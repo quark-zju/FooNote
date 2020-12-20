@@ -1,0 +1,14 @@
+backup/
+lib/
+*.exe
+*.dll
+*.foonote
+*.ini
+icons/**/*.png
+*.mo
+*.dbg
+*.ico
+Config.json
+*.lrj
+.*
+.vscode
