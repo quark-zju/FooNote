@@ -1,0 +1,26 @@
+object SolidColorPreviewForm: TSolidColorPreviewForm
+  Left = 647
+  Height = 0
+  Top = 161
+  Width = 120
+  AlphaBlend = True
+  AlphaBlendValue = 128
+  BorderIcons = []
+  BorderStyle = bsNone
+  Caption = 'FooNoteOverlay'
+  ClientHeight = 0
+  ClientWidth = 120
+  Color = clHighlight
+  Enabled = False
+  FormStyle = fsStayOnTop
+  OnCreate = FormCreate
+  ShowInTaskBar = stNever
+  LCLVersion = '2.0.10.0'
+  object MainImage: TImage
+    Left = 0
+    Height = 33
+    Top = 0
+    Width = 32
+    Enabled = False
+  end
+end
