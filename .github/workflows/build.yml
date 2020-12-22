@@ -1,4 +1,4 @@
-name: gui
+name: build
 
 on:
   push:
@@ -13,16 +13,19 @@ jobs:
       matrix:
         operating-system: [ ubuntu-latest, windows-latest ]
         lazarus-versions: [ 2.0.10 ]
+
     steps:
     - uses: actions/checkout@v2
+    - name: Build backend
+      run: cargo build --manifest-path backend/Cargo.toml --verbose --target-dir=target
+    - name: Run backend tests
+      run: cargo test --manifest-path backend/Cargo.toml --verbose --target-dir=target
+    - name: Coppy build assets (Linux)
+      if: runner.os == 'Linux'
+      run: cp target/debug/libnotebackend.so frontend
     - name: Install Lazarus
       uses: gcarreno/setup-lazarus@v2.2.6
       with:
         lazarus-version: ${{ matrix.lazarus-versions }}
-    - if: matrix.os == 'ubuntu-latest'
-      name: Create a dummy libnotebackend.so to make ld happy
-      run: |
-        touch a.c
-        cc -o libnotebackend.so --shared a.c
-    - name: Build FooNote GUI
+    - name: Build GUI
       run: lazbuild "frontend/foonote.lpi"
