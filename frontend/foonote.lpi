@@ -46,7 +46,6 @@
             <IncludeFiles Value="$(ProjOutDir)"/>
             <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
           </SearchPaths>
-          <Conditionals Value="if TargetOs = 'linux' then LinkerOptions += ' --unresolved-symbols=ignore-all';"/>
           <Parsing>
             <SyntaxOptions>
               <IncludeAssertionCode Value="True"/>
@@ -82,7 +81,6 @@
             <IncludeFiles Value="$(ProjOutDir)"/>
             <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
           </SearchPaths>
-          <Conditionals Value="if TargetOs = 'linux' then LinkerOptions += ' --unresolved-symbols=ignore-all';"/>
           <CodeGeneration>
             <SmartLinkUnit Value="True"/>
             <Optimizations>
@@ -197,7 +195,6 @@
       <IncludeFiles Value="$(ProjOutDir)"/>
       <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
-    <Conditionals Value="if TargetOs = 'linux' then LinkerOptions += ' --unresolved-symbols=ignore-all';"/>
   </CompilerOptions>
   <Debugging>
     <Exceptions Count="3">
