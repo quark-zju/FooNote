@@ -68,9 +68,6 @@
               <TrashVariables Value="True"/>
               <UseExternalDbgSyms Value="True"/>
             </Debugging>
-            <Options>
-              <PassLinkerOptions Value="True"/>
-            </Options>
           </Linking>
         </CompilerOptions>
       </Item2>
@@ -97,9 +94,6 @@
               <GenerateDebugInfo Value="False"/>
             </Debugging>
             <LinkSmart Value="True"/>
-            <Options>
-              <PassLinkerOptions Value="True"/>
-            </Options>
           </Linking>
         </CompilerOptions>
       </Item3>
@@ -204,11 +198,6 @@
       <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
     <Conditionals Value="if TargetOs = 'linux' then LinkerOptions += ' --unresolved-symbols=ignore-all';"/>
-    <Linking>
-      <Options>
-        <PassLinkerOptions Value="True"/>
-      </Options>
-    </Linking>
   </CompilerOptions>
   <Debugging>
     <Exceptions Count="3">
