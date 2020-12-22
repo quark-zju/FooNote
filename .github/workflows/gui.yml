@@ -11,13 +11,18 @@ jobs:
     runs-on: ${{ matrix.operating-system }}
     strategy:
       matrix:
-        operating-system: [ubuntu-latest, windows-latest]
-        lazarus-versions: [2.0.10]
+        operating-system: [ ubuntu-latest, windows-latest ]
+        lazarus-versions: [ 2.0.10 ]
     steps:
     - uses: actions/checkout@v2
     - name: Install Lazarus
       uses: gcarreno/setup-lazarus@v2.2.6
       with:
         lazarus-version: ${{ matrix.lazarus-versions }}
-    - name: Build the Main Application
+    - if: matrix.os == 'ubuntu-latest'
+      name: Create a dummy libnotebackend.so to make ld happy
+      run: |
+        touch a.c
+        cc -o libnotebackend.so --shared a.c
+    - name: Build FooNote GUI
       run: lazbuild "frontend/foonote.lpi"
