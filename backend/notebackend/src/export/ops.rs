@@ -6,11 +6,10 @@ use crate::backend;
 use crate::backend::clipboard;
 use crate::backend::multiplex::FullId;
 use crate::backend::multiplex::MultiplexBackend;
-use crate::backend::TreeBackend;
-
 use backend::blob::MemBackend;
 use backend::search::Search;
-use backend::InsertPos;
+use notebackend_types::InsertPos;
+use notebackend_types::TreeBackend;
 use once_cell::sync::Lazy;
 use parking_lot::RwLock;
 use std::sync::Arc;
@@ -31,7 +30,7 @@ macro_rules! pop {
 
 macro_rules! pop_fid {
     () => {{
-        let id: crate::backend::Id = match stack::pop() {
+        let id: ::notebackend_types::Id = match stack::pop() {
             Err(i) => return i,
             Ok(v) => v,
         };
@@ -335,7 +334,6 @@ pub extern "C" fn notebackend_paste() -> i32 {
 
     let pos: i32 = pop!();
     let dest = pop_fid!();
-    dbg!(pos, dest);
 
     let mut backend = ROOT_BACKEND.write();
     let ids = attempt!(clipboard::paste(&copied, &mut *backend, dest, pos.into()));

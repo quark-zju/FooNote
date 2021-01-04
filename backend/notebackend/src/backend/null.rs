@@ -1,3 +1,5 @@
+//! Null backend. Useful as "umounted" backend in a multiplex backend.
+
 use super::Id;
 use super::InsertPos;
 use super::TreeBackend;

@@ -1,6 +1,4 @@
 backup/
-backend/target/
-backend/Cargo.lock
 frontend/icons/elementary-icons/*.png
 frontend/icons/elementary-icons/*.svg
 frontend/icons/mainicon/*.png

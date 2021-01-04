@@ -1,10 +1,17 @@
+//! Blob backend. Backend that can be serialized into and deserialized from
+//! a blob.
+
 mod file;
 mod mem;
 
 use super::*;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 use std::collections::BTreeMap;
-use std::io::{self, Read, Result, Write};
+use std::io;
+use std::io::Read;
+use std::io::Result;
+use std::io::Write;
 
 pub type SingleFileBackend = BlobBackend<file::FileBlobIo>;
 pub type MemBackend = BlobBackend<mem::MemBlobIo>;
@@ -63,7 +70,7 @@ impl TreeData {
         let mut header = vec![0u8; HEADER_V1.len()];
         reader.read_exact(&mut header)?;
         if header != HEADER_V1 {
-            return crate::error::invalid_data("invalid header");
+            return notebackend_types::error::invalid_data("invalid header");
         }
         let mut d = varbincode::de::Deserializer::new(reader);
         let mut data: TreeData = serde::Deserialize::deserialize(&mut d)
@@ -352,7 +359,7 @@ where
     fn remove(&mut self, id: Id) -> Result<()> {
         self.check_id(id)?;
         if id == ROOT_ID || id == TRASH_ID {
-            return crate::error::invalid_input("special nodes cannot be removed");
+            return notebackend_types::error::invalid_input("special nodes cannot be removed");
         }
         self.touch(id)?;
         if !self.has_trash || self.is_ancestor(TRASH_ID, id)? {
@@ -369,7 +376,7 @@ where
         self.check_id(id)?;
         self.check_id(dest_id)?;
         if id == ROOT_ID || id == TRASH_ID {
-            return crate::error::invalid_input("special nodes cannot be moved");
+            return notebackend_types::error::invalid_input("special nodes cannot be moved");
         }
         let parent_id = match pos {
             InsertPos::Before | InsertPos::After => self

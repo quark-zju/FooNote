@@ -1,12 +1,12 @@
-//! Process the "mount" metadata so multiple backends can be mixed.
+//! Multiplex backend. Mixing multiple backends together.
 
-use super::meta::TreeMeta;
 use super::null::NullBackend;
 use super::BackendId;
 use super::Id;
 use super::InsertPos;
 use super::Mtime;
 use super::TreeBackend;
+use notebackend_types::meta::TreeMeta;
 use std::collections::HashMap;
 use std::io;
 use std::io::Result;
@@ -87,7 +87,7 @@ impl TreeBackend for MultiplexBackend {
 
     fn set_parent(&mut self, id: Self::Id, dest_id: Self::Id, pos: InsertPos) -> Result<Self::Id> {
         if id.0.max(dest_id.0) >= self.backends.len() {
-            return crate::error::invalid_input("backend id is out of bound");
+            return notebackend_types::error::invalid_input("backend id is out of bound");
         }
         if id.0 == dest_id.0 {
             // Move within a single backend.
@@ -105,7 +105,9 @@ impl TreeBackend for MultiplexBackend {
             let result = (|| -> Result<Self::Id> {
                 // Do not move special nodes.
                 if !src.is_copyable(id.1)? {
-                    return crate::error::invalid_input("cannot copy non-copyable nodes");
+                    return notebackend_types::error::invalid_input(
+                        "cannot copy non-copyable nodes",
+                    );
                 }
                 // Do the move.
                 let dst_id = dst.insert(dest_id.1, pos, String::new(), String::new())?;
@@ -179,10 +181,10 @@ impl MultiplexBackend {
 
     pub fn mount(&mut self, id: FullId, backend: BoxBackend) -> Result<FullId> {
         if id.1 == 0 {
-            return crate::error::invalid_input("cannot mount at root");
+            return notebackend_types::error::invalid_input("cannot mount at root");
         }
         if self.table_srcdst.contains_key(&id) {
-            return crate::error::invalid_input("already mounted");
+            return notebackend_types::error::invalid_input("already mounted");
         }
         let backend_id = self.backends.len();
         let root_id = backend.get_root_id();

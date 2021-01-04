@@ -5,7 +5,9 @@
 //! allows Rust to return references to Pascal, then Pascal
 //! can copy the data, and then pop the item on the stack.
 
-use super::errno::{ENONE, ETYPE, OK};
+use super::errno::ENONE;
+use super::errno::ETYPE;
+use super::errno::OK;
 use super::Variant;
 use std::cell::RefCell;
 use std::convert::TryInto;

@@ -1,4 +1,4 @@
-use super::TreeBackend;
+use crate::TreeBackend;
 use std::io::Result;
 pub trait TreeMeta: TreeBackend {
     fn is_copyable(&self, id: Self::Id) -> Result<bool> {

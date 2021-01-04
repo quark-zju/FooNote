@@ -3,7 +3,8 @@ use parking_lot::RwLock;
 use std::collections::HashMap;
 use std::ops::Deref;
 use std::sync::atomic::AtomicBool;
-use std::sync::atomic::Ordering::{Acquire, Release};
+use std::sync::atomic::Ordering::Acquire;
+use std::sync::atomic::Ordering::Release;
 use std::sync::Arc;
 use std::thread;
 

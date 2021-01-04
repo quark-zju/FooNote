@@ -1,3 +1,5 @@
+//! Clipboard operations (copy, paste) for backends.
+
 use super::blob::MemBackend;
 use super::InsertPos;
 use super::TreeBackend;

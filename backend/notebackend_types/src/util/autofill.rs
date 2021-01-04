@@ -246,7 +246,7 @@ fn common_suffix_len(seq: &[&str]) -> usize {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::util::autofill::*;
 
     #[test]
     fn test_common_prefix_len() {
