@@ -7,6 +7,7 @@ use std::io::Result;
 pub fn open(url: &str) -> Result<Box<dyn TreeBackend<Id = Id>>> {
     use super::blob;
     use std::path::Path;
+
     let foonote = "foonote:";
     let backend: Box<dyn TreeBackend<Id = Id>> = if url.starts_with(foonote) {
         let path = Path::new(&url[foonote.len()..]);
@@ -17,5 +18,6 @@ pub fn open(url: &str) -> Result<Box<dyn TreeBackend<Id = Id>>> {
             format!("invalid backend URL: {}", url),
         ));
     };
+
     Ok(backend)
 }

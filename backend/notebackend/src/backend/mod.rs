@@ -1,8 +1,8 @@
 pub(crate) mod blob;
 pub(crate) mod clipboard;
+pub(crate) mod dylib;
 pub(crate) mod multiplex;
 pub(crate) mod null;
-pub(crate) mod rlib;
 pub(crate) mod search;
 pub(crate) mod url;
 
