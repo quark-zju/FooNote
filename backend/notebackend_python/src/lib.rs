@@ -5,6 +5,7 @@ use pyo3::{prelude::*, types::PyDict};
 use std::fs;
 use std::io;
 
+#[no_mangle]
 pub fn notebackend_create(url: &str) -> io::Result<Box<dyn TreeBackend<Id = Id>>> {
     let split = url.splitn(2, ':').collect::<Vec<_>>();
     if let [scheme, path] = split[..] {
