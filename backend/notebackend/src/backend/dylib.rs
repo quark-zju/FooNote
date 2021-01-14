@@ -7,8 +7,9 @@ use libloading::Symbol;
 use notebackend_types::{CreateBackendFunc, Id};
 use std::io;
 pub struct DylibBackend {
-    lib: Library,
+    // The order here is important. `tree` needs to be dropped before `lib`.
     tree: Box<dyn TreeBackend<Id = Id>>,
+    lib: Library,
 }
 
 impl DylibBackend {
@@ -21,7 +22,12 @@ impl DylibBackend {
             lib.get(b"notebackend_create")
                 .map_err(|e| io::Error::new(io::ErrorKind::NotFound, e))?
         };
-        let tree = create_func(url)?;
+        let tree = create_func(url).map_err(|e| {
+            // The error data might refer to static segments in the dylib.
+            // They will become invalid after dropping "lib". So turn them
+            // into plain strings first.
+            io::Error::new(e.kind(), e.to_string())
+        })?;
         Ok(Self { lib, tree })
     }
 }
