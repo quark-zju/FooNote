@@ -1,0 +1,13 @@
+[package]
+name = "notebackend_python"
+version = "0.1.0"
+authors = ["Jun Wu <quark@lihdd.net>"]
+edition = "2018"
+
+[lib]
+crate-type = ["dylib"]
+
+[dependencies]
+base64 = "0.13"
+notebackend_types = { path = "../notebackend_types" }
+pyo3 = "0.13"

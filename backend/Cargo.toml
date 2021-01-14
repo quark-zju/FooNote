@@ -2,4 +2,5 @@
 members = [
     "notebackend_types",
     "notebackend",
+    "notebackend_python",
 ]
