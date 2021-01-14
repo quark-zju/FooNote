@@ -23,6 +23,16 @@ pub enum InsertPos {
     Append,
 }
 
+impl From<InsertPos> for i32 {
+    fn from(pos: InsertPos) -> Self {
+        match pos {
+            InsertPos::Before => -1,
+            InsertPos::After => 1,
+            InsertPos::Append => 0,
+        }
+    }
+}
+
 impl From<i32> for InsertPos {
     fn from(v: i32) -> Self {
         if v < 0 {
