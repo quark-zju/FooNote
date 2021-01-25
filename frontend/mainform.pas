@@ -10,7 +10,7 @@ uses
   {$endif}
   Classes, SysUtils, Forms, Controls, Graphics, Dialogs, StdCtrls, Menus,
   ExtCtrls, ComCtrls, ActnList, PairSplitter, StdActns, ClipBrd, LCLType, LazUtf8, FGL,
-  LazLogger, Math, NoteBackend, MemoUtil, LCLTranslator, Buttons,
+  LazLogger, Math, NoteBackend, NoteTypes, MemoUtil, LCLTranslator, Buttons,
   JSONPropStorage, TreeNodeData, TreeViewSync, Settings, SettingsForm,
   PreviewForm, AboutForm;
 

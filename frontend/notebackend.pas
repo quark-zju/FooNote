@@ -1,12 +1,11 @@
 unit NoteBackend;
 
 {$mode objfpc}{$H+}
-{$modeSwitch advancedRecords}
 
 interface
 
 uses
-  Classes, SysUtils, LazLogger;
+  Classes, SysUtils, LazLogger, NoteTypes;
 
 const
   OK: Int32 = 0;
@@ -14,28 +13,6 @@ const
   ETYPE: Int32 = -2;
 
 // Main APIs.
-
-type
-  NoteBackendId = Int32;
-  NodeId = Int32;
-  NodeMtime = Int32;
-
-  FullId = record
-    Id: NodeId;
-    BackendId: NoteBackendId;
-    constructor Create(B: NoteBackendId; I: NodeId);
-    class operator < (X, Y: FullId): boolean;
-    class operator > (X, Y: FullId): boolean;
-    class operator = (X, Y: FullId): boolean;
-    function ToString(): string;
-  end;
-  VecFullId = array of FullId;
-
-  FullIdText = record
-    Id: FullId;
-    Text: string;
-  end;
-  VecFullIdText = array of FullIdText;
 
 procedure CloseAll;
 function Open(Url: string): FullId;
@@ -77,32 +54,6 @@ function TryUmount(Id: FullId): boolean;
 
 
 implementation
-
-constructor FullId.Create(B: NoteBackendId; I: NodeId);
-begin
-  Id := I;
-  BackendId := B;
-end;
-
-class operator FullId. < (X, Y: FullId): boolean;
-begin
-  Result := (X.BackendId < Y.BackendId) or ((X.BackendId = Y.BackendId) and (X.Id < Y.Id));
-end;
-
-class operator FullId. > (X, Y: FullId): boolean;
-begin
-  Result := (X.BackendId > Y.BackendId) or ((X.BackendId = Y.BackendId) and (X.Id > Y.Id));
-end;
-
-class operator FullId. = (X, Y: FullId): boolean;
-begin
-  Result := (X.BackendId = Y.BackendId) and (X.Id = Y.Id);
-end;
-
-function FullId.ToString: string;
-begin
-  Result := Format('%d:%d', [BackendId, Id]);
-end;
 
 // Communicate with Rust via a stack. References (like string or bytes) are copied
 // when crossing language boundaries.

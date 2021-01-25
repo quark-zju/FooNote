@@ -5,7 +5,7 @@ unit TreeNodeData;
 interface
 
 uses
-  Classes, SysUtils, ComCtrls, NoteBackend, ImageIndex, LazLogger;
+  Classes, SysUtils, ComCtrls, NoteTypes, NoteBackend, ImageIndex, LazLogger;
 
 type
   TTreeNodeData = class

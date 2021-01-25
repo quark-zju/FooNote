@@ -5,7 +5,7 @@ unit TreeViewSync;
 interface
 
 uses
-  Classes, SysUtils, ComCtrls, TreeNodeData, NoteBackend, FGL, LazLogger, Settings;
+  Classes, SysUtils, ComCtrls, TreeNodeData, NoteBackend, NoteTypes, FGL, LazLogger, Settings;
 
 // Update a tree view node from backend. Prepare its children (for +/- sign).
 procedure SyncTreeNode(View: TTreeNode; ForceChild: boolean = False);
