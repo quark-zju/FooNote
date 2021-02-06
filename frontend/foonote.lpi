@@ -31,7 +31,7 @@
       <AutoIncrementBuild Value="True"/>
       <MajorVersionNr Value="1"/>
       <MinorVersionNr Value="1"/>
-      <BuildNr Value="1"/>
+      <BuildNr Value="8"/>
     </VersionInfo>
     <BuildModes Count="3">
       <Item1 Name="Default" Default="True"/>
@@ -86,6 +86,7 @@
             <Optimizations>
               <OptimizationLevel Value="3"/>
             </Optimizations>
+            <SmallerCode Value="True"/>
           </CodeGeneration>
           <Linking>
             <Debugging>
@@ -120,7 +121,7 @@
       <Unit1>
         <Filename Value="mainform.pas"/>
         <IsPartOfProject Value="True"/>
-        <ComponentName Value="FooNoteForm"/>
+        <ComponentName Value="FormFooNoteMain"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="MainForm"/>
@@ -161,27 +162,25 @@
         <UnitName Value="Settings"/>
       </Unit8>
       <Unit9>
-        <Filename Value="settingsform.pas"/>
-        <IsPartOfProject Value="True"/>
-        <ComponentName Value="FooNoteSettingsForm"/>
-        <HasResources Value="True"/>
-        <ResourceBaseClass Value="Form"/>
-      </Unit9>
-      <Unit10>
         <Filename Value="previewform.pas"/>
         <IsPartOfProject Value="True"/>
         <ComponentName Value="SolidColorPreviewForm"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="PreviewForm"/>
-      </Unit10>
-      <Unit11>
+      </Unit9>
+      <Unit10>
         <Filename Value="aboutform.pas"/>
         <IsPartOfProject Value="True"/>
         <ComponentName Value="AboutFooNoteForm"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="AboutForm"/>
+      </Unit10>
+      <Unit11>
+        <Filename Value="notetypes.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="NoteTypes"/>
       </Unit11>
     </Units>
   </ProjectOptions>
