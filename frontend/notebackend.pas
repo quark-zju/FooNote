@@ -5,7 +5,7 @@ unit NoteBackend;
 interface
 
 uses
-  Classes, SysUtils, LazLogger, NoteTypes;
+  Classes, SysUtils, LazLogger, NoteTypes, Math;
 
 const
   OK: Int32 = 0;
@@ -19,6 +19,7 @@ function Open(Url: string): FullId;
 function GetRootId(): FullId;
 function GetChildren(Id: FullId): VecFullId;
 function GetParent(Id: FullId): FullId;
+function GetAncestors(Id: FullId): VecFullId;
 function GetRawMeta(Id: FullId): string;
 function GetMtime(Id: FullId): NodeMtime;
 function GetText(Id: FullId): string;
@@ -308,6 +309,26 @@ begin
     raise EExternal.Create(Format('GetParent(%s) failed', [Id.ToString()]));
   end;
   Result := StackPopFullId();
+end;
+
+function GetAncestors(Id: FullId): VecFullId;
+const
+  MinCapacity: integer = 5;
+var
+  Parent: FullId;
+  Count: integer;
+begin
+  SetLength(Result, MinCapacity);
+  Count := 0;
+  Parent := GetParent(Id);
+  while Parent <> Id do begin
+    Inc(Count);
+    SetLength(Result, Max(MinCapacity, Count));
+    Result[Count - 1] := Parent;
+    Id := Parent;
+    Parent := GetParent(Id);
+  end;
+  SetLength(Result, Count);
 end;
 
 function GetMtime(Id: FullId): NodeMtime;
