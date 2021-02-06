@@ -451,7 +451,9 @@ begin
   StackPushFullId(Parent);
   StackPushInt(Pos);
   Result := (LogError(notebackend_set_parent_batch()) = OK);
-  Ids := StackPopFullIdList();
+  if Result then begin
+    Ids := StackPopFullIdList();
+  end;
 end;
 
 
