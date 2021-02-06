@@ -616,6 +616,11 @@ begin
   if MemoNote.CaretPos.Y <= 1 then begin
     RefreshFullTree;
   end;
+  // Schedule AutoSave
+  TimerAutoSave.Enabled := False;
+  TimerAutoSave.Enabled := True;
+  // Seems broken after Drag-and-drop move:
+  // TreeViewSync.SyncTreeNode(TreeViewNoteTree.Selected);
 end;
 
 procedure TFormFooNoteMain.FormClose(Sender: TObject; var CloseAction: TCloseAction);
@@ -926,6 +931,15 @@ begin
       end;
     end;
   end;
+end;
+
+procedure TFormFooNoteMain.TimerAutoSaveTimer(Sender: TObject);
+var
+  Saved: boolean;
+begin
+  Saved := ActionEditSave.Execute;
+  DebugLn('AutoSave. Succeeded: %d', [integer(Saved)]);
+  TimerAutoSave.Enabled := False;
 end;
 
 procedure TFormFooNoteMain.TreeViewNoteTreeAdvancedCustomDrawItem(Sender: TCustomTreeView;
