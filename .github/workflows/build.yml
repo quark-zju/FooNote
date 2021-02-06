@@ -16,11 +16,13 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+    - name: Rust Information
+      run: rustup show
     - name: Build backend
       run: cargo build --manifest-path backend/Cargo.toml --verbose --target-dir=target
     - name: Run backend tests
       run: cargo test --manifest-path backend/Cargo.toml --verbose --target-dir=target
-    - name: Coppy build assets (Linux)
+    - name: Copy build assets (Linux)
       if: runner.os == 'Linux'
       run: cp target/debug/libnotebackend.so frontend
     - name: Install Lazarus
