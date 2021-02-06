@@ -1159,6 +1159,8 @@ begin
     // Focus on search.
     EditNoteSearch.SetFocus;
     Key := #0; // Marked as already handled.
+  end else if (key = '.') then begin
+    TreeViewNoteTree.PopupMenu.PopUp;
   end else if (Key = #10) or (Key = #13) then begin
     TreeViewNoteTreeDblClick(Sender);
   end;
