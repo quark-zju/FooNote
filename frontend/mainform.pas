@@ -292,6 +292,22 @@ begin
     B := (Config.FeatureLevel >= flAdvanced);
     This.MenuSepMount.Visible := B;
     This.MenuItemMount.Visible := B;
+  end else if Name = 'ZenMode' then begin
+    B := Config.ZenMode;
+    This.PanelTop.Visible := not B;
+    This.PanelEdit.Visible := not B;
+    This.PanelTree.Visible := not B;
+    This.PanelZen.Visible := B;
+    This.ActionViewToggleZenMode.Checked := B;
+    This.SplitterTreeNote.Visible := not B;
+    if B then begin
+      This.MemoNote.Parent := This.PanelZen;
+    end else begin
+      This.MemoNote.Parent := This.PanelEdit;
+    end;
+    if not This.MemoNote.Focused and This.MemoNote.CanSetFocus then begin
+      This.MemoNote.SetFocus;
+    end;
   end;
 end;
 
@@ -585,6 +601,11 @@ end;
 procedure TFormFooNoteMain.ActionViewStayOnTopExecute(Sender: TObject);
 begin
   AppConfig.StayOnTop := not AppConfig.StayOnTop;
+end;
+
+procedure TFormFooNoteMain.ActionViewToggleZenModeExecute(Sender: TObject);
+begin
+  AppConfig.ZenMode := not AppConfig.ZenMode;
 end;
 
 procedure TFormFooNoteMain.ActionViewDockLeftExecute(Sender: TObject);
