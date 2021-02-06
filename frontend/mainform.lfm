@@ -1,12 +1,13 @@
-object FooNoteForm: TFooNoteForm
-  Left = 971
+object FormFooNoteMain: TFormFooNoteMain
+  Left = 1108
   Height = 510
-  Top = 104
+  Top = 116
   Width = 257
   BorderIcons = [biSystemMenu, biMinimize]
   Caption = 'FooNote'
   ClientHeight = 510
   ClientWidth = 257
+  Color = clWindow
   Constraints.MaxWidth = 500
   Constraints.MinHeight = 200
   Constraints.MinWidth = 160
@@ -19,9 +20,25 @@ object FooNoteForm: TFooNoteForm
   OnWindowStateChange = FormWindowStateChange
   ParentDoubleBuffered = False
   LCLVersion = '2.0.10.0'
+  object PanelZen: TPanel
+    AnchorSideLeft.Control = PanelDockSplitterLeft
+    AnchorSideLeft.Side = asrBottom
+    AnchorSideTop.Control = Owner
+    AnchorSideRight.Control = PanelDockSplitterRight
+    AnchorSideBottom.Control = Owner
+    AnchorSideBottom.Side = asrBottom
+    Left = 16
+    Height = 494
+    Top = 8
+    Width = 225
+    Anchors = [akTop, akLeft, akRight, akBottom]
+    BorderSpacing.Around = 8
+    BevelOuter = bvNone
+    TabOrder = 3
+  end
   object PanelEdit: TPanel
     AnchorSideLeft.Control = PanelTree
-    AnchorSideTop.Control = TreeNoteSplitter
+    AnchorSideTop.Control = SplitterTreeNote
     AnchorSideTop.Side = asrBottom
     AnchorSideRight.Control = PanelTree
     AnchorSideRight.Side = asrBottom
@@ -33,75 +50,79 @@ object FooNoteForm: TFooNoteForm
     Width = 231
     Anchors = [akTop, akLeft, akRight, akBottom]
     BorderSpacing.Bottom = 5
+    BevelColor = clWindow
     BevelOuter = bvNone
-    ClientHeight = 139
-    ClientWidth = 231
+    BorderStyle = bsSingle
+    ClientHeight = 135
+    ClientWidth = 227
     Constraints.MinHeight = 24
-    TabOrder = 4
-    object NoteMemo: TMemo
+    TabOrder = 5
+    object MemoNote: TMemo
       Left = 0
-      Height = 139
+      Height = 135
       Top = 0
-      Width = 231
+      Width = 227
       Align = alClient
       Anchors = []
+      BorderStyle = bsNone
+      Color = clWindow
       Constraints.MinHeight = 24
-      OnChange = NoteMemoChange
-      OnKeyDown = NoteMemoKeyDown
+      OnChange = MemoNoteChange
+      OnKeyDown = MemoNoteKeyDown
       ParentFont = False
-      ScrollBars = ssAutoVertical
       TabOrder = 0
       WantTabs = True
     end
   end
-  object TopPanel: TPanel
-    AnchorSideLeft.Control = DockSplitterLeft
+  object PanelTop: TPanel
+    AnchorSideLeft.Control = PanelDockSplitterLeft
     AnchorSideLeft.Side = asrBottom
     AnchorSideTop.Control = Owner
-    AnchorSideRight.Control = DockSplitterRight
+    AnchorSideRight.Control = PanelDockSplitterRight
     Left = 8
-    Height = 35
+    Height = 27
     Top = 0
     Width = 241
     Align = alCustom
     Anchors = [akTop, akLeft, akRight]
     AutoSize = True
     BevelOuter = bvNone
-    ClientHeight = 35
+    ClientHeight = 27
     ClientWidth = 241
     ParentFont = False
     TabOrder = 1
-    OnMouseDown = TopPanelMouseDown
-    OnMouseMove = TopPanelMouseMove
-    OnMouseUp = TopPanelMouseUp
-    object NoteSearch: TEdit
-      AnchorSideLeft.Control = NoteToolBar
+    OnMouseDown = PanelTopMouseDown
+    OnMouseMove = PanelTopMouseMove
+    OnMouseUp = PanelTopMouseUp
+    object EditNoteSearch: TEdit
+      AnchorSideLeft.Control = ToolBarDefault
       AnchorSideLeft.Side = asrBottom
-      AnchorSideTop.Control = TopPanel
-      AnchorSideRight.Control = TopPanel
+      AnchorSideTop.Control = PanelTop
+      AnchorSideRight.Control = PanelTop
       AnchorSideRight.Side = asrBottom
-      Left = 157
-      Height = 25
+      Left = 111
+      Height = 17
       Top = 5
-      Width = 79
+      Width = 125
       Align = alCustom
       Anchors = [akTop, akLeft, akRight]
       BorderSpacing.Around = 5
-      OnChange = NoteSearchChange
-      OnKeyPress = NoteSearchKeyPress
+      BorderStyle = bsNone
+      OnChange = EditNoteSearchChange
+      OnKeyPress = EditNoteSearchKeyPress
       ParentFont = False
       TabOrder = 2
-      TextHint = 'Find'
+      TextHint = 'Search'
     end
-    object DockedToolBar: TToolBar
-      AnchorSideLeft.Control = TopPanel
-      AnchorSideTop.Control = NoteSearch
+    object ToolBarDocked: TToolBar
+      AnchorSideLeft.Control = PanelTop
+      AnchorSideTop.Control = EditNoteSearch
       AnchorSideTop.Side = asrCenter
-      AnchorSideRight.Control = TopPanel
+      AnchorSideRight.Control = PanelTop
       AnchorSideRight.Side = asrBottom
       Left = 5
       Height = 22
-      Top = 6
+      Top = 2
       Width = 60
       Align = alCustom
       AutoSize = True
@@ -110,7 +131,7 @@ object FooNoteForm: TFooNoteForm
       EdgeBorders = []
       EdgeInner = esNone
       EdgeOuter = esNone
-      Images = ElementaryIcons
+      Images = ImageListElementaryIcons
       ParentShowHint = False
       ShowCaptions = True
       ShowHint = True
@@ -120,25 +141,25 @@ object FooNoteForm: TFooNoteForm
         Left = 1
         Top = 0
         Caption = 'FooNote'
-        DropdownMenu = DockMenu
+        DropdownMenu = PopupMenuDockMenu
       end
     end
-    object NoteToolBar: TToolBar
-      AnchorSideLeft.Control = DockedToolBar
+    object ToolBarDefault: TToolBar
+      AnchorSideLeft.Control = ToolBarDocked
       AnchorSideLeft.Side = asrBottom
-      AnchorSideTop.Control = NoteSearch
+      AnchorSideTop.Control = EditNoteSearch
       AnchorSideTop.Side = asrCenter
       Left = 70
       Height = 22
-      Top = 6
-      Width = 82
+      Top = 2
+      Width = 36
       Align = alCustom
       AutoSize = True
       BorderSpacing.Left = 5
       EdgeBorders = []
       EdgeInner = esNone
       EdgeOuter = esNone
-      Images = ElementaryIcons
+      Images = ImageListElementaryIcons
       ParentFont = False
       ParentShowHint = False
       ShowHint = True
@@ -146,26 +167,16 @@ object FooNoteForm: TFooNoteForm
       object ToolButtonNew: TToolButton
         Left = 1
         Top = 0
-        Action = NewNote
-        DropdownMenu = AddMenu
+        Action = ActionNewNote
+        DropdownMenu = MenuAddMenu
         Style = tbsDropDown
-      end
-      object ToolButton1: TToolButton
-        Left = 36
-        Top = 0
-        Action = EditCopyAction
-      end
-      object ToolButton2: TToolButton
-        Left = 59
-        Top = 0
-        Action = EditPasteAction
       end
     end
   end
-  object TreeNoteSplitter: TSplitter
-    AnchorSideLeft.Control = TopPanel
+  object SplitterTreeNote: TSplitter
+    AnchorSideLeft.Control = PanelTop
     AnchorSideTop.Side = asrBottom
-    AnchorSideRight.Control = TopPanel
+    AnchorSideRight.Control = PanelTop
     AnchorSideRight.Side = asrBottom
     Cursor = crVSplit
     Left = 8
@@ -174,10 +185,10 @@ object FooNoteForm: TFooNoteForm
     Width = 241
     Align = alNone
     Anchors = [akLeft, akRight]
-    OnMoved = TreeNoteSplitterMoved
+    OnMoved = SplitterTreeNoteMoved
     ResizeAnchor = akBottom
   end
-  object DockSplitterLeft: TPanel
+  object PanelDockSplitterLeft: TPanel
     AnchorSideLeft.Control = Owner
     AnchorSideTop.Control = Owner
     AnchorSideBottom.Control = Owner
@@ -194,11 +205,11 @@ object FooNoteForm: TFooNoteForm
     ParentColor = False
     TabOrder = 0
     Visible = False
-    OnMouseDown = DockSplitterLeftMouseDown
-    OnMouseMove = DockSplitterLeftMouseMove
-    OnMouseUp = DockSplitterLeftMouseUp
+    OnMouseDown = PanelDockSplitterLeftMouseDown
+    OnMouseMove = PanelDockSplitterLeftMouseMove
+    OnMouseUp = PanelDockSplitterLeftMouseUp
   end
-  object DockSplitterRight: TPanel
+  object PanelDockSplitterRight: TPanel
     AnchorSideLeft.Control = Owner
     AnchorSideTop.Control = Owner
     AnchorSideRight.Control = Owner
@@ -215,34 +226,57 @@ object FooNoteForm: TFooNoteForm
     BevelOuter = bvNone
     Color = clBackground
     ParentColor = False
-    TabOrder = 5
+    TabOrder = 6
     Visible = False
-    OnMouseDown = DockSplitterLeftMouseDown
-    OnMouseMove = DockSplitterLeftMouseMove
-    OnMouseUp = DockSplitterLeftMouseUp
+    OnMouseDown = PanelDockSplitterLeftMouseDown
+    OnMouseMove = PanelDockSplitterLeftMouseMove
+    OnMouseUp = PanelDockSplitterLeftMouseUp
   end
   object PanelTree: TPanel
-    AnchorSideLeft.Control = DockSplitterLeft
+    AnchorSideLeft.Control = PanelDockSplitterLeft
     AnchorSideLeft.Side = asrBottom
-    AnchorSideTop.Control = TopPanel
+    AnchorSideTop.Control = PanelTop
     AnchorSideTop.Side = asrBottom
-    AnchorSideRight.Control = DockSplitterRight
-    AnchorSideBottom.Control = TreeNoteSplitter
+    AnchorSideRight.Control = PanelDockSplitterRight
+    AnchorSideBottom.Control = SplitterTreeNote
     Left = 13
-    Height = 326
-    Top = 35
+    Height = 334
+    Top = 27
     Width = 231
     Anchors = [akTop, akLeft, akRight, akBottom]
     BorderSpacing.Left = 5
     BorderSpacing.Right = 5
+    BevelColor = clWindow
     BevelOuter = bvNone
     BorderStyle = bsSingle
-    ClientHeight = 322
+    ClientHeight = 330
     ClientWidth = 227
     TabOrder = 2
-    object NoteTree: TTreeView
+    object TreeViewSearchTree: TTreeView
       Left = 0
-      Height = 322
+      Height = 330
+      Top = 0
+      Width = 227
+      Align = alClient
+      BorderStyle = bsNone
+      Images = ImageListElementaryIcons
+      ReadOnly = True
+      RowSelect = True
+      ScrollBars = ssAutoVertical
+      ShowButtons = False
+      ShowLines = False
+      ShowRoot = False
+      TabOrder = 0
+      Visible = False
+      OnDblClick = TreeViewSearchTreeDblClick
+      OnDeletion = TreeViewNoteTreeDeletion
+      OnKeyPress = TreeViewSearchTreeKeyPress
+      OnSelectionChanged = TreeViewSearchTreeSelectionChanged
+      Options = [tvoAutoItemHeight, tvoHideSelection, tvoKeepCollapsedNodes, tvoReadOnly, tvoRowSelect, tvoToolTips]
+    end
+    object TreeViewNoteTree: TTreeView
+      Left = 0
+      Height = 330
       Top = 0
       Width = 227
       Align = alClient
@@ -251,234 +285,231 @@ object FooNoteForm: TFooNoteForm
       DragMode = dmAutomatic
       ExpandSignType = tvestArrow
       HideSelection = False
-      Images = ElementaryIcons
+      Images = ImageListElementaryIcons
       MultiSelect = True
       MultiSelectStyle = [msControlSelect, msShiftSelect]
       ParentFont = False
-      PopupMenu = EditMenu
+      PopupMenu = PopupMenuEdit
       ReadOnly = True
       RightClickSelect = True
       RowSelect = True
       ScrollBars = ssAutoVertical
       SelectionFontColor = clHighlightText
       ShowLines = False
-      TabOrder = 0
-      OnAdvancedCustomDrawItem = NoteTreeAdvancedCustomDrawItem
-      OnDeletion = NoteTreeDeletion
-      OnDragDrop = NoteTreeDragDrop
-      OnDragOver = NoteTreeDragOver
-      OnEndDrag = NoteTreeEndDrag
-      OnEnter = NoteTreeEnter
-      OnExit = NoteTreeExit
-      OnExpanding = NoteTreeExpanding
-      OnMouseMove = NoteTreeMouseMove
-      OnMouseUp = NoteTreeMouseUp
-      OnSelectionChanged = NoteTreeSelectionChanged
-      OnStartDrag = NoteTreeStartDrag
+      TabOrder = 1
+      OnAdvancedCustomDrawItem = TreeViewNoteTreeAdvancedCustomDrawItem
+      OnDblClick = TreeViewNoteTreeDblClick
+      OnDeletion = TreeViewNoteTreeDeletion
+      OnDragDrop = TreeViewNoteTreeDragDrop
+      OnDragOver = TreeViewNoteTreeDragOver
+      OnEndDrag = TreeViewNoteTreeEndDrag
+      OnEnter = TreeViewNoteTreeEnter
+      OnExit = TreeViewNoteTreeExit
+      OnExpanding = TreeViewNoteTreeExpanding
+      OnKeyPress = TreeViewNoteTreeKeyPress
+      OnMouseMove = TreeViewNoteTreeMouseMove
+      OnMouseUp = TreeViewNoteTreeMouseUp
+      OnSelectionChanged = TreeViewNoteTreeSelectionChanged
+      OnStartDrag = TreeViewNoteTreeStartDrag
       Options = [tvoAllowMultiselect, tvoAutoItemHeight, tvoKeepCollapsedNodes, tvoReadOnly, tvoRightClickSelect, tvoRowSelect, tvoShowButtons, tvoShowRoot, tvoToolTips]
     end
-    object SearchTree: TTreeView
-      Left = 0
-      Height = 322
-      Top = 0
-      Width = 227
-      Align = alClient
-      BorderStyle = bsNone
-      Images = ElementaryIcons
-      ReadOnly = True
-      RowSelect = True
-      ScrollBars = ssAutoVertical
-      ShowButtons = False
-      ShowLines = False
-      ShowRoot = False
-      TabOrder = 1
-      Visible = False
-      OnDblClick = SearchTreeDblClick
-      OnDeletion = NoteTreeDeletion
-      OnKeyPress = SearchTreeKeyPress
-      OnSelectionChanged = SearchTreeSelectionChanged
-      Options = [tvoAutoItemHeight, tvoHideSelection, tvoKeepCollapsedNodes, tvoReadOnly, tvoRowSelect, tvoToolTips]
-      Items.Data = {
-        F9FFFFFF0200010000000000000000000000FFFFFFFFFFFFFFFF000000000000
-        0000000D00000053656172636820526573756C74
-      }
-    end
   end
-  object AddMenu: TPopupMenu
-    Images = ElementaryIcons
-    Left = 40
-    Top = 128
+  object MenuAddMenu: TPopupMenu
+    Images = ImageListElementaryIcons
+    Left = 64
+    Top = 160
     object MenuItemNewNote: TMenuItem
-      Action = NewNote
+      Action = ActionNewNote
     end
     object MenuItemNewFolder: TMenuItem
-      Action = NewFolder
+      Action = ActionNewFolder
     end
     object MenuItemNewSeparator: TMenuItem
-      Action = NewSeparator
+      Action = ActionNewSeparator
     end
     object MenuSepMount: TMenuItem
       Caption = '-'
       Visible = False
     end
     object MenuItemMount: TMenuItem
-      Action = MountUrl
+      Action = ActionMountUrl
     end
   end
-  object ActionList: TActionList
-    Images = ElementaryIcons
-    Left = 40
-    Top = 272
-    object EditSave: TAction
+  object ActionListMain: TActionList
+    Images = ImageListElementaryIcons
+    Left = 64
+    Top = 320
+    object ActionEditSave: TAction
       Category = 'Edit'
       Caption = '&Save'
       DisableIfNoHandler = False
       Hint = 'Save'
-      OnExecute = EditSaveExecute
+      OnExecute = ActionEditSaveExecute
       ShortCut = 16467
     end
-    object NewNote: TAction
+    object ActionNewNote: TAction
       Category = 'New'
       Caption = 'New &Note'
       Hint = 'New Note'
       ImageIndex = 3
-      OnExecute = NewNoteExecute
+      OnExecute = ActionNewNoteExecute
       ShortCut = 16462
     end
-    object NewFolder: TAction
+    object ActionNewFolder: TAction
       Category = 'New'
       Caption = 'New &Folder'
       Hint = 'New Folder'
       ImageIndex = 3
-      OnExecute = NewFolderExecute
+      OnExecute = ActionNewFolderExecute
       ShortCut = 24654
     end
-    object NewSeparator: TAction
+    object ActionNewSeparator: TAction
       Category = 'New'
       Caption = 'New &Separator'
       Hint = 'New Separator'
-      OnExecute = NewSeparatorExecute
+      OnExecute = ActionNewSeparatorExecute
     end
-    object MountUrl: TAction
+    object ActionMountUrl: TAction
       Category = 'Mount'
       Caption = '&Mount ...'
-      OnExecute = MountUrlExecute
+      OnExecute = ActionMountUrlExecute
+      Visible = False
     end
-    object AppSettingPreferences: TAction
+    object ActionAppSettingPreferences: TAction
       Category = 'App'
       Caption = '&Preferences ...'
       DisableIfNoHandler = False
       ImageIndex = 4
-      OnExecute = AppSettingPreferencesExecute
+      OnExecute = ActionAppSettingPreferencesExecute
       ShortCut = 24656
+      Visible = False
     end
-    object AppQuitAction: TAction
+    object ActionAppQuit: TAction
       Category = 'App'
       Caption = '&Exit'
       Hint = 'Exit'
-      OnExecute = AppQuitActionExecute
+      OnExecute = ActionAppQuitExecute
       ShortCut = 24657
     end
-    object ViewUndock: TAction
+    object ActionViewUndock: TAction
       Category = 'View'
       Caption = '&Undock'
       Hint = 'Undock'
-      OnExecute = ViewUndockExecute
+      OnExecute = ActionViewUndockExecute
     end
-    object ViewStayOnTop: TAction
+    object ActionViewStayOnTop: TAction
       Category = 'View'
       Caption = 'Stay On &Top'
-      OnExecute = ViewStayOnTopExecute
+      OnExecute = ActionViewStayOnTopExecute
     end
-    object ViewDockLeft: TAction
+    object ActionViewDockLeft: TAction
       Category = 'View'
       Caption = 'Dock &Left'
-      OnExecute = ViewDockLeftExecute
+      OnExecute = ActionViewDockLeftExecute
     end
-    object ViewDockRight: TAction
+    object ActionViewDockRight: TAction
       Category = 'View'
       Caption = 'Dock R&ight'
-      OnExecute = ViewDockRightExecute
+      OnExecute = ActionViewDockRightExecute
     end
-    object AppAboutAction: TAction
+    object ActionAppAbout: TAction
       Category = 'App'
       Caption = '&About'
-      OnExecute = AppAboutActionExecute
+      OnExecute = ActionAppAboutExecute
     end
-    object EditCopyAction: TAction
+    object ActionEditCopy: TAction
       Category = 'Edit'
       Caption = '&Copy'
       Hint = 'Copy'
       ImageIndex = 7
-      OnExecute = EditCopyActionExecute
+      OnExecute = ActionEditCopyExecute
       ShortCut = 16451
     end
-    object EditDeleteAction: TAction
+    object ActionEditDelete: TAction
       Category = 'Edit'
       Caption = '&Delete'
       Hint = 'Delete'
       OnExecute = EditDeleteExecute
       ShortCut = 46
     end
-    object EditPasteAction: TAction
+    object ActionEditPaste: TAction
       Category = 'Edit'
       Caption = '&Paste'
       Hint = 'Paste'
       ImageIndex = 8
-      OnExecute = EditPasteActionExecute
+      OnExecute = ActionEditPasteExecute
       ShortCut = 16470
     end
+    object ActionViewToggleZenMode: TAction
+      Category = 'View'
+      Caption = '&Zen Mode'
+      OnExecute = ActionViewToggleZenModeExecute
+      ShortCut = 122
+    end
   end
-  object EditMenu: TPopupMenu
-    Images = ElementaryIcons
-    Left = 40
-    Top = 200
-    object MenuItem7: TMenuItem
-      Action = EditCopyAction
-    end
-    object MenuItem9: TMenuItem
-      Action = EditPasteAction
-    end
-    object MenuItem4: TMenuItem
-      Action = EditDeleteAction
-    end
-    object MenuItem15: TMenuItem
-      Caption = '-'
-    end
+  object PopupMenuEdit: TPopupMenu
+    Images = ImageListElementaryIcons
+    Left = 64
+    Top = 240
     object MenuItem14: TMenuItem
-      Action = NewNote
+      Action = ActionNewNote
     end
     object MenuItem16: TMenuItem
-      Action = NewFolder
+      Action = ActionNewFolder
     end
     object MenuItem17: TMenuItem
-      Action = NewSeparator
+      Action = ActionNewSeparator
     end
     object MenuItem11: TMenuItem
       Caption = '-'
     end
+    object MenuItem7: TMenuItem
+      Action = ActionEditCopy
+    end
+    object MenuItem9: TMenuItem
+      Action = ActionEditPaste
+    end
+    object MenuItem4: TMenuItem
+      Action = ActionEditDelete
+    end
+    object MenuItem15: TMenuItem
+      Caption = '-'
+    end
+    object MenuItemRootPath: TMenuItem
+      Enabled = False
+    end
     object MenuItem5: TMenuItem
-      Action = EditSave
+      Action = ActionEditSave
+    end
+    object MenuItem3: TMenuItem
+      Caption = '-'
+    end
+    object MenuItem6: TMenuItem
+      Action = ActionViewToggleZenMode
+    end
+    object MenuItem10: TMenuItem
+      Caption = '-'
     end
     object MenuItem2: TMenuItem
-      Action = AppQuitAction
+      Action = ActionAppQuit
     end
     object MenuItem12: TMenuItem
       Caption = '-'
+      Visible = False
     end
     object MenuItem13: TMenuItem
-      Action = AppSettingPreferences
+      Action = ActionAppSettingPreferences
     end
     object MenuItem8: TMenuItem
       Caption = '-'
     end
     object MenuItem1: TMenuItem
-      Action = AppAboutAction
+      Action = ActionAppAbout
     end
   end
-  object ElementaryIcons: TImageList
+  object ImageListElementaryIcons: TImageList
     Scaled = True
-    Left = 128
+    Left = 176
     Top = 200
     Bitmap = {
       4C690A0000001000000010000000000000000000000000000000000000000000
@@ -1361,62 +1392,70 @@ object FooNoteForm: TFooNoteForm
       173E
     }
   end
-  object DockMenu: TPopupMenu
-    Images = ElementaryIcons
-    Left = 40
-    Top = 56
+  object PopupMenuDockMenu: TPopupMenu
+    Images = ImageListElementaryIcons
+    Left = 64
+    Top = 88
     object MenuItem18: TMenuItem
-      Action = ViewUndock
+      Action = ActionViewUndock
     end
     object MenuItem24: TMenuItem
-      Action = ViewDockLeft
+      Action = ActionViewDockLeft
     end
     object MenuItem25: TMenuItem
-      Action = ViewDockRight
+      Action = ActionViewDockRight
     end
     object MenuItem26: TMenuItem
       Caption = '-'
     end
     object MenuItem23: TMenuItem
-      Action = ViewStayOnTop
+      Action = ActionViewStayOnTop
     end
     object MenuItem20: TMenuItem
       Caption = '-'
+      Visible = False
     end
     object MenuItem21: TMenuItem
-      Action = AppSettingPreferences
+      Action = ActionAppSettingPreferences
     end
     object MenuItem22: TMenuItem
       Caption = '-'
     end
     object MenuItem19: TMenuItem
-      Action = AppQuitAction
+      Action = ActionAppQuit
     end
   end
-  object JSONProp: TJSONPropStorage
+  object JSONPropAppConfig: TJSONPropStorage
     StoredValues = <>
-    JSONFileName = 'Config.json'
+    JSONFileName = 'FooNoteConfig.json'
     Formatted = False
-    Left = 128
+    Left = 176
     Top = 56
   end
   object IdleTimerWndProc: TIdleTimer
     Interval = 2000
     OnTimer = IdleTimerWndProcTimer
-    Left = 128
+    Left = 176
     Top = 272
   end
   object SaveDialog: TSaveDialog
     DefaultExt = '.foonote'
     Options = [ofEnableSizing, ofDontAddToRecent, ofViewDetail]
-    Left = 128
+    Left = 176
     Top = 128
   end
   object TimerSearchResult: TTimer
     Enabled = False
     Interval = 100
     OnTimer = TimerSearchResultTimer
-    Left = 128
+    Left = 176
     Top = 344
+  end
+  object TimerAutoSave: TTimer
+    Enabled = False
+    Interval = 3000
+    OnTimer = TimerAutoSaveTimer
+    Left = 176
+    Top = 424
   end
 end
