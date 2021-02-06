@@ -854,10 +854,28 @@ begin
   end;
 end;
 
-procedure TFooNoteForm.NoteSearchKeyPress(Sender: TObject; var Key: char);
+procedure TFormFooNoteMain.EditNoteSearchKeyPress(Sender: TObject; var Key: char);
+var
+  Node: TTreeNode;
 begin
   if key = #27 then begin
-    NoteSearch.Clear;
+    EditNoteSearch.Clear;
+  end else if (key = #10) or (key = #13) then begin
+    if TreeViewSearchTree.Visible then begin
+      if TreeViewSearchTree.CanSetFocus then begin
+        if not Assigned(TreeViewSearchTree.Selected) then begin
+          Node := TreeViewSearchTree.Items.GetFirstNode;
+          if Assigned(Node) then begin
+            TreeViewSearchTree.Select(Node);
+          end;
+        end;
+        TreeViewSearchTree.SetFocus;
+      end;
+    end else begin
+      if TreeViewNoteTree.CanSetFocus then begin
+        TreeViewNoteTree.SetFocus;
+      end;
+    end;
   end;
 end;
 
@@ -961,6 +979,14 @@ begin
   end;
 end;
 
+procedure TFormFooNoteMain.TreeViewNoteTreeDblClick(Sender: TObject);
+begin
+  if MemoNote.CanSetFocus and not MemoNote.ReadOnly then begin
+    MemoNote.SelStart := 32767;
+    MemoNote.SetFocus;
+  end;
+end;
+
 procedure TFormFooNoteMain.TreeViewNoteTreeDragDrop(Sender, Source: TObject; X, Y: integer);
 var
   Ids: VecFullId;
@@ -1046,14 +1072,32 @@ begin
   PreviewForm.Hide;
 end;
 
-procedure TFooNoteForm.NoteTreeEnter(Sender: TObject);
+procedure TFormFooNoteMain.TreeViewNoteTreeEnter(Sender: TObject);
 begin
-  NoteTree.SelectionColor := clHighlight;
+  TreeViewNoteTree.SelectionColor := clHighlight;
+  ActionEditDelete.Enabled := True;
+  ActionEditCopy.Enabled := True;
+  ActionEditPaste.Enabled := True;
 end;
 
-procedure TFooNoteForm.NoteTreeExit(Sender: TObject);
+procedure TFormFooNoteMain.TreeViewNoteTreeExit(Sender: TObject);
 begin
-  NoteTree.SelectionColor := clGray;
+  TreeViewNoteTree.SelectionColor := clSilver;
+  ActionEditDelete.Enabled := False;
+  ActionEditCopy.Enabled := False;
+  ActionEditPaste.Enabled := False;
+end;
+
+procedure TFormFooNoteMain.TreeViewNoteTreeKeyPress(Sender: TObject; var Key: char);
+
+begin
+  if (Key = '/') or (Key = #27) and EditNoteSearch.CanSetFocus then begin
+    // Focus on search.
+    EditNoteSearch.SetFocus;
+    Key := #0; // Marked as already handled.
+  end else if (Key = #10) or (Key = #13) then begin
+    TreeViewNoteTreeDblClick(Sender);
+  end;
 end;
 
 procedure TFormFooNoteMain.TreeViewNoteTreeMouseMove(Sender: TObject; Shift: TShiftState; X, Y: integer);
@@ -1092,7 +1136,9 @@ end;
 
 procedure TFormFooNoteMain.TreeViewSearchTreeDblClick(Sender: TObject);
 begin
-  NoteSearch.Clear;
+  SelectExpandNode(SelectedId);
+  EditNoteSearch.Clear;
+  TreeViewNoteTreeDblClick(Sender);
 end;
 
 procedure TFormFooNoteMain.TreeViewSearchTreeKeyPress(Sender: TObject; var Key: char);
@@ -1180,9 +1226,11 @@ end;
 
 procedure TFormFooNoteMain.EditDeleteExecute(Sender: TObject);
 begin
-  NoteBackend.TryRemove(SelectedIds);
-  NoteTree.Select([]);
-  RefreshFullTree;
+  if TreeViewNoteTree.Focused then begin
+    NoteBackend.TryRemove(SelectedIds);
+    TreeViewNoteTree.Select([]);
+    RefreshFullTree;
+  end;
 end;
 
 procedure TFormFooNoteMain.ActionEditSaveExecute(Sender: TObject);
@@ -1194,9 +1242,13 @@ end;
 procedure TFormFooNoteMain.MemoNoteKeyDown(Sender: TObject; var Key: word; Shift: TShiftState);
 begin
   if key = 27 then begin
-    // ESC - lose focus.
-    NoteTree.SetFocus;
-    Key := 0;
+    // ESC - lose focus, or exit ZenMode
+    if AppConfig.ZenMode then begin
+      AppConfig.ZenMode := False;
+    end else begin
+      TreeViewNoteTree.SetFocus;
+    end;
+    Key := 0; // Mark as handled.
     exit;
   end;
   MemoUtil.SmartKeyDown(MemoNote, Key, Shift);
