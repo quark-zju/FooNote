@@ -187,7 +187,7 @@ type
     procedure RefreshFullTree;
     function InsertLocation(Id: FullId; NParent: integer; out Pos: integer): FullId;
     function NewNode(AText, AMeta: string; NParent: integer = 0): FullId;
-    procedure SelectNode(Id: FullId);
+    procedure SelectExpandNode(Id: FullId);
     procedure SetSelectedId(Id: FullId);
     function GetSelectedIds(): VecFullId;
     procedure SetSelectedIds(Ids: VecFullId);
@@ -431,20 +431,55 @@ begin
   end;
 end;
 
-procedure TFooNoteForm.SelectNode(Id: FullId);
+procedure TFormFooNoteMain.SelectExpandNode(Id: FullId);
 var
   Node: TTreeNode;
+  Ancestors: VecFullId;
+  Ancestor: FullId;
+  I: integer;
 begin
-  if SelectedId = Id then begin
+  if Assigned(TreeViewNoteTree.Selected) and (NodeData(TreeViewNoteTree.Selected).Id = Id) then begin
     exit;
   end;
-  // PERF: This might be improved.
-  for Node in NoteTree.Items do begin
-    if TTreeNodeData(Node.Data).Id = Id then begin
-      NoteTree.Select(Node);
+
+  // Expand ancestors recursively.
+  Ancestors := NoteBackend.GetAncestors(Id);
+  Node := TreeViewNoteTree.Items.GetFirstNode;
+  for I := Length(Ancestors) - 1 downto 0 do begin
+    Ancestor := Ancestors[I];
+    if Ancestor = RootNodeData.Id then begin
+      // RootNode is not in the tree view.
+      continue;
+    end;
+    while Assigned(Node) do begin
+      // DebugLn('Visit %s', [NodeData(Node).Id.ToString()]);
+      if NodeData(Node).Id = Ancestor then begin
+        Node.Expand(False);
+        DebugLn(' Expand ancestor %s', [Ancestor.ToString()]);
+        Node := Node.GetFirstChild;
+        break; // Next ancestor
+      end else begin
+        Node := Node.GetNextSibling;
+      end;
+    end;
+    if not Assigned(Node) then begin
+      DebugLn('Cannot find ancestor %s to select %s!', [Ancestor.ToString(), Id.ToString()]);
+      Exit;
+    end;
+  end;
+
+  while Assigned(Node) do begin
+    if NodeData(Node).Id = Id then begin
+      DebugLn('Select %s', [Id.ToString()]);
+      TreeViewNoteTree.Select(Node);
       SelectedId := Id;
       break;
+    end else begin
+      Node := Node.GetNextSibling;
     end;
+  end;
+  if not Assigned(Node) then begin
+    DebugLn('Cannot find %s to select!', [Id.ToString()]);
   end;
 end;
 
@@ -552,29 +587,35 @@ end;
 
 procedure TFormFooNoteMain.ActionNewFolderExecute(Sender: TObject);
 begin
-  SelectNode(NewNode('', 'type=folder' + #10, 1));
-  NoteMemo.SetFocus;
+  SelectExpandNode(NewNode('', 'type=folder' + #10, 1));
+  MemoNote.SetFocus;
 end;
 
 procedure TFormFooNoteMain.ActionNewNoteExecute(Sender: TObject);
 begin
-  SelectNode(NewNode('', ''));
-  NoteMemo.SetFocus;
+  SelectExpandNode(NewNode('', ''));
+  MemoNote.SetFocus;
 end;
 
 procedure TFormFooNoteMain.ActionNewSeparatorExecute(Sender: TObject);
 begin
-  SelectNode(NewNode('-', 'type=separator' + #10 + 'readonly=true' + #10));
+  SelectExpandNode(NewNode('-', 'type=separator' + #10 + 'readonly=true' + #10));
 end;
 
 procedure TFormFooNoteMain.MemoNoteChange(Sender: TObject);
 begin
-  if NoteMemo.ReadOnly then begin
+  if MemoNote.ReadOnly then begin
     exit;
   end;
-  NoteBackend.TrySetText(SelectedId, NoteMemo.Text);
-  // Only refresh the selected node.
-  TreeViewSync.SyncTreeNode(NoteTree.Selected);
+  if SelectedId.Id = 0 then begin
+    SelectExpandNode(NewNode(MemoNote.Text, ''));
+    Exit;
+  end;
+  NoteBackend.TrySetText(SelectedId, MemoNote.Text);
+  // Only refresh when changing the first line.
+  if MemoNote.CaretPos.Y <= 1 then begin
+    RefreshFullTree;
+  end;
 end;
 
 procedure TFormFooNoteMain.FormClose(Sender: TObject; var CloseAction: TCloseAction);
