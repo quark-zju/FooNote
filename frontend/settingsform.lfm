@@ -205,29 +205,6 @@ object FooNoteSettingsForm: TFooNoteSettingsForm
     Align = alClient
     BorderSpacing.Around = 10
     TabOrder = 0
-    object PropEditor: TTIPropertyGrid
-      Left = 12
-      Height = 226
-      Top = 37
-      Width = 390
-      Align = alClient
-      BackgroundColor = clWindow
-      BorderSpacing.Left = 5
-      BorderSpacing.Top = 5
-      BorderSpacing.Right = 5
-      BorderSpacing.Around = 5
-      CheckboxForBoolean = True
-      DefaultValueFont.Color = clWindowText
-      Filter = [tkInteger, tkChar, tkEnumeration, tkFloat, tkSet, tkMethod, tkSString, tkLString, tkAString, tkWString, tkVariant, tkArray, tkRecord, tkInterface, tkClass, tkObject, tkWChar, tkBool, tkInt64, tkQWord, tkDynArray, tkInterfaceRaw, tkProcVar, tkUString, tkUChar, tkHelper, tkFile, tkClassRef, tkPointer]
-      Indent = 16
-      NameFont.Color = clWindowText
-      OnClick = PropEditorClick
-      OnKeyPress = PropEditorKeyPress
-      PreferredSplitterX = 200
-      SplitterX = 200
-      Tabstop = True
-      ValueFont.Color = clMaroon
-    end
     object PanelHint: TPanel
       Left = 12
       Height = 82

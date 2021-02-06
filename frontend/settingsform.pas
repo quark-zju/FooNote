@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, Forms, Controls, Graphics, Dialogs, ExtCtrls, StdCtrls,
-  ComCtrls, Buttons, RTTIGrids, RTTICtrls, Settings;
+  ComCtrls, Buttons, Settings;
 
 type
 
@@ -18,7 +18,6 @@ type
     LabelHint: TLabel;
     PanelButtons: TPanel;
     PanelHint: TPanel;
-    PropEditor: TTIPropertyGrid;
     SettingTabs: TTabControl;
     procedure ButtonOkClick(Sender: TObject);
     procedure CheckBoxResetChange(Sender: TObject);
@@ -71,7 +70,7 @@ begin
     exit;
   end;
   if This.Visible then begin
-    This.PropEditor.RefreshPropertyValues;
+    //This.PropEditor.RefreshPropertyValues;
   end;
   if Name = 'FeatureLevel' then begin
     This.UpdateTabs;
@@ -92,10 +91,10 @@ end;
 procedure TFooNoteSettingsForm.SettingTabsChange(Sender: TObject);
 begin
   if SettingTabs.TabIndex = 0 then begin
-    PropEditor.TIObject := AppConfig;
+    //PropEditor.TIObject := AppConfig;
     PanelHint.Visible := True;
   end else if SettingTabs.TabIndex = 1 then begin
-    PropEditor.TIObject := AppState;
+    //PropEditor.TIObject := AppState;
     PanelHint.Visible := False;
   end;
 end;
@@ -124,10 +123,10 @@ procedure TFooNoteSettingsForm.UpdateHint;
 var
   HintText: string;
 begin
-  if not Assigned(PropEditor.GetActiveRow) then begin
+  //if not Assigned(PropEditor.GetActiveRow) then begin
     exit;
-  end;
-  HintText := PropEditor.GetActiveRow.Name;
+  //end;
+  //HintText := PropEditor.GetActiveRow.Name;
   if HintText = 'StayOnTop' then begin
     HintText := RSStayOnTop;
   end;
