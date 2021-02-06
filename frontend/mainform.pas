@@ -515,7 +515,7 @@ var
   Index: integer;
 begin
   P := InsertLocation(SelectedId, NParent, Index);
-  Id := NoteBackend.Insert(P, Index, AText, AMeta);
+  Id := NoteBackend.InsertNode(P, Index, AText, AMeta);
 
   DebugLn('NewNode Id=%d Index=%d Meta=%s', [Id.Id, Index, AMeta.Trim]);
   RefreshFullTree;

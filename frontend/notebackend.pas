@@ -26,7 +26,7 @@ function GetText(Id: FullId): string;
 function GetTextFirstLine(Id: FullId): string;
 function GetHeads(IdList: VecFullId): VecFullId;
 function ExtractMeta(Id: FullId; Prefix: string): string;
-function Insert(Id: FullId; Pos: integer; Text: string; meta: string; AutoFill: boolean = True): FullId;
+function InsertNode(Id: FullId; Pos: integer; Text: string; meta: string; AutoFill: boolean = True): FullId;
 
 function CopyToBytes(Ids: VecFullId): TBytes;
 function PasteFromBytes(DestId: FullId; Pos: Int32; Bytes: TBytes): VecFullId;
@@ -393,7 +393,7 @@ begin
   Result := StackPopString();
 end;
 
-function Insert(Id: FullId; Pos: integer; Text: string; meta: string; AutoFill: boolean = True): FullId;
+function InsertNode(Id: FullId; Pos: integer; Text: string; meta: string; AutoFill: boolean = True): FullId;
 begin
   StackClear();
   StackPushFullId(Id);
@@ -401,7 +401,7 @@ begin
   StackPushString(Text);
   StackPushString(meta);
   if LogError(notebackend_insert()) <> OK then begin
-    raise EExternal.Create(Format('Insert(%s, %d, %s, %s) failed', [Id.ToString(), Pos, Text, meta]));
+    raise EExternal.Create(Format('InsertNode(%s, %d, %s, %s) failed', [Id.ToString(), Pos, Text, meta]));
   end;
   Result := StackPopFullId();
   if autofill then begin
