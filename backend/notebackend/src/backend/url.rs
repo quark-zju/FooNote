@@ -11,7 +11,12 @@ pub fn open(url: &str) -> Result<Box<dyn TreeBackend<Id = Id>>> {
         let mut split = url.splitn(2, ':');
         let scheme = split.next().unwrap_or_default();
         let path = split.next().unwrap_or_default();
-        (scheme, path)
+        if path.is_empty() {
+            // scheme was not provided, use default scheme: foonote
+            ("foonote", url)
+        } else {
+            (scheme, path)
+        }
     };
 
     match scheme {
