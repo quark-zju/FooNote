@@ -15,6 +15,6 @@ begin
   Application.Title:='FooNote';
   Application.Scaled := True;
   Application.Initialize;
-  Application.CreateForm(TFooNoteForm, FooNoteForm);
+  Application.CreateForm(TFormFooNoteMain, FormFooNoteMain);
   Application.Run;
 end.

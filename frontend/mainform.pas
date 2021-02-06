@@ -9,23 +9,30 @@ uses
   PlatformWindows,
   {$endif}
   Classes, SysUtils, Forms, Controls, Graphics, Dialogs, StdCtrls, Menus,
-  ExtCtrls, ComCtrls, ActnList, PairSplitter, StdActns, ClipBrd, LCLType, LazUtf8, FGL,
-  LazLogger, Math, NoteBackend, NoteTypes, MemoUtil, LCLTranslator, Buttons,
-  JSONPropStorage, TreeNodeData, TreeViewSync, Settings, SettingsForm,
-  PreviewForm, AboutForm;
+  ExtCtrls, ComCtrls, ActnList, PairSplitter, StdActns, ClipBrd, LCLType,
+  LazUtf8, FGL, LazLogger, Math, NoteBackend, NoteTypes, MemoUtil,
+  LCLTranslator, Buttons, JSONPropStorage, TreeNodeData,
+  TreeViewSync, Settings, SettingsForm, PreviewForm, AboutForm;
 
 type
 
-  { TFooNoteForm }
+  { TFormFooNoteMain }
 
-  TFooNoteForm = class(TForm)
-    EditPasteAction: TAction;
-    EditDeleteAction: TAction;
-    EditCopyAction: TAction;
-    AppAboutAction: TAction;
-    DockSplitterRight: TPanel;
+  TFormFooNoteMain = class(TForm)
+    MenuItem10: TMenuItem;
+    MenuItemRootPath: TMenuItem;
+    MenuItem3: TMenuItem;
+    MenuItem6: TMenuItem;
+    PanelZen: TPanel;
+    TimerAutoSave: TTimer;
+    ActionViewToggleZenMode: TAction;
+    ActionEditPaste: TAction;
+    ActionEditDelete: TAction;
+    ActionEditCopy: TAction;
+    ActionAppAbout: TAction;
+    PanelDockSplitterRight: TPanel;
     IdleTimerWndProc: TIdleTimer;
-    JSONProp: TJSONPropStorage;
+    JSONPropAppConfig: TJSONPropStorage;
     MenuItem1: TMenuItem;
     MenuItem2: TMenuItem;
     MenuItem23: TMenuItem;
@@ -33,31 +40,29 @@ type
     MenuItem25: TMenuItem;
     MenuItem26: TMenuItem;
     MenuItem8: TMenuItem;
-    NoteMemo: TMemo;
-    DockSplitterLeft: TPanel;
-    NoteTree: TTreeView;
+    MemoNote: TMemo;
+    PanelDockSplitterLeft: TPanel;
+    TreeViewNoteTree: TTreeView;
     PanelTree: TPanel;
     PanelEdit: TPanel;
     SaveDialog: TSaveDialog;
     TimerSearchResult: TTimer;
-    ToolButton1: TToolButton;
-    ToolButton2: TToolButton;
-    TreeNoteSplitter: TSplitter;
-    SearchTree: TTreeView;
-    ViewDockRight: TAction;
-    ViewDockLeft: TAction;
-    ViewStayOnTop: TAction;
+    SplitterTreeNote: TSplitter;
+    TreeViewSearchTree: TTreeView;
+    ActionViewDockRight: TAction;
+    ActionViewDockLeft: TAction;
+    ActionViewStayOnTop: TAction;
     MenuItem20: TMenuItem;
     MenuItem21: TMenuItem;
     MenuItem22: TMenuItem;
-    ViewUndock: TAction;
-    AppQuitAction: TAction;
-    ElementaryIcons: TImageList;
+    ActionViewUndock: TAction;
+    ActionAppQuit: TAction;
+    ImageListElementaryIcons: TImageList;
     MenuItem14: TMenuItem;
     MenuItem15: TMenuItem;
     MenuItem16: TMenuItem;
     MenuItem17: TMenuItem;
-    AppSettingPreferences: TAction;
+    ActionAppSettingPreferences: TAction;
     MenuItem12: TMenuItem;
     MenuItem13: TMenuItem;
     MenuItem18: TMenuItem;
@@ -69,75 +74,79 @@ type
     MenuItem5: TMenuItem;
     MenuItem7: TMenuItem;
     MenuItem9: TMenuItem;
-    MountUrl: TAction;
-    NewSeparator: TAction;
-    NewFolder: TAction;
-    NewNote: TAction;
-    EditSave: TAction;
-    ActionList: TActionList;
-    EditMenu: TPopupMenu;
-    NoteSearch: TEdit;
-    NoteToolBar: TToolBar;
+    ActionMountUrl: TAction;
+    ActionNewSeparator: TAction;
+    ActionNewFolder: TAction;
+    ActionNewNote: TAction;
+    ActionEditSave: TAction;
+    ActionListMain: TActionList;
+    PopupMenuEdit: TPopupMenu;
+    EditNoteSearch: TEdit;
+    ToolBarDefault: TToolBar;
     MenuItemNewSeparator: TMenuItem;
     MenuItemNewFolder: TMenuItem;
     MenuItemNewNote: TMenuItem;
-    DockMenu: TPopupMenu;
+    PopupMenuDockMenu: TPopupMenu;
     ToolButtonDockedMenu: TToolButton;
     ToolButtonNew: TToolButton;
-    DockedToolBar: TToolBar;
-    TopPanel: TPanel;
-    AddMenu: TPopupMenu;
+    ToolBarDocked: TToolBar;
+    PanelTop: TPanel;
+    MenuAddMenu: TPopupMenu;
 
-    procedure AppAboutActionExecute(Sender: TObject);
-    procedure DockSplitterLeftMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: integer);
-    procedure DockSplitterLeftMouseMove(Sender: TObject; Shift: TShiftState; X, Y: integer);
-    procedure DockSplitterLeftMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: integer);
-    procedure EditCopyActionExecute(Sender: TObject);
-    procedure EditPasteActionExecute(Sender: TObject);
+    procedure ActionAppAboutExecute(Sender: TObject);
+    procedure PanelDockSplitterLeftMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: integer);
+    procedure PanelDockSplitterLeftMouseMove(Sender: TObject; Shift: TShiftState; X, Y: integer);
+    procedure PanelDockSplitterLeftMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: integer);
+    procedure ActionEditCopyExecute(Sender: TObject);
+    procedure ActionEditPasteExecute(Sender: TObject);
     procedure FormShow(Sender: TObject);
     procedure IdleTimerWndProcTimer(Sender: TObject);
-    procedure MountUrlExecute(Sender: TObject);
-    procedure NoteSearchChange(Sender: TObject);
-    procedure NoteSearchKeyPress(Sender: TObject; var Key: char);
-    procedure NoteTreeAdvancedCustomDrawItem(Sender: TCustomTreeView; Node: TTreeNode;
+    procedure ActionMountUrlExecute(Sender: TObject);
+    procedure EditNoteSearchChange(Sender: TObject);
+    procedure EditNoteSearchKeyPress(Sender: TObject; var Key: char);
+    procedure TimerAutoSaveTimer(Sender: TObject);
+    procedure TreeViewNoteTreeAdvancedCustomDrawItem(Sender: TCustomTreeView; Node: TTreeNode;
       State: TCustomDrawState; Stage: TCustomDrawStage; var PaintImages, DefaultDraw: boolean);
-    procedure NoteTreeDragDrop(Sender, Source: TObject; X, Y: integer);
-    procedure NoteTreeDragOver(Sender, Source: TObject; X, Y: integer; State: TDragState; var Accept: boolean);
-    procedure NoteTreeEndDrag(Sender, Target: TObject; X, Y: integer);
-    procedure NoteTreeEnter(Sender: TObject);
-    procedure NoteTreeExit(Sender: TObject);
-    procedure NoteTreeMouseMove(Sender: TObject; Shift: TShiftState; X, Y: integer);
-    procedure NoteTreeMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: integer);
-    procedure NoteTreeStartDrag(Sender: TObject; var DragObject: TDragObject);
-    procedure SearchTreeDblClick(Sender: TObject);
-    procedure SearchTreeKeyPress(Sender: TObject; var Key: char);
-    procedure SearchTreeSelectionChanged(Sender: TObject);
+    procedure TreeViewNoteTreeDblClick(Sender: TObject);
+    procedure TreeViewNoteTreeDragDrop(Sender, Source: TObject; X, Y: integer);
+    procedure TreeViewNoteTreeDragOver(Sender, Source: TObject; X, Y: integer; State: TDragState; var Accept: boolean);
+    procedure TreeViewNoteTreeEndDrag(Sender, Target: TObject; X, Y: integer);
+    procedure TreeViewNoteTreeEnter(Sender: TObject);
+    procedure TreeViewNoteTreeExit(Sender: TObject);
+    procedure TreeViewNoteTreeKeyPress(Sender: TObject; var Key: char);
+    procedure TreeViewNoteTreeMouseMove(Sender: TObject; Shift: TShiftState; X, Y: integer);
+    procedure TreeViewNoteTreeMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: integer);
+    procedure TreeViewNoteTreeStartDrag(Sender: TObject; var DragObject: TDragObject);
+    procedure TreeViewSearchTreeDblClick(Sender: TObject);
+    procedure TreeViewSearchTreeKeyPress(Sender: TObject; var Key: char);
+    procedure TreeViewSearchTreeSelectionChanged(Sender: TObject);
     procedure TimerSearchResultTimer(Sender: TObject);
-    procedure TopPanelMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: integer);
-    procedure TopPanelMouseMove(Sender: TObject; Shift: TShiftState; X, Y: integer);
-    procedure TopPanelMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: integer);
-    procedure TreeNoteSplitterMoved(Sender: TObject);
-    procedure ViewDockLeftExecute(Sender: TObject);
-    procedure ViewDockRightExecute(Sender: TObject);
-    procedure ViewStayOnTopExecute(Sender: TObject);
-    procedure ViewUndockExecute(Sender: TObject);
-    procedure AppQuitActionExecute(Sender: TObject);
+    procedure PanelTopMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: integer);
+    procedure PanelTopMouseMove(Sender: TObject; Shift: TShiftState; X, Y: integer);
+    procedure PanelTopMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: integer);
+    procedure SplitterTreeNoteMoved(Sender: TObject);
+    procedure ActionViewDockLeftExecute(Sender: TObject);
+    procedure ActionViewDockRightExecute(Sender: TObject);
+    procedure ActionViewStayOnTopExecute(Sender: TObject);
+    procedure ActionViewToggleZenModeExecute(Sender: TObject);
+    procedure ActionViewUndockExecute(Sender: TObject);
+    procedure ActionAppQuitExecute(Sender: TObject);
     procedure EditDeleteExecute(Sender: TObject);
-    procedure EditSaveExecute(Sender: TObject);
+    procedure ActionEditSaveExecute(Sender: TObject);
     procedure FormClose(Sender: TObject; var CloseAction: TCloseAction);
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure FormResize(Sender: TObject);
     procedure FormWindowStateChange(Sender: TObject);
-    procedure NewFolderExecute(Sender: TObject);
-    procedure NewNoteExecute(Sender: TObject);
-    procedure NewSeparatorExecute(Sender: TObject);
-    procedure NoteMemoChange(Sender: TObject);
-    procedure NoteMemoKeyDown(Sender: TObject; var Key: word; Shift: TShiftState);
-    procedure NoteTreeDeletion(Sender: TObject; Node: TTreeNode);
-    procedure NoteTreeExpanding(Sender: TObject; Node: TTreeNode; var AllowExpansion: boolean);
-    procedure NoteTreeSelectionChanged(Sender: TObject);
-    procedure AppSettingPreferencesExecute(Sender: TObject);
+    procedure ActionNewFolderExecute(Sender: TObject);
+    procedure ActionNewNoteExecute(Sender: TObject);
+    procedure ActionNewSeparatorExecute(Sender: TObject);
+    procedure MemoNoteChange(Sender: TObject);
+    procedure MemoNoteKeyDown(Sender: TObject; var Key: word; Shift: TShiftState);
+    procedure TreeViewNoteTreeDeletion(Sender: TObject; Node: TTreeNode);
+    procedure TreeViewNoteTreeExpanding(Sender: TObject; Node: TTreeNode; var AllowExpansion: boolean);
+    procedure TreeViewNoteTreeSelectionChanged(Sender: TObject);
+    procedure ActionAppSettingPreferencesExecute(Sender: TObject);
   private
     // NoteTreeView state.
     RootNodeData: TTreeNodeData;
@@ -190,7 +199,7 @@ type
   end;
 
 var
-  FooNoteForm: TFooNoteForm;
+  FormFooNoteMain: TFormFooNoteMain;
   PaintingPreviewForSelectedTreeItems: boolean = False;
 
 resourcestring
@@ -208,22 +217,22 @@ var
 type
   TIdBoolMap = specialize TFPGMap<FullId, boolean>;
 
-{ TFooNoteForm }
+{ TFormFooNoteMain }
 
-procedure TFooNoteForm.RefreshFullTree;
+procedure TFormFooNoteMain.RefreshFullTree;
 begin
   if RootNodeData.SyncFromBackend() then begin
     // Change detected. Refresh the tree.
-    NoteTree.BeginUpdate;
-    TreeViewSync.SyncChildTreeNode(NoteTree, nil, NoteTree.Items.GetFirstNode,
+    TreeViewNoteTree.BeginUpdate;
+    TreeViewSync.SyncChildTreeNode(TreeViewNoteTree, nil, TreeViewNoteTree.Items.GetFirstNode,
       RootNodeData, True);
-    NoteTree.EndUpdate;
+    TreeViewNoteTree.EndUpdate;
   end else begin
     DebugLn('Root Note Not changed');
   end;
 end;
 
-procedure TFooNoteForm.InitRootBackend;
+procedure TFormFooNoteMain.InitRootBackend;
 var
   RootId: FullId;
 begin
@@ -237,9 +246,9 @@ procedure OnConfigChange(Name: string; Config: TAppConfig);
 var
   I: longint;
   B: boolean;
-  This: TFooNoteForm;
+  This: TFormFooNoteMain;
 begin
-  This := FooNoteForm;
+  This := FormFooNoteMain;
   if Name = 'StayOnTop' then begin
     if Config.StayOnTop and (not AppState.ForceNotTop) then begin
       if This.FormStyle <> fsSystemStayOnTop then begin
@@ -250,22 +259,22 @@ begin
         This.FormStyle := fsNormal;
       end;
     end;
-    This.ViewStayOnTop.Checked := Config.StayOnTop;
+    This.ActionViewStayOnTop.Checked := Config.StayOnTop;
   end else if Name = 'DockSide' then begin
     // When docked, the title bar is hidden. Show extra controls.
-    This.DockedToolBar.Visible := (Config.DockSide <> dsNone);
-    This.ViewUndock.Enabled := (Config.DockSide <> dsNone);
-    This.ViewDockLeft.Enabled := (Config.DockSide <> dsLeft);
-    This.ViewDockRight.Enabled := (Config.DockSide <> dsRight);
-    This.DockSplitterLeft.Visible := (Config.DockSide = dsRight);
-    This.DockSplitterRight.Visible := (Config.DockSide = dsLeft);
+    This.ToolBarDocked.Visible := (Config.DockSide <> dsNone);
+    This.ActionViewUndock.Enabled := (Config.DockSide <> dsNone);
+    This.ActionViewDockLeft.Enabled := (Config.DockSide <> dsLeft);
+    This.ActionViewDockRight.Enabled := (Config.DockSide <> dsRight);
+    This.PanelDockSplitterLeft.Visible := (Config.DockSide = dsRight);
+    This.PanelDockSplitterRight.Visible := (Config.DockSide = dsLeft);
     if Config.DockSide = dsNone then begin
       I := AppState.NonDockNoteSplitTop;
     end else begin
       I := AppState.DockNoteSplitTop;
     end;
     if (I > 0) and (I < This.Height) then begin
-      This.TreeNoteSplitter.Top := I;
+      This.SplitterTreeNote.Top := I;
     end;
   end else if Name = 'FeatureLevel' then begin
     B := (Config.FeatureLevel >= flAdvanced);
@@ -274,22 +283,22 @@ begin
   end;
 end;
 
-procedure TFooNoteForm.InitOnConfigChange;
+procedure TFormFooNoteMain.InitOnConfigChange;
 begin
   AppConfig.RegisterOnChangeCallback(@OnConfigChange);
 end;
 
-procedure TFooNoteForm.Reposition;
+procedure TFormFooNoteMain.Reposition;
 begin
   Left := Screen.WorkAreaWidth - Width * 3 div 2;
   Top := Width div 2;
 end;
 
-procedure TFooNoteForm.LoadAppState;
+procedure TFormFooNoteMain.LoadAppState;
 var
   S: string;
 begin
-  S := JsonProp.ReadString('AppState', '');
+  S := JSONPropAppConfig.ReadString('AppState', '');
   if not S.IsEmpty then begin
     AppState.LoadFromJSON(S);
   end;
@@ -300,31 +309,31 @@ begin
   SetDefaultLang(AppState.Locale, 'locale');
 end;
 
-procedure TFooNoteForm.LoadSplitterPosition;
+procedure TFormFooNoteMain.LoadSplitterPosition;
 var
   I: integer;
 begin
   if AppConfig.DockSide = dsNone then begin
     I := AppState.NonDockNoteSplitTop;
     if (I > 0) and (I < Height) then begin
-      TreeNoteSplitter.Top := I;
+      SplitterTreeNote.Top := I;
     end; // After Height update
   end else begin
     I := AppState.DockNoteSplitTop;
     if (I > 0) and (I < Height) then begin
-      TreeNoteSplitter.Top := I;
+      SplitterTreeNote.Top := I;
     end; // After Height update
   end;
-  // DebugLn(' TreeNoteSplitter.Top=%d', [TreeNoteSplitter.Top]);
+  // DebugLn(' TreeNoteSplitter.Top=%d', [SplitterTreeNote.Top]);
 end;
 
-procedure TFooNoteForm.LoadAppConfig;
+procedure TFormFooNoteMain.LoadAppConfig;
 var
   S: string;
   I: integer;
 begin
   DebugLn('Before loading AppConfig %d x %d', [Width, Height]);
-  S := JsonProp.ReadString('AppConfig', '');
+  S := JSONPropAppConfig.ReadString('AppConfig', '');
   if not S.IsEmpty then begin
     AppConfig.LoadFromJSON(S);
   end; // Might update Height. But docking is updated asyncly.
@@ -352,37 +361,37 @@ begin
   LoadSplitterPosition;
 end;
 
-procedure TFooNoteForm.SaveConfigFile;
+procedure TFormFooNoteMain.SaveConfigFile;
 begin
   if AppState.ResetOnNextStartup then begin
-    DeleteFile(JsonProp.JSONFileName);
+    DeleteFile(JSONPropAppConfig.JSONFileName);
   end else begin
-    if JsonProp.ReadBoolean('RememberPosition', True) and (AppConfig.DockSide = dsNone) then begin
+    if JSONPropAppConfig.ReadBoolean('RememberPosition', True) and (AppConfig.DockSide = dsNone) then begin
       AppState.Left := Left;
       AppState.Top := Top;
     end;
-    DebugLn(' TreeNoteSplitter.Top=%d %d,%d', [TreeNoteSplitter.Top, AppState.NonDockNoteSplitTop,
+    DebugLn(' TreeNoteSplitter.Top=%d %d,%d', [SplitterTreeNote.Top, AppState.NonDockNoteSplitTop,
       AppState.DockNoteSplitTop]);
 
-    JsonProp.WriteString('AppConfig', AppConfig.ToJSON());
-    JsonProp.WriteString('AppState', AppState.ToJSON());
-    JsonProp.Save;
+    JSONPropAppConfig.WriteString('AppConfig', AppConfig.ToJSON());
+    JSONPropAppConfig.WriteString('AppState', AppState.ToJSON());
+    JSONPropAppConfig.Save;
   end;
 end;
 
-procedure TFooNoteForm.InitPlatformSpecific;
+procedure TFormFooNoteMain.InitPlatformSpecific;
 begin
 {$ifdef Windows}
   PlatformWindows.SetupMainForm(Self);
 {$endif}
 end;
 
-procedure TFooNoteForm.InitAppConfigLink;
+procedure TFormFooNoteMain.InitAppConfigLink;
 begin
-  AppConfig.EditorFont := NoteMemo.Font;
+  AppConfig.EditorFont := MemoNote.Font;
 end;
 
-function TFooNoteForm.InsertLocation(Id: FullId; NParent: integer; out Pos: integer): FullId;
+function TFormFooNoteMain.InsertLocation(Id: FullId; NParent: integer; out Pos: integer): FullId;
 var
   Data: TTreeNodeData;
 begin
@@ -411,24 +420,27 @@ begin
   end;
 end;
 
-procedure TFooNoteForm.SetSelectedId(Id: FullId);
+procedure TFormFooNoteMain.SetSelectedId(Id: FullId);
 var
   AText, ReadOnly: string;
 begin
   FSelectedId := Id;
-  NoteMemo.ReadOnly := True; // Disable NoteMemo.OnChange
+  MemoNote.ReadOnly := True; // Disable MemoNote.OnChange
   AText := NoteBackend.GetText(Id);
-  NoteMemo.Text := AText;
+  MemoNote.Text := AText;
   ReadOnly := NoteBackend.ExtractMeta(Id, 'readonly=');
   if not (ReadOnly = 'true') then begin
-    NoteMemo.ReadOnly := False;
-    if NoteMemo.Lines.Count < 2 then begin
-      NoteMemo.SelStart := LazUtf8.UTF8Length(AText);
+    MemoNote.ReadOnly := False;
+    if MemoNote.Lines.Count < 2 then begin
+      MemoNote.SelStart := LazUtf8.UTF8Length(AText);
     end;
+    MemoNote.Color := clWindow;
+  end else begin
+    MemoNote.Color := clBtnFace;
   end;
 end;
 
-procedure TFooNoteForm.SetSelectedIds(Ids: VecFullId);
+procedure TFormFooNoteMain.SetSelectedIds(Ids: VecFullId);
 var
   Item: TTreeNode;
   IdSet: TIdBoolMap;
@@ -441,8 +453,8 @@ begin
   for I := 0 to Length(ids) - 1 do begin
     IdSet.Add(Ids[I], True);
   end;
-  NoteTree.ClearSelection();
-  for Item in NoteTree.Items do begin
+  TreeViewNoteTree.ClearSelection();
+  for Item in TreeViewNoteTree.Items do begin
     Id := TTreeNodeData(Item.Data).Id;
     item.MultiSelected := IdSet.TryGetData(Id, B);
     if B then begin
@@ -459,7 +471,7 @@ begin
   FreeAndNil(IdSet);
 end;
 
-procedure TFooNoteForm.FormCreate(Sender: TObject);
+procedure TFormFooNoteMain.FormCreate(Sender: TObject);
 begin
   InitAppConfigLink;
   LoadAppState; // Might affect InitPlatformSpecific
@@ -469,14 +481,14 @@ begin
   InitRootBackend;
 end;
 
-procedure TFooNoteForm.FormDestroy(Sender: TObject);
+procedure TFormFooNoteMain.FormDestroy(Sender: TObject);
 begin
-  NoteTree.Items.Clear;
+  TreeViewNoteTree.Items.Clear;
   FreeAndNil(RootNodeData);
   NoteBackend.CloseAll;
 end;
 
-procedure TFooNoteForm.FormResize(Sender: TObject);
+procedure TFormFooNoteMain.FormResize(Sender: TObject);
 begin
   if (not AppState.MovingPreview) and (WindowState = wsNormal) then begin
     if AppConfig.DockSide = dsNone then begin
@@ -490,14 +502,14 @@ begin
   end;
 end;
 
-procedure TFooNoteForm.FormWindowStateChange(Sender: TObject);
+procedure TFormFooNoteMain.FormWindowStateChange(Sender: TObject);
 begin
 {$ifdef Windows}
   PlatformWindows.RepositionDock;
 {$endif}
 end;
 
-function TFooNoteForm.NewNode(AText, AMeta: string; NParent: integer = 0): FullId;
+function TFormFooNoteMain.NewNode(AText, AMeta: string; NParent: integer = 0): FullId;
 var
   P, Id: FullId;
   Index: integer;
@@ -510,24 +522,24 @@ begin
   Result := Id;
 end;
 
-procedure TFooNoteForm.NewFolderExecute(Sender: TObject);
+procedure TFormFooNoteMain.ActionNewFolderExecute(Sender: TObject);
 begin
   SelectNode(NewNode('', 'type=folder' + #10, 1));
   NoteMemo.SetFocus;
 end;
 
-procedure TFooNoteForm.NewNoteExecute(Sender: TObject);
+procedure TFormFooNoteMain.ActionNewNoteExecute(Sender: TObject);
 begin
   SelectNode(NewNode('', ''));
   NoteMemo.SetFocus;
 end;
 
-procedure TFooNoteForm.NewSeparatorExecute(Sender: TObject);
+procedure TFormFooNoteMain.ActionNewSeparatorExecute(Sender: TObject);
 begin
   SelectNode(NewNode('-', 'type=separator' + #10 + 'readonly=true' + #10));
 end;
 
-procedure TFooNoteForm.NoteMemoChange(Sender: TObject);
+procedure TFormFooNoteMain.MemoNoteChange(Sender: TObject);
 begin
   if NoteMemo.ReadOnly then begin
     exit;
@@ -537,7 +549,7 @@ begin
   TreeViewSync.SyncTreeNode(NoteTree.Selected);
 end;
 
-procedure TFooNoteForm.FormClose(Sender: TObject; var CloseAction: TCloseAction);
+procedure TFormFooNoteMain.FormClose(Sender: TObject; var CloseAction: TCloseAction);
 begin
   SaveConfigFile;
   if not NoteBackend.TryPersist() then begin
@@ -548,27 +560,27 @@ begin
   end;
 end;
 
-procedure TFooNoteForm.AppQuitActionExecute(Sender: TObject);
+procedure TFormFooNoteMain.ActionAppQuitExecute(Sender: TObject);
 begin
   Close;
 end;
 
-procedure TFooNoteForm.ViewUndockExecute(Sender: TObject);
+procedure TFormFooNoteMain.ActionViewUndockExecute(Sender: TObject);
 begin
   AppConfig.DockSide := dsNone;
 end;
 
-procedure TFooNoteForm.ViewStayOnTopExecute(Sender: TObject);
+procedure TFormFooNoteMain.ActionViewStayOnTopExecute(Sender: TObject);
 begin
   AppConfig.StayOnTop := not AppConfig.StayOnTop;
 end;
 
-procedure TFooNoteForm.ViewDockLeftExecute(Sender: TObject);
+procedure TFormFooNoteMain.ActionViewDockLeftExecute(Sender: TObject);
 begin
   AppConfig.DockSide := dsLeft;
 end;
 
-procedure TFooNoteForm.TopPanelMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: integer);
+procedure TFormFooNoteMain.PanelTopMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: integer);
 begin
   if (Button = mbLeft) and (not TopPanelMouseLeftIsDown) then begin
     TopPanelMouseLeftDownStartPos.X := X;
@@ -577,7 +589,7 @@ begin
   end;
 end;
 
-procedure TFooNoteForm.DockSplitterLeftMouseDown(Sender: TObject; Button: TMouseButton;
+procedure TFormFooNoteMain.PanelDockSplitterLeftMouseDown(Sender: TObject; Button: TMouseButton;
   Shift: TShiftState; X, Y: integer);
 begin
   if (Button = mbLeft) and (not DockSplitterLeftIsDown) and (AppConfig.DockSide <> dsNone) then begin
@@ -589,7 +601,7 @@ begin
   end;
 end;
 
-procedure TFooNoteForm.AppAboutActionExecute(Sender: TObject);
+procedure TFormFooNoteMain.ActionAppAboutExecute(Sender: TObject);
 begin
   if AboutFooNoteForm = nil then begin
     Application.CreateForm(TAboutFooNoteForm, AboutFooNoteForm);
@@ -597,36 +609,36 @@ begin
   AboutFooNoteForm.ShowModal;
 end;
 
-procedure TFooNoteForm.DrawTreeSelectionPreview;
+procedure TFormFooNoteMain.DrawTreeSelectionPreview;
 var
   PreviewCanvas: TCanvas;
   OrigSelectionColor, OrigBackColor: TColor;
 begin
   // ClientRect.Width does not include the scrollbar.
-  PreviewCanvas := PreviewForm.PrepareCleanCanvas(NoteTree.ClientRect.Width, NoteTree.Height);
+  PreviewCanvas := PreviewForm.PrepareCleanCanvas(TreeViewNoteTree.ClientRect.Width, TreeViewNoteTree.Height);
 
-  NoteTree.BeginUpdate;
+  TreeViewNoteTree.BeginUpdate;
   PaintingPreviewForSelectedTreeItems := True;
-  OrigSelectionColor := NoteTree.SelectionColor;
-  OrigBackColor := Notetree.BackgroundColor;
+  OrigSelectionColor := TreeViewNoteTree.SelectionColor;
+  OrigBackColor := TreeViewNoteTree.BackgroundColor;
 
   // Temporarily change background color to avoid drawing white blank area.
-  NoteTree.BackgroundColor := clFuchsia;
+  TreeViewNoteTree.BackgroundColor := clFuchsia;
   // Temporarily ensure selection color is with focus.
-  NoteTree.SelectionColor := clHighlight;
-  NoteTree.EndUpdate;
+  TreeViewNoteTree.SelectionColor := clHighlight;
+  TreeViewNoteTree.EndUpdate;
   // Draw to preview canvas.
-  NoteTree.PaintTo(PreviewCanvas, 0, 0);
+  TreeViewNoteTree.PaintTo(PreviewCanvas, 0, 0);
 
   // Restore colors.
-  NoteTree.BeginUpdate;
-  NoteTree.SelectionColor := OrigSelectionColor;
-  NoteTree.BackgroundColor := OrigBackColor;
+  TreeViewNoteTree.BeginUpdate;
+  TreeViewNoteTree.SelectionColor := OrigSelectionColor;
+  TreeViewNoteTree.BackgroundColor := OrigBackColor;
   PaintingPreviewForSelectedTreeItems := False;
-  NoteTree.EndUpdate;
+  TreeViewNoteTree.EndUpdate;
 end;
 
-function TFooNoteForm.DockSplitterNewWidth: longint;
+function TFormFooNoteMain.DockSplitterNewWidth: longint;
 var
   Pos: TPoint;
   DX, NewWidth: longint;
@@ -641,7 +653,7 @@ begin
   Result := NewWidth;
 end;
 
-procedure TFooNoteForm.DockSplitterLeftMouseMove(Sender: TObject; Shift: TShiftState; X, Y: integer);
+procedure TFormFooNoteMain.PanelDockSplitterLeftMouseMove(Sender: TObject; Shift: TShiftState; X, Y: integer);
 var
   NewWidth, PreviewLeft, SplitterWidth: longint;
 begin
@@ -649,7 +661,7 @@ begin
     Assert(AppConfig.DockSide <> dsNone);
     // Do not use X, Y. They are relative to the form, which is changing.
     NewWidth := DockSplitterNewWidth;
-    SplitterWidth := DockSplitterLeft.Width;
+    SplitterWidth := PanelDockSplitterLeft.Width;
     // DebugLn('Dock Splitter MouseMove; NewWidth = %d', [NewWidth]);
     if AppConfig.DockSide = dsRight then begin
       PreviewLeft := DockSplitterLeftDownOrigLeft - NewWidth + DockSplitterLeftDownOrigWidth;
@@ -666,7 +678,7 @@ begin
   end;
 end;
 
-procedure TFooNoteForm.DockSplitterLeftMouseUp(Sender: TObject; Button: TMouseButton;
+procedure TFormFooNoteMain.PanelDockSplitterLeftMouseUp(Sender: TObject; Button: TMouseButton;
   Shift: TShiftState; X, Y: integer);
 var
   NewWidth: longint;
@@ -684,7 +696,7 @@ begin
   end;
 end;
 
-procedure TFooNoteForm.EditCopyActionExecute(Sender: TObject);
+procedure TFormFooNoteMain.ActionEditCopyExecute(Sender: TObject);
 var
   T: string = '';
   B: TBytes;
@@ -715,7 +727,7 @@ begin
   end;
 end;
 
-procedure TFooNoteForm.EditPasteActionExecute(Sender: TObject);
+procedure TFormFooNoteMain.ActionEditPasteExecute(Sender: TObject);
 var
   Pos: integer = 1;
   DestId: FullId;
@@ -750,9 +762,9 @@ begin
   end;
 end;
 
-procedure TFooNoteForm.FormShow(Sender: TObject);
+procedure TFormFooNoteMain.FormShow(Sender: TObject);
 begin
-  // Setting TreeNoteSplitter.Top in FormCreate might be updated (due to autosize?).
+  // Setting SplitterTreeNote.Top in FormCreate might be updated (due to autosize?).
   // Set it again here.
   LoadSplitterPosition;
 
@@ -762,7 +774,7 @@ begin
   {$endif}
 end;
 
-procedure TFooNoteForm.IdleTimerWndProcTimer(Sender: TObject);
+procedure TFormFooNoteMain.IdleTimerWndProcTimer(Sender: TObject);
 begin
   {$ifdef Windows}
   // HACK: For some reason, LCL rewrites WndProc periodically.
@@ -770,7 +782,7 @@ begin
   {$endif}
 end;
 
-procedure TFooNoteForm.MountUrlExecute(Sender: TObject);
+procedure TFormFooNoteMain.ActionMountUrlExecute(Sender: TObject);
 var
   url: string;
   Id: FullId;
@@ -789,23 +801,23 @@ begin
   end;
 end;
 
-procedure TFooNoteForm.NoteSearchChange(Sender: TObject);
+procedure TFormFooNoteMain.EditNoteSearchChange(Sender: TObject);
 var
   T: string;
 begin
-  T := NoteSearch.Text;
+  T := EditNoteSearch.Text;
   if T.IsEmpty then begin
     NoteBackend.StopSearch();
     TimerSearchResult.Enabled := False;
-    SearchTree.Visible := False;
-    NoteTree.Visible := True;
-    SearchTree.Items.Clear;
+    TreeViewSearchTree.Visible := False;
+    TreeViewNoteTree.Visible := True;
+    TreeViewSearchTree.Items.Clear;
     LastSearchText := '';
   end else begin
     NoteBackend.StartSearch([RootNodeData.Id], T);
     TimerSearchResult.Enabled := True;
-    NoteTree.Visible := False;
-    SearchTree.Visible := True;
+    TreeViewNoteTree.Visible := False;
+    TreeViewSearchTree.Visible := True;
   end;
 end;
 
@@ -816,8 +828,8 @@ begin
   end;
 end;
 
-procedure TFooNoteForm.NoteTreeAdvancedCustomDrawItem(Sender: TCustomTreeView; Node: TTreeNode;
-  State: TCustomDrawState; Stage: TCustomDrawStage; var PaintImages, DefaultDraw: boolean);
+procedure TFormFooNoteMain.TreeViewNoteTreeAdvancedCustomDrawItem(Sender: TCustomTreeView;
+  Node: TTreeNode; State: TCustomDrawState; Stage: TCustomDrawStage; var PaintImages, DefaultDraw: boolean);
 var
   C: TCanvas;
   H, I, Y: longint;
@@ -869,7 +881,7 @@ begin
   end;
 
   // Draw markers for DragOver destination.
-  if NoteTree.Dragging and (Stage = cdPostPaint) and (CandidateDropNode = Node) and
+  if TreeViewNoteTree.Dragging and (Stage = cdPostPaint) and (CandidateDropNode = Node) and
     (not PaintingPreviewForSelectedTreeItems) then begin
     C := Sender.Canvas;
     H := Node.Height;
@@ -916,7 +928,7 @@ begin
   end;
 end;
 
-procedure TFooNoteForm.NoteTreeDragDrop(Sender, Source: TObject; X, Y: integer);
+procedure TFormFooNoteMain.TreeViewNoteTreeDragDrop(Sender, Source: TObject; X, Y: integer);
 var
   Ids: VecFullId;
   DestId: FullId;
@@ -933,31 +945,31 @@ begin
   end;
 end;
 
-function TFooNoteForm.GetSelectedIds(): VecFullId;
+function TFormFooNoteMain.GetSelectedIds(): VecFullId;
 var
   I, C: integer;
 begin
   Result := VecFullId.Create;
-  C := NoteTree.Items.SelectionCount;
+  C := TreeViewNoteTree.Items.SelectionCount;
   if C > 0 then begin
     SetLength(Result, C);
-    for I := 0 to NoteTree.Items.SelectionCount - 1 do begin
-      Result[I] := TTreeNodeData(NoteTree.Selections[I].Data).Id;
+    for I := 0 to TreeViewNoteTree.Items.SelectionCount - 1 do begin
+      Result[I] := TTreeNodeData(TreeViewNoteTree.Selections[I].Data).Id;
     end;
   end;
 end;
 
-procedure TFooNoteForm.NoteTreeDragOver(Sender, Source: TObject; X, Y: integer; State: TDragState;
-  var Accept: boolean);
+procedure TFormFooNoteMain.TreeViewNoteTreeDragOver(Sender, Source: TObject; X, Y: integer;
+  State: TDragState; var Accept: boolean);
 var
   N: TTreeNode;
   P: longint = 0;
   R: TRect;
   D: TTreeNodeData;
 begin
-  if Source = NoteTree then begin
+  if Source = TreeViewNoteTree then begin
     Accept := True;
-    N := NoteTree.GetNodeAt(X, Y);
+    N := TreeViewNoteTree.GetNodeAt(X, Y);
     if Assigned(N) and (N.Selected or N.MultiSelected) then begin
       // Do not use selected nodes as DnD targets.
       N := nil;
@@ -986,17 +998,17 @@ begin
     if not ((CandidateDropNode = N) and (CandidateInsertPosition = P)) then begin
       CandidateDropNode := N;
       CandidateInsertPosition := P;
-      NoteTree.Repaint;
+      TreeViewNoteTree.Repaint;
     end;
   end;
 end;
 
-procedure TFooNoteForm.NoteTreeEndDrag(Sender, Target: TObject; X, Y: integer);
+procedure TFormFooNoteMain.TreeViewNoteTreeEndDrag(Sender, Target: TObject; X, Y: integer);
 begin
   // This can be called if drag was aborted by the ESC key.
   if CandidateDropNode <> nil then begin
     CandidateDropNode := nil;
-    NoteTree.Repaint;
+    TreeViewNoteTree.Repaint;
   end;
   PreviewForm.Hide;
 end;
@@ -1011,11 +1023,11 @@ begin
   NoteTree.SelectionColor := clGray;
 end;
 
-procedure TFooNoteForm.NoteTreeMouseMove(Sender: TObject; Shift: TShiftState; X, Y: integer);
+procedure TFormFooNoteMain.TreeViewNoteTreeMouseMove(Sender: TObject; Shift: TShiftState; X, Y: integer);
 var
   Point: TPoint;
 begin
-  if NoteTree.Dragging then begin
+  if TreeViewNoteTree.Dragging then begin
     if not DragOverHappened then begin
       // Take a "screenshot" of the tree view.
       // Do not do it in OnStartDrag to reduce cost.
@@ -1032,42 +1044,44 @@ begin
   end;
 end;
 
-procedure TFooNoteForm.NoteTreeMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: integer);
+procedure TFormFooNoteMain.TreeViewNoteTreeMouseUp(Sender: TObject; Button: TMouseButton;
+  Shift: TShiftState; X, Y: integer);
 begin
-  if not NoteTree.Dragging then begin
+  if not TreeViewNoteTree.Dragging then begin
     PreviewForm.Hide;
   end;
 end;
 
-procedure TFooNoteForm.NoteTreeStartDrag(Sender: TObject; var DragObject: TDragObject);
+procedure TFormFooNoteMain.TreeViewNoteTreeStartDrag(Sender: TObject; var DragObject: TDragObject);
 begin
   DragOverHappened := False;
 end;
 
-procedure TFooNoteForm.SearchTreeDblClick(Sender: TObject);
+procedure TFormFooNoteMain.TreeViewSearchTreeDblClick(Sender: TObject);
 begin
   NoteSearch.Clear;
 end;
 
-procedure TFooNoteForm.SearchTreeKeyPress(Sender: TObject; var Key: char);
+procedure TFormFooNoteMain.TreeViewSearchTreeKeyPress(Sender: TObject; var Key: char);
 begin
-  if key = #27 then begin
-    NoteSearch.Clear;
+  if (key = #27) or (key = #10) or (key = #13) then begin
+    TreeViewSearchTreeDblClick(Sender);
   end;
 end;
 
-procedure TFooNoteForm.SearchTreeSelectionChanged(Sender: TObject);
+procedure TFormFooNoteMain.TreeViewSearchTreeSelectionChanged(Sender: TObject);
 var
   Id: FullId;
 begin
-  if Assigned(SearchTree.Selected) then begin
-    Id := NodeData(SearchTree.Selected).Id;
-    SelectedIds := [Id];
+  if Assigned(TreeViewSearchTree.Selected) then begin
+    Id := NodeData(TreeViewSearchTree.Selected).Id;
     SelectedId := Id;
+    SelectedIds := [Id];
+    // Do not expand it here. Expand it on double click or ENTER // SelectExpandNode(Id);
   end;
 end;
 
-procedure TFooNoteForm.TimerSearchResultTimer(Sender: TObject);
+procedure TFormFooNoteMain.TimerSearchResultTimer(Sender: TObject);
 var
   S: FullIdText;
   N: TTreeNode;
@@ -1076,17 +1090,17 @@ var
 begin
   SearchText := NoteBackend.GetSearchInput();
   if LastSearchText <> SearchText then begin
-    SearchTree.Items.Clear;
+    TreeViewSearchTree.Items.Clear;
     LastSearchText := SearchText;
   end;
   TimerSearchResult.Enabled := not NoteBackend.IsSearchComplete();
   if not TimerSearchResult.Enabled then begin
     DebugLn('Search Completed');
   end;
-  N := SearchTree.Items.GetLastNode;
-  for S in NoteBackend.GetSearchResult(SearchTree.Items.Count) do begin
+  N := TreeViewSearchTree.Items.GetLastNode;
+  for S in NoteBackend.GetSearchResult(TreeViewSearchTree.Items.Count) do begin
     DebugLn('Search Result: %s (%s)', [S.Text, S.Id.ToString()]);
-    N := SearchTree.Items.Add(N, '');
+    N := TreeViewSearchTree.Items.Add(N, '');
     D := TTreeNodeData.Create(S.Id);
     D.SyncFromBackend();
     D.SearchText := S.Text;
@@ -1095,7 +1109,7 @@ begin
   end;
 end;
 
-procedure TFooNoteForm.TopPanelMouseMove(Sender: TObject; Shift: TShiftState; X, Y: integer);
+procedure TFormFooNoteMain.PanelTopMouseMove(Sender: TObject; Shift: TShiftState; X, Y: integer);
 const
   THRESHOLD = 30;
 begin
@@ -1108,43 +1122,43 @@ begin
   end;
 end;
 
-procedure TFooNoteForm.TopPanelMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: integer);
+procedure TFormFooNoteMain.PanelTopMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: integer);
 begin
   if Button = mbLeft then begin
     TopPanelMouseLeftIsDown := False;
   end;
 end;
 
-procedure TFooNoteForm.TreeNoteSplitterMoved(Sender: TObject);
+procedure TFormFooNoteMain.SplitterTreeNoteMoved(Sender: TObject);
 begin
   if AppConfig.DockSide = dsNone then begin
-    AppState.NonDockNoteSplitTop := TreeNoteSplitter.Top;
+    AppState.NonDockNoteSplitTop := SplitterTreeNote.Top;
     AppState.DockNoteSplitTop := 0;
   end else begin
-    AppState.DockNoteSplitTop := TreeNoteSplitter.Top;
+    AppState.DockNoteSplitTop := SplitterTreeNote.Top;
     // AppState.NonDockNoteSplitTop := 0;
   end;
 end;
 
-procedure TFooNoteForm.ViewDockRightExecute(Sender: TObject);
+procedure TFormFooNoteMain.ActionViewDockRightExecute(Sender: TObject);
 begin
   AppConfig.DockSide := dsRight;
 end;
 
-procedure TFooNoteForm.EditDeleteExecute(Sender: TObject);
+procedure TFormFooNoteMain.EditDeleteExecute(Sender: TObject);
 begin
   NoteBackend.TryRemove(SelectedIds);
   NoteTree.Select([]);
   RefreshFullTree;
 end;
 
-procedure TFooNoteForm.EditSaveExecute(Sender: TObject);
+procedure TFormFooNoteMain.ActionEditSaveExecute(Sender: TObject);
 begin
   // TODO: Print failure.
   NoteBackend.TryPersist();
 end;
 
-procedure TFooNoteForm.NoteMemoKeyDown(Sender: TObject; var Key: word; Shift: TShiftState);
+procedure TFormFooNoteMain.MemoNoteKeyDown(Sender: TObject; var Key: word; Shift: TShiftState);
 begin
   if key = 27 then begin
     // ESC - lose focus.
@@ -1152,10 +1166,10 @@ begin
     Key := 0;
     exit;
   end;
-  MemoUtil.SmartKeyDown(NoteMemo, Key, Shift);
+  MemoUtil.SmartKeyDown(MemoNote, Key, Shift);
 end;
 
-procedure TFooNoteForm.NoteTreeDeletion(Sender: TObject; Node: TTreeNode);
+procedure TFormFooNoteMain.TreeViewNoteTreeDeletion(Sender: TObject; Node: TTreeNode);
 begin
   if Node.Data <> nil then begin
     TTreeNodeData(Node.Data).Free;
@@ -1163,29 +1177,29 @@ begin
   end;
 end;
 
-procedure TFooNoteForm.NoteTreeExpanding(Sender: TObject; Node: TTreeNode; var AllowExpansion: boolean);
+procedure TFormFooNoteMain.TreeViewNoteTreeExpanding(Sender: TObject; Node: TTreeNode; var AllowExpansion: boolean);
 begin
   TreeViewSync.SyncTreeNode(Node, True);
 end;
 
-procedure TFooNoteForm.NoteTreeSelectionChanged(Sender: TObject);
+procedure TFormFooNoteMain.TreeViewNoteTreeSelectionChanged(Sender: TObject);
 var
   Selected: TTreeNode;
 begin
-  Selected := NoteTree.Selected;
+  Selected := TreeViewNoteTree.Selected;
   if Selected = nil then begin
     exit;
   end;
   SelectedId := TTreeNodeData(Selected.Data).Id;
 end;
 
-procedure TFooNoteForm.AppSettingPreferencesExecute(Sender: TObject);
+procedure TFormFooNoteMain.ActionAppSettingPreferencesExecute(Sender: TObject);
 begin
-  if FooNoteSettingsForm = nil then begin
-    Application.CreateForm(TFooNoteSettingsForm, FooNoteSettingsForm);
-  end;
-  FooNoteSettingsForm.Show;
-  FooNoteSettingsForm.SetFocus;
+  //if FooNoteSettingsForm = nil then begin
+  //  Application.CreateForm(TFooNoteSettingsForm, FooNoteSettingsForm);
+  //end;
+  //FooNoteSettingsForm.Show;
+  //FooNoteSettingsForm.SetFocus;
 end;
 
 initialization
