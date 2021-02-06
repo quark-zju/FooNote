@@ -431,8 +431,6 @@ begin
 end;
 
 function TFormFooNoteMain.InsertLocation(Id: FullId; NParent: integer; out Pos: integer): FullId;
-var
-  Data: TTreeNodeData;
 begin
   Pos := 1; // Insert after.
   Result := Id;
@@ -619,6 +617,7 @@ begin
     exit;
   end;
   if SelectedId.Id = 0 then begin
+    // Create a new node on demand.
     SelectExpandNode(NewNode(MemoNote.Text, ''));
     Exit;
   end;
