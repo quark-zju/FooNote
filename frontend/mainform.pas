@@ -778,26 +778,30 @@ var
   Ids: VecFullId;
   Id: FullId;
 begin
-  Ids := SelectedIds;
-  for Id in Ids do begin
-    T += NoteBackend.GetText(Id);
-    if Length(Ids) > 1 then begin
-      T += #10;
+  if TreeViewNoteTree.Focused then begin
+    Ids := SelectedIds;
+    for Id in Ids do begin
+      T += NoteBackend.GetText(Id);
+      if Length(Ids) > 1 then begin
+        T += #10;
+      end;
     end;
-  end;
-  ClipBoard.Open;
-  try
-    ClipBoard.Clear;
-    // As text.
-    ClipBoard.AsText := T;
-    // As binary.
-    B := NoteBackend.CopyToBytes(Ids);
-    S := TBytesStream.Create(B);
-    DebugLn('Copy binary len %d', [Length(B)]);
-    ClipBoard.AddFormat(BinaryClipboardFormat, S);
-  finally
-    ClipBoard.Close;
-    FreeAndNil(S);
+    ClipBoard.Open;
+    try
+      ClipBoard.Clear;
+      // As text.
+      ClipBoard.AsText := T;
+      // As binary.
+      B := NoteBackend.CopyToBytes(Ids);
+      S := TBytesStream.Create(B);
+      DebugLn('Copy binary len %d', [Length(B)]);
+      ClipBoard.AddFormat(BinaryClipboardFormat, S);
+    finally
+      ClipBoard.Close;
+      FreeAndNil(S);
+    end;
+  end else if MemoNote.Focused then begin
+    MemoNote.CopyToClipboard;
   end;
 end;
 
@@ -811,28 +815,32 @@ var
   B: TBytes;
   Ids: VecFullId;
 begin
-  try
-    S := TBytesStream.Create;
-    if ClipBoard.HasFormat(BinaryClipboardFormat) and ClipBoard.GetFormat(BinaryClipboardFormat, S) then begin
-      L := S.Position;
-      DebugLn('Paste binary len %d', [L]);
-      B := S.bytes;
-      SetLength(B, L);
-      DestId := InsertLocation(SelectedId, 0, Pos);
-      Ids := NoteBackend.PasteFromBytes(DestId, Pos, B);
-      RefreshFullTree;
-      // For some reason, accessing Selected can SIGSEGV here? RootId?
-      // NoteTree.Selected.Expanded := True;
-      SelectedIds := Ids;
-    end else begin
-      T := ClipBoard.AsText;
-      if not T.IsEmpty then begin
-        SelectNode(NewNode(T, ''));
-        NoteMemo.SetFocus;
+  if TreeViewNoteTree.Focused then begin
+    try
+      S := TBytesStream.Create;
+      if ClipBoard.HasFormat(BinaryClipboardFormat) and ClipBoard.GetFormat(BinaryClipboardFormat, S) then begin
+        L := S.Position;
+        DebugLn('Paste binary len %d', [L]);
+        B := S.bytes;
+        SetLength(B, L);
+        DestId := InsertLocation(SelectedId, 0, Pos);
+        Ids := NoteBackend.PasteFromBytes(DestId, Pos, B);
+        RefreshFullTree;
+        // For some reason, accessing Selected can SIGSEGV here? RootId?
+        // TreeViewNoteTree.Selected.Expanded := True;
+        SelectedIds := Ids;
+      end else begin
+        T := ClipBoard.AsText;
+        if not T.IsEmpty then begin
+          SelectExpandNode(NewNode(T, ''));
+          MemoNote.SetFocus;
+        end;
       end;
+    finally
+      FreeAndNil(S);
     end;
-  finally
-    FreeAndNil(S);
+  end else if MemoNote.Focused then begin
+    MemoNote.PasteFromClipboard;
   end;
 end;
 
