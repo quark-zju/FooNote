@@ -270,6 +270,7 @@ object FormFooNoteMain: TFormFooNoteMain
       Visible = False
       OnDblClick = TreeViewSearchTreeDblClick
       OnDeletion = TreeViewNoteTreeDeletion
+      OnEnter = TreeViewSearchTreeEnter
       OnKeyPress = TreeViewSearchTreeKeyPress
       OnSelectionChanged = TreeViewSearchTreeSelectionChanged
       Options = [tvoAutoItemHeight, tvoHideSelection, tvoKeepCollapsedNodes, tvoReadOnly, tvoRowSelect, tvoToolTips]

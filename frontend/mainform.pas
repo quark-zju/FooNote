@@ -118,6 +118,7 @@ type
     procedure TreeViewNoteTreeMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: integer);
     procedure TreeViewNoteTreeStartDrag(Sender: TObject; var DragObject: TDragObject);
     procedure TreeViewSearchTreeDblClick(Sender: TObject);
+    procedure TreeViewSearchTreeEnter(Sender: TObject);
     procedure TreeViewSearchTreeKeyPress(Sender: TObject; var Key: char);
     procedure TreeViewSearchTreeSelectionChanged(Sender: TObject);
     procedure TimerSearchResultTimer(Sender: TObject);
@@ -909,20 +910,12 @@ begin
 end;
 
 procedure TFormFooNoteMain.EditNoteSearchKeyPress(Sender: TObject; var Key: char);
-var
-  Node: TTreeNode;
 begin
   if key = #27 then begin
     EditNoteSearch.Clear;
   end else if (key = #10) or (key = #13) then begin
     if TreeViewSearchTree.Visible then begin
       if TreeViewSearchTree.CanSetFocus then begin
-        if not Assigned(TreeViewSearchTree.Selected) then begin
-          Node := TreeViewSearchTree.Items.GetFirstNode;
-          if Assigned(Node) then begin
-            TreeViewSearchTree.Select(Node);
-          end;
-        end;
         TreeViewSearchTree.SetFocus;
       end;
     end else begin
@@ -1136,11 +1129,19 @@ begin
 end;
 
 procedure TFormFooNoteMain.TreeViewNoteTreeEnter(Sender: TObject);
+var
+  Node: TTreeNode;
 begin
   TreeViewNoteTree.SelectionColor := clHighlight;
   ActionEditDelete.Enabled := True;
   ActionEditCopy.Enabled := True;
   ActionEditPaste.Enabled := True;
+  if not Assigned(TreeViewNoteTree.Selected) then begin
+    Node := TreeViewNoteTree.Items.GetFirstNode;
+    if Assigned(Node) then begin
+      TreeViewNoteTree.Select(Node);
+    end;
+  end;
 end;
 
 procedure TFormFooNoteMain.TreeViewNoteTreeExit(Sender: TObject);
@@ -1202,6 +1203,19 @@ begin
   SelectExpandNode(SelectedId);
   EditNoteSearch.Clear;
   TreeViewNoteTreeDblClick(Sender);
+end;
+
+procedure TFormFooNoteMain.TreeViewSearchTreeEnter(Sender: TObject);
+var
+  Node: TTreeNode;
+begin
+  // Attempt to select one item
+  if not Assigned(TreeViewSearchTree.Selected) then begin
+    Node := TreeViewSearchTree.Items.GetFirstNode;
+    if Assigned(Node) then begin
+      TreeViewSearchTree.Select(Node);
+    end;
+  end;
 end;
 
 procedure TFormFooNoteMain.TreeViewSearchTreeKeyPress(Sender: TObject; var Key: char);
