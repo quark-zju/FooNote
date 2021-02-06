@@ -56,7 +56,9 @@ impl Default for TreeData {
             parents: Default::default(),
             next_id: TRASH_ID + 1,
         };
-        result.metas.insert(ROOT_ID, "type=root\n".to_string());
+        result
+            .metas
+            .insert(ROOT_ID, "type=root\nreadonly=true\n".to_string());
         result.rebuild_parents();
         result
     }
@@ -227,7 +229,7 @@ where
         if enabled {
             self.data.metas.insert(
                 TRASH_ID,
-                "type=trash\ncopyable=false\npin=true\n".to_string(),
+                "type=trash\ncopyable=false\npin=true\nreadonly=true\n".to_string(),
             );
         }
         self
