@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, Forms, Controls, Graphics, Dialogs, ExtCtrls, StdCtrls,
-  ComCtrls, FileInfo, Settings;
+  ComCtrls, FileInfo, Settings, BuildInfo, LclIntf;
 
 type
 
@@ -41,7 +41,6 @@ var
 
 const
   VersionText = '1.1';
-  BuildDateText = {$I %DATE%};
 
 implementation
 
