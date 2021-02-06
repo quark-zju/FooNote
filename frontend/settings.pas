@@ -37,6 +37,7 @@ type
     ForceNotTop: boolean;
     MovingPreview: boolean;
     ResetOnNextStartup: boolean;
+    RootTreeUrl: string;
   published
     property DockWidth: longint read FDockWidth write FDockWidth;
     property DockNoteSplitTop: longint read FDockNoteSplitTop write FDockNoteSplitTop;

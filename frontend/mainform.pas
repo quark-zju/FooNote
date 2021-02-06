@@ -233,10 +233,22 @@ begin
 end;
 
 procedure TFormFooNoteMain.InitRootBackend;
+const
+  DefaultUrl: string = 'Default.FooNote';
 var
   RootId: FullId;
+  Url: string;
 begin
-  RootId := NoteBackend.Open('foonote:root.foonote');
+  if ParamCount() >= 1 then begin
+    Url := ParamStr(1);
+    Caption := Format('%s - FooNote', [ExtractFileName(Url)]);
+  end else begin
+    Url := DefaultUrl;
+  end;
+  AppState.RootTreeUrl := Url;
+  MenuItemRootPath.Caption := ExtractFileName(Url);
+  MenuItemRootPath.Hint := Url;
+  RootId := NoteBackend.Open(Url);
   RootNodeData := TTreeNodeData.Create(RootId);
   SelectedId := RootId;
   RefreshFullTree;
