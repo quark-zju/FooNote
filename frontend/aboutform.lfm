@@ -1,11 +1,11 @@
 object AboutFooNoteForm: TAboutFooNoteForm
   Left = 379
-  Height = 345
+  Height = 361
   Top = 281
   Width = 430
   BorderIcons = [biSystemMenu]
   Caption = 'About FooNote'
-  ClientHeight = 345
+  ClientHeight = 361
   ClientWidth = 430
   OnCreate = FormCreate
   Position = poDesktopCenter
@@ -13,7 +13,7 @@ object AboutFooNoteForm: TAboutFooNoteForm
   object PanelButtons: TPanel
     Left = 5
     Height = 32
-    Top = 308
+    Top = 324
     Width = 420
     Align = alBottom
     AutoSize = True
@@ -46,7 +46,7 @@ object AboutFooNoteForm: TAboutFooNoteForm
     AnchorSideRight.Side = asrBottom
     AnchorSideBottom.Control = PanelButtons
     Left = 10
-    Height = 288
+    Height = 304
     Top = 10
     Width = 410
     ActivePage = TabSheet1
@@ -56,7 +56,7 @@ object AboutFooNoteForm: TAboutFooNoteForm
     TabOrder = 0
     object TabSheet1: TTabSheet
       Caption = 'About'
-      ClientHeight = 258
+      ClientHeight = 274
       ClientWidth = 402
       object ImageIcon: TImage
         AnchorSideLeft.Control = TabSheet1
@@ -208,29 +208,13 @@ object AboutFooNoteForm: TAboutFooNoteForm
           000049454E44AE426082
         }
       end
-      object LabelTitle: TLabel
-        AnchorSideLeft.Control = ImageIcon
-        AnchorSideLeft.Side = asrCenter
-        AnchorSideTop.Control = ImageIcon
-        AnchorSideTop.Side = asrBottom
-        Left = 175
-        Height = 17
-        Top = 94
-        Width = 53
-        Caption = 'FooNote'
-        Font.Style = [fsBold]
-        ParentColor = False
-        ParentFont = False
-        Visible = False
-      end
       object LabelVersion: TLabel
-        AnchorSideLeft.Control = LabelTitle
-        AnchorSideLeft.Side = asrCenter
+        AnchorSideLeft.Control = ImageIcon
         AnchorSideTop.Control = LabelLink
         AnchorSideTop.Side = asrBottom
-        Left = 179
+        Left = 51
         Height = 17
-        Top = 165
+        Top = 148
         Width = 44
         BorderSpacing.Top = 20
         Caption = 'Version'
@@ -239,81 +223,102 @@ object AboutFooNoteForm: TAboutFooNoteForm
       end
       object LabelVersionNumber: TLabel
         AnchorSideLeft.Control = LabelVersion
-        AnchorSideLeft.Side = asrCenter
+        AnchorSideLeft.Side = asrBottom
         AnchorSideTop.Control = LabelVersion
-        AnchorSideTop.Side = asrBottom
-        Left = 198
+        Left = 105
         Height = 17
-        Top = 182
+        Top = 148
         Width = 7
-        BorderSpacing.Left = 5
+        BorderSpacing.Left = 10
         Caption = '1'
         ParentColor = False
         ParentFont = False
       end
       object LabelBuildDate: TLabel
-        AnchorSideLeft.Control = LabelTitle
-        AnchorSideLeft.Side = asrCenter
+        AnchorSideLeft.Control = ImageIcon
         AnchorSideTop.Control = LabelVersionNumber
         AnchorSideTop.Side = asrBottom
-        Left = 171
+        Left = 51
         Height = 17
-        Top = 209
+        Top = 165
         Width = 60
-        BorderSpacing.Top = 10
         Caption = 'Build Date'
         ParentColor = False
         ParentFont = False
       end
       object LabelBuildDateValue: TLabel
         AnchorSideLeft.Control = LabelBuildDate
-        AnchorSideLeft.Side = asrCenter
+        AnchorSideLeft.Side = asrBottom
         AnchorSideTop.Control = LabelBuildDate
-        AnchorSideTop.Side = asrBottom
-        Left = 198
+        Left = 121
         Height = 17
-        Top = 226
+        Top = 165
         Width = 7
-        BorderSpacing.Left = 5
+        BorderSpacing.Left = 10
         Caption = '1'
         ParentColor = False
         ParentFont = False
       end
       object LabelLink: TLabel
-        AnchorSideLeft.Control = LabelTitle
-        AnchorSideLeft.Side = asrCenter
+        AnchorSideLeft.Control = ImageIcon
         AnchorSideTop.Control = LabelDesc
         AnchorSideTop.Side = asrBottom
-        Left = 57
+        Left = 51
         Height = 17
-        Top = 128
+        Top = 111
         Width = 288
         Caption = 'https://github.com/github.com/quark-zju/foonote'
         ParentColor = False
       end
       object LabelDesc: TLabel
         AnchorSideLeft.Control = ImageIcon
-        AnchorSideLeft.Side = asrCenter
-        AnchorSideTop.Control = LabelTitle
+        AnchorSideTop.Control = ImageIcon
         AnchorSideTop.Side = asrBottom
-        Left = 117
+        Left = 51
         Height = 17
-        Top = 111
-        Width = 168
-        Caption = 'Lightweight Tree Note Editor'
+        Top = 94
+        Width = 300
+        Caption = 'Lightweight tree-structured note-taking companion.'
+        ParentColor = False
+        ParentFont = False
+      end
+      object EditRootTreeUrl: TEdit
+        AnchorSideLeft.Control = ImageIcon
+        AnchorSideTop.Control = LabelRootTreeUrl
+        AnchorSideTop.Side = asrBottom
+        AnchorSideRight.Control = ImageIcon
+        AnchorSideRight.Side = asrBottom
+        Left = 51
+        Height = 25
+        Top = 209
+        Width = 300
+        Anchors = [akTop, akLeft, akRight]
+        ReadOnly = True
+        TabOrder = 0
+      end
+      object LabelRootTreeUrl: TLabel
+        AnchorSideLeft.Control = ImageIcon
+        AnchorSideTop.Control = LabelBuildDateValue
+        AnchorSideTop.Side = asrBottom
+        Left = 51
+        Height = 17
+        Top = 192
+        Width = 87
+        BorderSpacing.Top = 10
+        Caption = 'Root Tree Path'
         ParentColor = False
         ParentFont = False
       end
     end
     object TabSheet2: TTabSheet
       Caption = 'Licenses'
-      ClientHeight = 271
-      ClientWidth = 406
+      ClientHeight = 258
+      ClientWidth = 402
       object MemoGPL3: TMemo
         Left = 10
-        Height = 251
+        Height = 238
         Top = 10
-        Width = 386
+        Width = 382
         Align = alClient
         BorderSpacing.Around = 10
         Lines.Strings = (

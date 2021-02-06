@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, Forms, Controls, Graphics, Dialogs, ExtCtrls, StdCtrls,
-  ComCtrls, FileInfo;
+  ComCtrls, FileInfo, Settings;
 
 type
 
@@ -14,12 +14,13 @@ type
 
   TAboutFooNoteForm = class(TForm)
     ButtonOk: TButton;
+    EditRootTreeUrl: TEdit;
     ImageIcon: TImage;
     LabelDesc: TLabel;
     LabelLink: TLabel;
     LabelBuildDate: TLabel;
     LabelBuildDateValue: TLabel;
-    LabelTitle: TLabel;
+    LabelRootTreeUrl: TLabel;
     LabelVersion: TLabel;
     LabelVersionNumber: TLabel;
     MemoGPL3: TMemo;
@@ -42,7 +43,6 @@ const
   VersionText = '1.1';
   BuildDateText = {$I %DATE%};
 
-
 implementation
 
 {$R *.lfm}
@@ -57,7 +57,8 @@ end;
 procedure TAboutFooNoteForm.FormCreate(Sender: TObject);
 begin
   LabelVersionNumber.Caption := VersionText;
-  LabelBuildDateValue.Caption:= BuildDateText;
+  LabelBuildDateValue.Caption := BuildDateText;
+  EditRootTreeUrl.Text := AppState.RootTreeUrl;
 end;
 
 end.
