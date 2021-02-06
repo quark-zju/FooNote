@@ -57,18 +57,21 @@ type
     FDockSide: TDockSide;
     FEditorFont: TFont;
     FFeatureLevel: TFeatureLevel;
+    FZenMode: boolean;
     Callbacks: array of TConfigChangeCallback;
 
     procedure RunCallbacks(Name: string);
     procedure SetStayOnTop(Value: boolean);
     procedure SetFeatureLevel(Value: TFeatureLevel);
     procedure SetDockSide(Value: TDockSide);
+    procedure SetZenMode(Value: boolean);
   public
     procedure RegisterOnChangeCallback(callback: TConfigChangeCallback);
   published
     property StayOnTop: boolean read FStayOnTop write SetStayOnTop;
     property DockSide: TDockSide read FDockSide write SetDockSide;
     property EditorFont: TFont read FEditorFont write FEditorFont;
+    property ZenMode: boolean read FZenMode write SetZenMode;
     property FeatureLevel: TFeatureLevel read FFeatureLevel write SetFeatureLevel;
   end;
 
@@ -126,6 +129,12 @@ begin
 {$endif}
   FDockSide := Value;
   RunCallbacks('DockSide');
+end;
+
+procedure TAppConfig.SetZenMode(Value: boolean);
+begin
+  FZenMode := Value;
+  RunCallbacks('ZenMode');
 end;
 
 procedure TAppConfig.RunCallbacks(Name: string);
