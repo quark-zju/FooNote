@@ -263,12 +263,17 @@ object AboutFooNoteForm: TAboutFooNoteForm
         AnchorSideLeft.Control = ImageIcon
         AnchorSideTop.Control = LabelDesc
         AnchorSideTop.Side = asrBottom
+        Cursor = crHandPoint
         Left = 51
         Height = 17
         Top = 111
-        Width = 288
-        Caption = 'https://github.com/github.com/quark-zju/foonote'
+        Width = 218
+        Caption = 'https://github.com/quark-zju/foonote'
+        Font.Color = clHotLight
+        Font.Style = [fsUnderline]
         ParentColor = False
+        ParentFont = False
+        OnClick = LabelLinkClick
       end
       object LabelDesc: TLabel
         AnchorSideLeft.Control = ImageIcon
@@ -312,11 +317,11 @@ object AboutFooNoteForm: TAboutFooNoteForm
     end
     object TabSheet2: TTabSheet
       Caption = 'Licenses'
-      ClientHeight = 258
+      ClientHeight = 274
       ClientWidth = 402
       object MemoGPL3: TMemo
         Left = 10
-        Height = 238
+        Height = 254
         Top = 10
         Width = 382
         Align = alClient

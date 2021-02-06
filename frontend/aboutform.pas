@@ -30,6 +30,7 @@ type
     TabSheet2: TTabSheet;
     procedure ButtonOkClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
+    procedure LabelLinkClick(Sender: TObject);
   private
 
   public
@@ -58,6 +59,11 @@ begin
   LabelVersionNumber.Caption := VersionText;
   LabelBuildDateValue.Caption := BuildDateText;
   EditRootTreeUrl.Text := AppState.RootTreeUrl;
+end;
+
+procedure TAboutFooNoteForm.LabelLinkClick(Sender: TObject);
+begin
+  OpenUrl(LabelLink.Caption);
 end;
 
 end.
