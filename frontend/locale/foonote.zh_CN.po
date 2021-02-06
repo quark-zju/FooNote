@@ -1,0 +1,239 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Project-Id-Version: \n"
+"POT-Creation-Date: \n"
+"PO-Revision-Date: \n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 2.2.3\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"Language: zh_CN\n"
+
+#: mainform.rsexitnosave
+msgctxt "mainform.rsexitnosave"
+msgid "Exit without saving"
+msgstr "退出而不保存"
+
+#: mainform.rsfailsavestillexit
+msgctxt "mainform.rsfailsavestillexit"
+msgid "Failed to save changes. Still exit?"
+msgstr "无法保存更改，仍然退出吗？"
+
+#: mainform.rsnoexit
+msgctxt "mainform.rsnoexit"
+msgid "Do not exit"
+msgstr "不退出"
+
+#: platformwindows.rsdockleft
+msgctxt "platformwindows.rsdockleft"
+msgid "Dock &Left"
+msgstr "左侧停靠(&L)"
+
+#: platformwindows.rsdockright
+msgctxt "platformwindows.rsdockright"
+msgid "Dock R&ight"
+msgstr "右侧停靠(&I)"
+
+#: platformwindows.rsstayontop
+msgctxt "platformwindows.rsstayontop"
+msgid "Stay On &Top"
+msgstr "置顶(&T)"
+
+#: taboutfoonoteform.buttonok.caption
+msgctxt "taboutfoonoteform.buttonok.caption"
+msgid "&Ok"
+msgstr "确定(&O)"
+
+#: taboutfoonoteform.caption
+msgid "About FooNote"
+msgstr "关于 FooNote"
+
+#: taboutfoonoteform.labelbuilddate.caption
+msgid "Build Date"
+msgstr "构建于"
+
+#: taboutfoonoteform.labelbuilddatevalue.caption
+msgctxt "taboutfoonoteform.labelbuilddatevalue.caption"
+msgid "1"
+msgstr ""
+
+#: taboutfoonoteform.labeldesc.caption
+msgid "Lightweight tree-structured note-taking companion."
+msgstr "树形笔记伴侣。"
+
+#: taboutfoonoteform.labellink.caption
+msgid "https://github.com/quark-zju/foonote"
+msgstr ""
+
+#: taboutfoonoteform.labelroottreeurl.caption
+msgid "Root Tree Path"
+msgstr "根节点源自"
+
+#: taboutfoonoteform.labelversion.caption
+msgid "Version"
+msgstr "版本"
+
+#: taboutfoonoteform.labelversionnumber.caption
+msgctxt "taboutfoonoteform.labelversionnumber.caption"
+msgid "1"
+msgstr ""
+
+#: taboutfoonoteform.tabsheet1.caption
+msgid "About"
+msgstr "关于"
+
+#: taboutfoonoteform.tabsheet2.caption
+msgid "Licenses"
+msgstr "许可协议"
+
+#: tformfoonotemain.actionappabout.caption
+msgctxt "tformfoonotemain.actionappabout.caption"
+msgid "&About"
+msgstr "关于(&A)"
+
+#: tformfoonotemain.actionappquit.caption
+msgctxt "tformfoonotemain.actionappquit.caption"
+msgid "&Exit"
+msgstr "退出(&E)"
+
+#: tformfoonotemain.actionappquit.hint
+msgctxt "tformfoonotemain.actionappquit.hint"
+msgid "Exit"
+msgstr "退出"
+
+#: tformfoonotemain.actionappsettingpreferences.caption
+msgctxt "tformfoonotemain.actionappsettingpreferences.caption"
+msgid "&Preferences ..."
+msgstr "选项(&P) ..."
+
+#: tformfoonotemain.actioneditcopy.caption
+msgctxt "tformfoonotemain.actioneditcopy.caption"
+msgid "&Copy"
+msgstr "复制(&C)"
+
+#: tformfoonotemain.actioneditcopy.hint
+msgctxt "tformfoonotemain.actioneditcopy.hint"
+msgid "Copy"
+msgstr "复制"
+
+#: tformfoonotemain.actioneditdelete.caption
+msgctxt "tformfoonotemain.actioneditdelete.caption"
+msgid "&Delete"
+msgstr "删除(&D)"
+
+#: tformfoonotemain.actioneditdelete.hint
+msgctxt "tformfoonotemain.actioneditdelete.hint"
+msgid "Delete"
+msgstr "删除"
+
+#: tformfoonotemain.actioneditpaste.caption
+msgctxt "tformfoonotemain.actioneditpaste.caption"
+msgid "&Paste"
+msgstr "粘贴(&P)"
+
+#: tformfoonotemain.actioneditpaste.hint
+msgctxt "tformfoonotemain.actioneditpaste.hint"
+msgid "Paste"
+msgstr "粘贴"
+
+#: tformfoonotemain.actioneditsave.caption
+msgctxt "tformfoonotemain.actioneditsave.caption"
+msgid "&Save"
+msgstr "保存(&S)"
+
+#: tformfoonotemain.actioneditsave.hint
+msgctxt "tformfoonotemain.actioneditsave.hint"
+msgid "Save"
+msgstr "保存"
+
+#: tformfoonotemain.actionmounturl.caption
+msgctxt "tformfoonotemain.actionmounturl.caption"
+msgid "&Mount ..."
+msgstr "挂载(&M) ..."
+
+#: tformfoonotemain.actionnewfolder.caption
+msgctxt "tformfoonotemain.actionnewfolder.caption"
+msgid "New &Folder"
+msgstr "新文件夹(&F)"
+
+#: tformfoonotemain.actionnewfolder.hint
+msgctxt "tformfoonotemain.actionnewfolder.hint"
+msgid "New Folder"
+msgstr "添加一个文件夹"
+
+#: tformfoonotemain.actionnewnote.caption
+msgctxt "tformfoonotemain.actionnewnote.caption"
+msgid "New &Note"
+msgstr "新笔记(&N)"
+
+#: tformfoonotemain.actionnewnote.hint
+msgctxt "tformfoonotemain.actionnewnote.hint"
+msgid "New Note"
+msgstr "添加一条笔记"
+
+#: tformfoonotemain.actionnewseparator.caption
+msgctxt "tformfoonotemain.actionnewseparator.caption"
+msgid "New &Separator"
+msgstr "新分隔符(&S)"
+
+#: tformfoonotemain.actionnewseparator.hint
+msgctxt "tformfoonotemain.actionnewseparator.hint"
+msgid "New Separator"
+msgstr "添加一条分隔栏"
+
+#: tformfoonotemain.actionviewdockleft.caption
+msgctxt "tformfoonotemain.actionviewdockleft.caption"
+msgid "Dock &Left"
+msgstr "左侧停靠(&L)"
+
+#: tformfoonotemain.actionviewdockright.caption
+msgctxt "tformfoonotemain.actionviewdockright.caption"
+msgid "Dock R&ight"
+msgstr "右侧停靠(&I)"
+
+#: tformfoonotemain.actionviewstayontop.caption
+msgctxt "tformfoonotemain.actionviewstayontop.caption"
+msgid "Stay On &Top"
+msgstr "置顶(&T)"
+
+#: tformfoonotemain.actionviewtogglezenmode.caption
+msgctxt "tformfoonotemain.actionviewtogglezenmode.caption"
+msgid "&Zen Mode"
+msgstr "清爽模式(&Z)"
+
+#: tformfoonotemain.actionviewundock.caption
+msgctxt "tformfoonotemain.actionviewundock.caption"
+msgid "&Undock"
+msgstr "取消停靠(&U)"
+
+#: tformfoonotemain.actionviewundock.hint
+msgctxt "tformfoonotemain.actionviewundock.hint"
+msgid "Undock"
+msgstr "不再停靠于桌面"
+
+#: tformfoonotemain.caption
+msgctxt "tformfoonotemain.caption"
+msgid "FooNote"
+msgstr ""
+
+#: tformfoonotemain.editnotesearch.texthint
+msgctxt "tformfoonotemain.editnotesearch.texthint"
+msgid "Search"
+msgstr "搜索"
+
+#: tformfoonotemain.toolbuttondockedmenu.caption
+msgctxt "tformfoonotemain.toolbuttondockedmenu.caption"
+msgid "FooNote"
+msgstr ""
+
+#: treenodedata.rstrash
+msgid "Trash"
+msgstr "回收站"
+
+#: tsolidcolorpreviewform.caption
+msgid "FooNoteOverlay"
+msgstr ""
+
