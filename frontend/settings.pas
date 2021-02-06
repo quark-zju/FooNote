@@ -59,6 +59,7 @@ type
     FEditorFont: TFont;
     FFeatureLevel: TFeatureLevel;
     FZenMode: boolean;
+    FAutoSaveInterval: integer;
     Callbacks: array of TConfigChangeCallback;
 
     procedure RunCallbacks(Name: string);
@@ -66,6 +67,7 @@ type
     procedure SetFeatureLevel(Value: TFeatureLevel);
     procedure SetDockSide(Value: TDockSide);
     procedure SetZenMode(Value: boolean);
+    procedure SetAutoSaveInterval(Value: integer);
   public
     procedure RegisterOnChangeCallback(callback: TConfigChangeCallback);
   published
@@ -74,6 +76,7 @@ type
     property EditorFont: TFont read FEditorFont write FEditorFont;
     property ZenMode: boolean read FZenMode write SetZenMode;
     property FeatureLevel: TFeatureLevel read FFeatureLevel write SetFeatureLevel;
+    property AutoSaveInterval: integer read FAutoSaveInterval write SetAutoSaveInterval;
   end;
 
 var
@@ -136,6 +139,12 @@ procedure TAppConfig.SetZenMode(Value: boolean);
 begin
   FZenMode := Value;
   RunCallbacks('ZenMode');
+end;
+
+procedure TAppConfig.SetAutoSaveInterval(Value: integer);
+begin
+  FAutoSaveInterval := Value;
+  RunCallbacks('AutoSaveInterval');
 end;
 
 procedure TAppConfig.RunCallbacks(Name: string);

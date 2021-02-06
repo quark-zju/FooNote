@@ -309,6 +309,16 @@ begin
     if not This.MemoNote.Focused and This.MemoNote.CanSetFocus then begin
       This.MemoNote.SetFocus;
     end;
+  end else if Name = 'AutoSaveInterval' then begin
+    I := Config.AutoSaveInterval;
+    if I < 0 then begin
+      I := 0;
+    end else if I = 0 then begin
+      // Default: 30 seconds.
+      I := 30;
+    end;
+    DebugLn('AutoSaveInterval: %d seconds', [I]);
+    This.TimerAutoSave.Interval := I * 1000;
   end;
 end;
 
