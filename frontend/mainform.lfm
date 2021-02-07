@@ -70,6 +70,7 @@ object FormFooNoteMain: TFormFooNoteMain
       OnChange = MemoNoteChange
       OnKeyDown = MemoNoteKeyDown
       ParentFont = False
+      ScrollBars = ssAutoVertical
       TabOrder = 0
       WantTabs = True
     end

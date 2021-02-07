@@ -6,7 +6,7 @@ unit Settings;
 interface
 
 uses
-  Classes, SysUtils, fpjsonrtti, Graphics, NoteTypes, FpJson;
+  Classes, SysUtils, fpjsonrtti, Graphics, NoteTypes, FpJson, StdCtrls;
 
 type
   TDockSide = (dsNone = 0, dsLeft = 1, dsRight = 2);
@@ -46,6 +46,7 @@ type
     FRememberPosition: boolean;
     FLastSelection: Int32;
     FEditorFont: TFont;
+    FEditorScrollBars: TScrollStyle;
     FWindowColor: TColor;
 
     // Callback.
@@ -90,6 +91,7 @@ type
     property RememberPosition: boolean read FRememberPosition write FRememberPosition;
     property LastSelectedId: Int32 read FLastSelection write FLastSelection;
     property WindowColor: TColor read FWindowColor write FWindowColor;
+    property EditorScrollBars: TScrollStyle read FEditorScrollBars write FEditorScrollBars;
   end;
 
 const
@@ -209,7 +211,8 @@ initialization
   AppConfig.FAutoSaveInterval := 30;
   AppConfig.FRememberPosition := True;
   AppConfig.ConfigFileName := 'FooNoteConfig.json';
-  AppConfig.WindowColor := clWindow;
+  AppConfig.FWindowColor := clWindow;
+  AppConfig.FEditorScrollBars := ssAutoVertical;
 
 finalization
   FreeAndNil(AppConfig);
