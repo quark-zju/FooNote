@@ -1,6 +1,7 @@
 pub(crate) mod blob;
 pub(crate) mod clipboard;
 pub(crate) mod dylib;
+pub(crate) mod git;
 pub(crate) mod multiplex;
 pub(crate) mod null;
 pub(crate) mod search;
