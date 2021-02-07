@@ -1,11 +1,11 @@
 object AboutFooNoteForm: TAboutFooNoteForm
   Left = 379
-  Height = 361
+  Height = 411
   Top = 281
   Width = 430
   BorderIcons = [biSystemMenu]
   Caption = 'About FooNote'
-  ClientHeight = 361
+  ClientHeight = 411
   ClientWidth = 430
   OnCreate = FormCreate
   Position = poDesktopCenter
@@ -13,7 +13,7 @@ object AboutFooNoteForm: TAboutFooNoteForm
   object PanelButtons: TPanel
     Left = 5
     Height = 32
-    Top = 324
+    Top = 374
     Width = 420
     Align = alBottom
     AutoSize = True
@@ -46,7 +46,7 @@ object AboutFooNoteForm: TAboutFooNoteForm
     AnchorSideRight.Side = asrBottom
     AnchorSideBottom.Control = PanelButtons
     Left = 10
-    Height = 304
+    Height = 354
     Top = 10
     Width = 410
     ActivePage = TabSheet1
@@ -56,7 +56,7 @@ object AboutFooNoteForm: TAboutFooNoteForm
     TabOrder = 0
     object TabSheet1: TTabSheet
       Caption = 'About'
-      ClientHeight = 274
+      ClientHeight = 324
       ClientWidth = 402
       object ImageIcon: TImage
         AnchorSideLeft.Control = TabSheet1
@@ -313,6 +313,33 @@ object AboutFooNoteForm: TAboutFooNoteForm
         Caption = 'Root Tree Path'
         ParentColor = False
         ParentFont = False
+      end
+      object LabelConfigPath: TLabel
+        AnchorSideLeft.Control = ImageIcon
+        AnchorSideTop.Control = EditRootTreeUrl
+        AnchorSideTop.Side = asrBottom
+        Left = 51
+        Height = 17
+        Top = 244
+        Width = 90
+        BorderSpacing.Top = 10
+        Caption = 'Config File Path'
+        ParentColor = False
+        ParentFont = False
+      end
+      object EditConfigFilePath: TEdit
+        AnchorSideLeft.Control = ImageIcon
+        AnchorSideTop.Control = LabelConfigPath
+        AnchorSideTop.Side = asrBottom
+        AnchorSideRight.Control = ImageIcon
+        AnchorSideRight.Side = asrBottom
+        Left = 51
+        Height = 25
+        Top = 261
+        Width = 300
+        Anchors = [akTop, akLeft, akRight]
+        ReadOnly = True
+        TabOrder = 1
       end
     end
     object TabSheet2: TTabSheet

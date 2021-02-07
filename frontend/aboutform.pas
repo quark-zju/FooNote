@@ -15,12 +15,14 @@ type
   TAboutFooNoteForm = class(TForm)
     ButtonOk: TButton;
     EditRootTreeUrl: TEdit;
+    EditConfigFilePath: TEdit;
     ImageIcon: TImage;
     LabelDesc: TLabel;
     LabelLink: TLabel;
     LabelBuildDate: TLabel;
     LabelBuildDateValue: TLabel;
     LabelRootTreeUrl: TLabel;
+    LabelConfigPath: TLabel;
     LabelVersion: TLabel;
     LabelVersionNumber: TLabel;
     MemoGPL3: TMemo;
@@ -59,6 +61,7 @@ begin
   LabelVersionNumber.Caption := VersionText;
   LabelBuildDateValue.Caption := BuildDateText;
   EditRootTreeUrl.Text := AppConfig.RootTreeUrl;
+  EditConfigFilePath.Text := AppConfig.ConfigFileName;
 end;
 
 procedure TAboutFooNoteForm.LabelLinkClick(Sender: TObject);

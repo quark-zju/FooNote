@@ -12,7 +12,7 @@ uses
   ExtCtrls, ComCtrls, ActnList, PairSplitter, StdActns, ClipBrd, LCLType,
   LazUtf8, FGL, LazLogger, Math, NoteBackend, NoteTypes, MemoUtil,
   LCLTranslator, Buttons, JSONPropStorage, TreeNodeData,
-  TreeViewSync, Settings, PreviewForm, AboutForm, FileUtil;
+  TreeViewSync, Settings, PreviewForm, AboutForm, FileUtil, md5;
 
 type
 
@@ -173,6 +173,7 @@ type
     DockSplitterLeftIsDown: boolean;
     function DockSplitterNewWidth: longint;
 
+    procedure InitRootTreeUrlAndConfigFileName;
     procedure InitRootBackend;
     procedure InitAppConfigLink;
     procedure InitPlatformSpecific;
@@ -198,9 +199,6 @@ type
   public
 
   end;
-
-const
-  ConfigFileName = 'FooNoteConfig.json';
 
 var
   FormFooNoteMain: TFormFooNoteMain;
@@ -236,11 +234,10 @@ begin
   end;
 end;
 
-procedure TFormFooNoteMain.InitRootBackend;
+procedure TFormFooNoteMain.InitRootTreeUrlAndConfigFileName;
 const
   DefaultUrl: string = 'Default.FooNote';
 var
-  RootId: FullId;
   Url: string;
 begin
   if ParamCount() >= 1 then begin
@@ -249,9 +246,18 @@ begin
   end else begin
     Url := DefaultUrl;
   end;
+  AppConfig.ConfigFileName := Format('FooNote-%s.cfg', [MDPrint(MD5String(url)).Substring(0, 7)]);
   AppConfig.RootTreeUrl := Url;
   MenuItemRootPath.Caption := ExtractFileName(Url);
   MenuItemRootPath.Hint := Url;
+end;
+
+procedure TFormFooNoteMain.InitRootBackend;
+var
+  RootId: FullId;
+  Url: string;
+begin
+  Url := AppConfig.RootTreeUrl;
   RootId := NoteBackend.Open(Url);
   RootNodeData := TTreeNodeData.Create(RootId);
   SelectedId := RootId;
@@ -346,7 +352,7 @@ var
 begin
   S := '{}';
   try
-    S := ReadFileToString(ConfigFileName);
+    S := ReadFileToString(AppConfig.ConfigFileName);
   except
     on e: EFileNotFoundException do S := '{}';
   end;
@@ -422,7 +428,7 @@ var
   F: TFileStream;
 begin
   if AppConfig.ResetOnNextStartup then begin
-    DeleteFile(ConfigFileName);
+    DeleteFile(AppConfig.ConfigFileName);
   end else begin
     if AppConfig.RememberPosition and (AppConfig.DockSide = dsNone) then begin
       AppConfig.Left := Left;
@@ -431,7 +437,7 @@ begin
     DebugLn(' TreeNoteSplitter.Top=%d %d,%d', [SplitterTreeNote.Top, AppConfig.NonDockNoteSplitTop,
       AppConfig.DockNoteSplitTop]);
     S := AppConfig.ToJSONString();
-    F := TFileStream.Create(ConfigFileName, fmOpenWrite or fmCreate);
+    F := TFileStream.Create(AppConfig.ConfigFileName, fmOpenWrite or fmCreate);
     try
       F.Write(PChar(S)^, Length(S));
     finally
@@ -567,12 +573,13 @@ end;
 
 procedure TFormFooNoteMain.FormCreate(Sender: TObject);
 begin
+  InitRootTreeUrlAndConfigFileName; // Affects config name.
   InitAppConfigLink; // Link Editor TFont to AppConfig's Font.
   LoadAppConfigFromDiskWithoutApply;
-  InitI18n;
+  InitI18n; // Used by many places. Need to be initialized first.
+  InitRootBackend; // Open the backend. Make NoteBackend APIs working.
   InitPlatformSpecific; // Register OnConfigChange (affected by i18n).
   InitOnConfigChange;   // Register OnConfigChange.
-  InitRootBackend; // Open the backend. Make NoteBackend APIs working.
   ApplyAppConfigToThisForm; // Apply non-callback (one-time) configs.
   AppConfig.NotifyAll; // Trigger "callback" to apply config changes.
 end;

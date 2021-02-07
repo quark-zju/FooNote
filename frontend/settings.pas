@@ -61,6 +61,7 @@ type
     MovingPreview: boolean;
     ResetOnNextStartup: boolean;
     RootTreeUrl: string;
+    ConfigFileName: string;
 
     procedure RegisterOnChangeCallback(callback: TConfigChangeCallback);
     procedure NotifyAll;
@@ -203,6 +204,7 @@ initialization
   AppConfig.FMaxWidth := 600;
   AppConfig.FAutoSaveInterval := 30;
   AppConfig.FRememberPosition := True;
+  AppConfig.ConfigFileName := 'FooNoteConfig.json';
 
 finalization
   FreeAndNil(AppConfig);
