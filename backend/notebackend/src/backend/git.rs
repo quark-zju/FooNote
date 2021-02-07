@@ -32,7 +32,7 @@ use tempfile::NamedTempFile;
 // - manifest.json: {children: {id: [id]}, meta: {id: str}}
 
 /// Git backend using the system git binary.
-struct GitBackend {
+pub struct GitBackend {
     remote_name: String,
     repo_path: PathBuf,
     branch_name: String,
