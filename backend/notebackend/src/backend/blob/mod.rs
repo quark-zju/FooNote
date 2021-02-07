@@ -24,7 +24,6 @@ pub type MemBackend = BlobBackend<mem::MemBlobIo>;
 pub struct BlobBackend<I> {
     blob_io: I,
     data: TreeData,
-    mtime: BTreeMap<Id, Mtime>,
     has_trash: bool,
 }
 
@@ -101,7 +100,6 @@ impl<I> BlobBackend<I> {
     pub fn remove_unreachable(&mut self) {
         let unreachable = self.data.unreachable_ids(&[ROOT_ID, TRASH_ID]);
         for id in unreachable {
-            self.mtime.remove(&id);
             self.data.remove(id);
         }
     }
@@ -129,7 +127,6 @@ where
         let result = Self {
             data,
             blob_io,
-            mtime: Default::default(),
             has_trash: false,
         };
         Ok(result)
@@ -183,7 +180,7 @@ where
     }
 
     fn get_mtime(&self, id: Id) -> Result<Mtime> {
-        Ok(self.mtime.get(&id).cloned().unwrap_or_default())
+        Ok(self.data.mtime.get(&id).cloned().unwrap_or_default())
     }
 
     fn get_text(&self, id: Id) -> Result<Cow<str>> {
@@ -256,17 +253,8 @@ where
         Ok(())
     }
 
-    fn touch(&mut self, mut id: Self::Id) -> Result<()> {
-        loop {
-            self.mtime.entry(id).and_modify(|v| *v += 1).or_insert(1);
-            if let Some(parent_id) = self.get_parent(id)? {
-                if parent_id != id {
-                    id = parent_id;
-                    continue;
-                }
-            }
-            break;
-        }
+    fn touch(&mut self, id: Self::Id) -> Result<()> {
+        self.data.touch(id);
         Ok(())
     }
 

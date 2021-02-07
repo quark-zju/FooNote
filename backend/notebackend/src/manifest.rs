@@ -1,4 +1,5 @@
 use notebackend_types::Id;
+use notebackend_types::Mtime;
 use serde::Deserialize;
 use serde::Serialize;
 use std::collections::BTreeMap;
@@ -14,6 +15,8 @@ pub struct Manifest {
     pub next_id: Id,
     #[serde(skip)]
     pub parents: HashMap<Id, Id>, // derived from children
+    #[serde(skip)]
+    pub mtime: HashMap<Id, Mtime>, // temporary in-process state
 }
 
 const ROOT_ID: Id = 0;
@@ -25,6 +28,7 @@ impl Default for Manifest {
             metas: Default::default(),
             children: Default::default(),
             parents: Default::default(),
+            mtime: Default::default(),
             next_id: min_next_id(),
         };
         result.metas.insert(ROOT_ID, "type=root\n".to_string());
@@ -64,6 +68,25 @@ impl Manifest {
         self.parents.remove(&id);
         self.children.remove(&id);
         self.metas.remove(&id);
+    }
+
+    /// Clear the mtime state. Useful for tests.
+    pub(crate) fn clear_mtime(&mut self) {
+        self.mtime.clear();
+    }
+
+    /// Bump mtime of id and its ancestors.
+    pub fn touch(&mut self, mut id: Id) {
+        loop {
+            self.mtime.entry(id).and_modify(|v| *v += 1).or_insert(1);
+            if let Some(&parent_id) = self.parents.get(&id) {
+                if parent_id != id {
+                    id = parent_id;
+                    continue;
+                }
+            }
+            break;
+        }
     }
 
     /// Find unreachable ids.

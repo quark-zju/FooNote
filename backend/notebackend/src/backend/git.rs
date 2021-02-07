@@ -40,7 +40,6 @@ pub struct GitBackend {
     branch_name: String,
     // value of texts: Some((content, modified)) | None (deleted)
     texts: RwLock<HashMap<Id, Option<(String, bool)>>>,
-    mtime: HashMap<Id, Mtime>,
     object_reader: Mutex<Option<Child>>,
     base_commit: String,
     manifest: Manifest,
@@ -69,7 +68,6 @@ impl GitBackend {
             branch_name,
             base_commit,
             texts: Default::default(),
-            mtime: Default::default(),
             object_reader: Default::default(),
             manifest: Default::default(),
             user: Lazy::new(|| git_config("user.name").unwrap_or_else(|| "FooNote".to_string())),
@@ -95,7 +93,7 @@ impl TreeBackend for GitBackend {
     }
 
     fn get_mtime(&self, id: Self::Id) -> io::Result<Mtime> {
-        Ok(self.mtime.get(&id).cloned().unwrap_or_default())
+        Ok(self.manifest.mtime.get(&id).cloned().unwrap_or_default())
     }
 
     fn get_text<'a>(&'a self, id: Self::Id) -> io::Result<std::borrow::Cow<'a, str>> {
@@ -276,17 +274,8 @@ impl GitBackend {
     }
 
     /// Bump mtime of id and its parents.
-    fn touch(&mut self, mut id: Id) -> io::Result<()> {
-        loop {
-            self.mtime.entry(id).and_modify(|v| *v += 1).or_insert(1);
-            if let Some(parent_id) = self.get_parent(id)? {
-                if parent_id != id {
-                    id = parent_id;
-                    continue;
-                }
-            }
-            break;
-        }
+    fn touch(&mut self, id: Id) -> io::Result<()> {
+        self.manifest.touch(id);
         Ok(())
     }
 
