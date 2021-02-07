@@ -392,6 +392,7 @@ procedure TFormFooNoteMain.ApplyAppConfigToThisForm;
 var
   S: string;
   I: integer;
+  Id: FullId;
 begin
   // Apply size constraint.
   if AppConfig.MaxWidth >= 80 then begin
@@ -420,6 +421,17 @@ begin
   end;
 
   LoadSplitterPosition;
+
+  // Apply previously selected node.
+  if AppConfig.LastSelectedId > 0 then begin
+    Id := FullId.Create(RootNodeData.Id.BackendId, AppConfig.LastSelectedId);
+    try
+      SelectExpandNode(Id);
+    except
+      on e: EExternal do ;
+    end;
+  end;
+
 end;
 
 procedure TFormFooNoteMain.SaveConfigFile;
@@ -434,6 +446,7 @@ begin
       AppConfig.Left := Left;
       AppConfig.Top := Top;
     end;
+    AppConfig.LastSelectedId := SelectedId.Id;
     DebugLn(' TreeNoteSplitter.Top=%d %d,%d', [SplitterTreeNote.Top, AppConfig.NonDockNoteSplitTop,
       AppConfig.DockNoteSplitTop]);
     S := AppConfig.ToJSONString();

@@ -45,6 +45,7 @@ type
     FLocale: string;
     FNodeShowId: boolean;
     FRememberPosition: boolean;
+    FLastSelection: Int32;
 
     // Callback.
     Callbacks: array of TConfigChangeCallback;
@@ -86,6 +87,7 @@ type
     property Locale: string read FLocale write FLocale;
     property ShowNodeId: boolean read FNodeShowId write FNodeShowId;
     property RememberPosition: boolean read FRememberPosition write FRememberPosition;
+    property LastSelectedId: Int32 read FLastSelection write FLastSelection;
   end;
 
 const
