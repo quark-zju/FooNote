@@ -49,8 +49,6 @@ pub(crate) struct TreeData {
 const ROOT_ID: Id = 0;
 const TRASH_ID: Id = 1;
 
-const HEADER_V1: &[u8] = b"FOONOTE1\n\0";
-
 impl Deref for TreeData {
     type Target = Manifest;
 
@@ -68,13 +66,7 @@ impl DerefMut for TreeData {
 impl TreeData {
     /// Load from a reader.
     pub fn load(reader: &mut impl Read) -> Result<Self> {
-        let mut header = vec![0u8; HEADER_V1.len()];
-        reader.read_exact(&mut header)?;
-        if header != HEADER_V1 {
-            return notebackend_types::error::invalid_data("invalid header");
-        }
-        let mut d = varbincode::de::Deserializer::new(reader);
-        let mut data: TreeData = serde::Deserialize::deserialize(&mut d)
+        let mut data: TreeData = serde_json::from_reader(reader)
             .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
         data.rebuild_parents();
         Ok(data)
@@ -82,9 +74,7 @@ impl TreeData {
 
     /// Dump the content to a file.
     pub fn dump(&self, writer: &mut impl Write) -> Result<()> {
-        writer.write_all(HEADER_V1)?;
-        let mut s = varbincode::ser::Serializer::new(writer);
-        self.serialize(&mut s)
+        serde_json::to_writer(writer, self)
             .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
     }
 
