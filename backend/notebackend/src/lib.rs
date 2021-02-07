@@ -1,6 +1,9 @@
 #![allow(dead_code)]
 #![allow(unused_variables)]
 
+/// (Reusable) metadata of backends.
+mod manifest;
+
 /// Note backend implementations.
 mod backend;
 

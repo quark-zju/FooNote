@@ -2,14 +2,13 @@ use super::Id;
 use super::InsertPos;
 use super::Mtime;
 use super::TreeBackend;
+use crate::manifest::min_next_id;
+use crate::manifest::Manifest;
 use once_cell::sync::Lazy;
 use parking_lot::lock_api::RwLockUpgradableReadGuard;
 use parking_lot::Mutex;
 use parking_lot::RwLock;
-use serde::Deserialize;
-use serde::Serialize;
 use std::collections::hash_map::DefaultHasher;
-use std::collections::BTreeMap;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::fs::File;
@@ -47,18 +46,6 @@ pub struct GitBackend {
     manifest: Manifest,
     user: Lazy<String>,
     email: Lazy<String>,
-}
-
-#[derive(Serialize, Deserialize, Default)]
-struct Manifest {
-    #[serde(default)]
-    children: BTreeMap<Id, Vec<Id>>,
-    #[serde(default)]
-    metas: BTreeMap<Id, String>,
-    #[serde(default = "default_next_id")]
-    next_id: Id,
-    #[serde(skip)]
-    parents: HashMap<Id, Id>, // derived from children
 }
 
 const MANIFEST_NAME: &str = "manifest.json";
@@ -278,38 +265,6 @@ impl TreeBackend for GitBackend {
     }
 }
 
-impl Manifest {
-    /// Rebuild parents from children data.
-    fn rebuild_parents(&mut self) {
-        for (&id, child_ids) in &self.children {
-            for &child_id in child_ids {
-                self.parents.insert(child_id, id);
-            }
-        }
-    }
-
-    /// Remove an id from its parent's children list.
-    fn remove_parent(&mut self, id: Id) {
-        if let Some(parent_id) = self.parents.get(&id) {
-            if let Some(children) = self.children.get_mut(parent_id) {
-                if let Some(pos) = children.iter().position(|x| *x == id) {
-                    children.remove(pos);
-                }
-                if children.is_empty() {
-                    self.children.remove(parent_id);
-                }
-            }
-        }
-        self.parents.remove(&id);
-    }
-
-    fn remove(&mut self, id: Id) {
-        self.parents.remove(&id);
-        self.children.remove(&id);
-        self.metas.remove(&id);
-    }
-}
-
 impl GitBackend {
     /// Fetch the latest commit from the remote.
     fn fetch(&self) -> io::Result<()> {
@@ -349,7 +304,7 @@ impl GitBackend {
         };
         let mut manifest: Manifest = serde_json::from_str(&manifest_str)
             .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
-        manifest.next_id = manifest.next_id.max(default_next_id());
+        manifest.next_id = manifest.next_id.max(min_next_id());
         manifest.rebuild_parents();
         self.manifest = manifest;
         Ok(())
