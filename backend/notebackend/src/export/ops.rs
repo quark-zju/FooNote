@@ -3,11 +3,11 @@
 use super::errno;
 use super::stack;
 use crate::backend;
-use crate::backend::clipboard;
 use crate::backend::multiplex::FullId;
 use crate::backend::multiplex::MultiplexBackend;
+use crate::clipboard;
+use crate::search::Search;
 use backend::blob::MemBackend;
-use backend::search::Search;
 use notebackend_types::InsertPos;
 use notebackend_types::TreeBackend;
 use once_cell::sync::Lazy;
@@ -108,7 +108,7 @@ fn push_fid_list(ids: &[FullId]) {
 #[no_mangle]
 pub extern "C" fn notebackend_open() -> i32 {
     let url: String = pop!();
-    let b = attempt!(backend::url::open(&url));
+    let b = attempt!(crate::url::open(&url));
     let m = MultiplexBackend::from_root_backend(b);
     push_fid(m.get_root_id());
     *ROOT_BACKEND.write() = m;
@@ -120,7 +120,7 @@ pub extern "C" fn notebackend_open() -> i32 {
 pub extern "C" fn notebackend_mount() -> i32 {
     let url: String = pop!();
     let id = pop_fid!();
-    let b = attempt!(backend::url::open(&url));
+    let b = attempt!(crate::url::open(&url));
     let mut root = ROOT_BACKEND.write();
     attempt!(root.update_meta(id, "mount=", &url));
     attempt!(root.mount(id, Box::new(b)));

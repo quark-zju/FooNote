@@ -1,8 +1,8 @@
-use super::blob;
-use super::dylib;
-use super::git;
-use super::Id;
-use super::TreeBackend;
+use crate::backend::blob;
+use crate::backend::dylib;
+use crate::backend::git;
+use notebackend_types::Id;
+use notebackend_types::TreeBackend;
 use std::io;
 use std::{io::Result, path::Path};
 

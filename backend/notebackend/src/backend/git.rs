@@ -762,8 +762,8 @@ fn fast_import_file_delete(path: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::backend::clipboard;
     use crate::backend::tests::*;
+    use crate::clipboard;
 
     fn populate_git_repo(dir: &Path) -> Option<PathBuf> {
         let git_repo_path = dir.join("repo");

@@ -1,8 +1,8 @@
 //! Clipboard operations (copy, paste) for backends.
 
-use super::blob::MemBackend;
-use super::InsertPos;
-use super::TreeBackend;
+use crate::backend::blob::MemBackend;
+use notebackend_types::InsertPos;
+use notebackend_types::TreeBackend;
 use std::io::Result;
 
 /// Copy copyable selected ids and descendants to a temporary backend.
@@ -20,7 +20,7 @@ where
             String::new(),
         )?;
         // Heads are enough."copy" is recursive.
-        super::copy(src, id, &mut dst, dst_id, None)?;
+        crate::backend::copy(src, id, &mut dst, dst_id, None)?;
     }
 
     Ok(dst)
@@ -40,7 +40,7 @@ where
     for src_id in src.get_children(src.get_root_id())? {
         let new_dst_id = dst.insert(dst_id, pos, String::new(), String::new())?;
         ids.push(new_dst_id);
-        super::copy(src, src_id, dst, new_dst_id, Some(&mut ids))?;
+        crate::backend::copy(src, src_id, dst, new_dst_id, Some(&mut ids))?;
         pos = InsertPos::After;
         dst_id = new_dst_id;
     }
@@ -49,10 +49,10 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::super::tests::TestTreeBackend;
-    use super::super::Id;
-    use super::super::TreeBackend;
     use super::*;
+    use crate::backend::tests::TestTreeBackend;
+    use notebackend_types::Id;
+    use notebackend_types::TreeBackend;
 
     fn quick_insert(b: &mut MemBackend) -> Vec<Id> {
         let id0 = b.get_root_id();

@@ -1,4 +1,4 @@
-use super::TreeBackend;
+use notebackend_types::TreeBackend;
 use parking_lot::RwLock;
 use std::collections::HashMap;
 use std::ops::Deref;
@@ -128,10 +128,10 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::super::blob::MemBackend;
-    use super::super::multiplex::MultiplexBackend;
-    use super::super::tests::*;
     use super::*;
+    use crate::backend::blob::MemBackend;
+    use crate::backend::multiplex::MultiplexBackend;
+    use crate::backend::tests::*;
 
     fn check_search(backend: &Arc<RwLock<MultiplexBackend>>, input: &str, expected: &str) {
         let mut s = Search::new(backend.clone());
