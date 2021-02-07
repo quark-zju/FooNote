@@ -452,7 +452,7 @@ impl GitBackend {
                 ));
             }
         }
-        let mut data = Vec::with_capacity(len + 1);
+        let mut data = vec![0u8; len + 1];
         stdout.read_exact(&mut data)?;
         if data.last() != Some(&b'\n') {
             return Err(io::Error::new(
@@ -624,7 +624,7 @@ fn git_config(key: &str) -> Option<String> {
     }
 }
 
-/// Create a remote pointing to the url. Return the remote name.
+/// Create a remote pointing to the url on demand. Return the remote name.
 fn prepare_remote_name(repo_path: &Path, url: &str) -> io::Result<String> {
     // origin  https://github.com/quark-zju/foonote (fetch)
     let output = git_command()
@@ -638,8 +638,10 @@ fn prepare_remote_name(repo_path: &Path, url: &str) -> io::Result<String> {
     let text = String::from_utf8_lossy(&output.stdout);
     let mut taken_names = HashSet::new();
     for line in text.lines() {
-        let split: Vec<&str> = line.split(' ').collect();
+        let split: Vec<&str> = line.split('\t').collect();
         if let Some(&[remote_name, remote_url]) = split.get(..2) {
+            let remote_url = remote_url.strip_suffix(" (push)").unwrap_or(remote_url);
+            let remote_url = remote_url.strip_suffix(" (fetch)").unwrap_or(remote_url);
             if remote_url == url {
                 return Ok(remote_name.to_string());
             }
@@ -651,7 +653,7 @@ fn prepare_remote_name(repo_path: &Path, url: &str) -> io::Result<String> {
     let base_name = {
         let mut s = DefaultHasher::new();
         url.hash(&mut s);
-        format!("r{:x}", s.finish())
+        format!("r{:x}", s.finish() & 0xfffff)
     };
     let remote_name = (0..)
         .map(|i| format!("{}{}", base_name, i))
@@ -752,6 +754,7 @@ fn fast_import_file_delete(path: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::backend::clipboard;
     use crate::backend::tests::*;
 
     fn populate_git_repo(dir: &Path) -> Option<PathBuf> {
@@ -791,19 +794,37 @@ mod tests {
             Some(path) => path,
             None => return, /* git does not work */
         };
-        dbg!(dir.path());
-        std::mem::forget(dir);
 
         let url = format!("{}#trunk", git_repo_path.display());
         let mut backend = GitBackend::new(&url, Some(&cache_path)).unwrap();
         backend.check_generic().unwrap();
-        // backend.persist().unwrap();
-
         backend.check_generic().unwrap();
-        // backend.persist().unwrap();
-        // drop(backend);
 
-        // let mut backend = GitBackend::new(&url, Some(&cache_path)).unwrap();
-        // backend.check_generic().unwrap();
+        backend.persist().unwrap();
+        backend.check_generic().unwrap();
+        backend.check_generic().unwrap();
+
+        // Serialize to bytes to test Eq.
+        let copied = clipboard::copy(&backend, &[backend.get_root_id()]).unwrap();
+        let check = |mut backend: GitBackend| {
+            // Check Eq.
+            let copied2 = clipboard::copy(&backend, &[backend.get_root_id()]).unwrap();
+            assert_eq!(copied, copied2);
+            // Check generic operations.
+            backend.check_generic().unwrap();
+        };
+
+        // Backend should not change after persist().
+        backend.persist().unwrap();
+        check(backend);
+
+        // Test re-load from the original repo using the same cache.
+        let backend = GitBackend::new(&url, Some(&cache_path)).unwrap();
+        check(backend);
+
+        // Test re-load from the original repo using the a different cache.
+        let cache_path = dir.path().join("cache2");
+        let backend = GitBackend::new(&url, Some(&cache_path)).unwrap();
+        check(backend);
     }
 }
