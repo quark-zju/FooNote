@@ -28,8 +28,11 @@ use std::time::UNIX_EPOCH;
 use tempfile::NamedTempFile;
 
 // Repo structure:
-// - text/{id}
-// - manifest.json: {children: {id: [id]}, meta: {id: str}}
+// - notes/{id prefix}/{id suffix} (raw content of note text)
+// - manifest.json: {children: {id: [id]}, meta: {id: str}} (metadata)
+//
+// For a url (no matter local or remote), operate the repo in a local cache
+// directory, and only use push and fetch to interact with the url.
 
 /// Git backend using the system git binary.
 pub struct GitBackend {
@@ -334,7 +337,7 @@ impl GitBackend {
 
     /// Path for the text object.
     fn text_path(&self, id: Id) -> String {
-        format!("text/{:x}/{:x}", id / 256, id % 256)
+        format!("notes/{:x}/{:x}", id / 256, id % 256)
     }
 
     /// Load the metadata (parents, children, meta).
