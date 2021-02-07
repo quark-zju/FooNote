@@ -26,7 +26,7 @@ jobs:
       if: runner.os == 'Linux'
       run: cp target/debug/libnotebackend.so frontend
     - name: Install Lazarus
-      uses: gcarreno/setup-lazarus@v2.2.6
+      uses: quark-zju/setup-lazarus@v2.2.6-win64
       with:
         lazarus-version: ${{ matrix.lazarus-versions }}
     - name: Build GUI
