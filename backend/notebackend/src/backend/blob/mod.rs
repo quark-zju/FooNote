@@ -102,17 +102,17 @@ impl TreeData {
     }
 
     /// Find unreachable ids.
-    fn unreachable_ids(&mut self) -> Vec<Id> {
+    fn unreachable_ids(&mut self, roots: &[Id]) -> Vec<Id> {
         let mut cache: BTreeMap<Id, bool> = BTreeMap::new();
         self.parents
             .keys()
             .cloned()
-            .filter(|&id| !self.is_reachable_cached(id, &mut cache))
+            .filter(|&id| !self.is_reachable_cached(id, &mut cache, roots))
             .collect()
     }
 
-    fn is_reachable_cached(&self, id: Id, cache: &mut BTreeMap<Id, bool>) -> bool {
-        if id == ROOT_ID || id == TRASH_ID {
+    fn is_reachable_cached(&self, id: Id, cache: &mut BTreeMap<Id, bool>, roots: &[Id]) -> bool {
+        if roots.contains(&id) {
             return true;
         }
         match cache.get(&id) {
@@ -122,7 +122,7 @@ impl TreeData {
                     if parent_id == id {
                         false
                     } else {
-                        self.is_reachable_cached(parent_id, cache)
+                        self.is_reachable_cached(parent_id, cache, roots)
                     }
                 } else {
                     false
@@ -188,7 +188,7 @@ impl<I> BlobBackend<I> {
 
     /// Remove unreachable nodes.
     pub fn remove_unreachable(&mut self) {
-        let unreachable = self.data.unreachable_ids();
+        let unreachable = self.data.unreachable_ids(&[ROOT_ID, TRASH_ID]);
         for id in unreachable {
             self.mtime.remove(&id);
             self.data.remove(id);
