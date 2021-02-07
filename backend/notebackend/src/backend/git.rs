@@ -620,8 +620,13 @@ fn git_config(key: &str) -> Option<String> {
         .output()
         .ok()?;
     if output.status.success() {
-        let s = String::from_utf8_lossy(&output.stdout).trim().into();
-        Some(s)
+        let s: String = String::from_utf8_lossy(&output.stdout).trim().into();
+        if s.is_empty() {
+            // Normalize empty strings to `None` values.
+            None
+        } else {
+            Some(s)
+        }
     } else {
         None
     }
