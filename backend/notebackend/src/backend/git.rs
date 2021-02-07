@@ -769,7 +769,12 @@ mod tests {
         let git_repo_path = dir.join("repo");
         let git_dir = git_repo_path.join(".git");
 
-        match git_command().arg("init").arg(&git_repo_path).status().ok() {
+        match git_command()
+            .args(&["-c", "init.defaultBranch=m", "init"])
+            .arg(&git_repo_path)
+            .status()
+            .ok()
+        {
             None => return None, // skip test: git does not work.
             Some(s) if !s.success() => return None,
             Some(s) => {}
@@ -792,7 +797,7 @@ mod tests {
         };
         git(&["add", "x"]);
         git(&["commit", "-m", "add x"]);
-        git(&["checkout", "-b", "trunk"]);
+        git(&["checkout", "-b", "mytrunk"]);
         git(&["config", "--add", "receive.denyCurrentBranch", "ignore"]);
 
         Some(git_repo_path)
@@ -807,7 +812,7 @@ mod tests {
             None => return, /* git does not work */
         };
 
-        let url = format!("{}#trunk", git_repo_path.display());
+        let url = format!("{}#mytrunk", git_repo_path.display());
         let mut backend = GitBackend::new(&url, Some(&cache_path)).unwrap();
         backend.check_generic().unwrap();
         backend.check_generic().unwrap();
