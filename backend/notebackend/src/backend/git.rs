@@ -782,6 +782,10 @@ mod tests {
                 .arg("--git-dir")
                 .arg(&git_dir)
                 .args(args)
+                .env("GIT_AUTHOR_NAME", "test")
+                .env("GIT_AUTHOR_EMAIL", "<a@example.com>")
+                .env("GIT_COMMITTER_NAME", "test")
+                .env("GIT_COMMITTER_EMAIL", "<a@example.com>")
                 .current_dir(&git_repo_path)
                 .status()
                 .unwrap();
