@@ -21,9 +21,7 @@ pub fn open(url: &str) -> Result<Box<dyn TreeBackend<Id = Id>>> {
 
     match scheme {
         "git" => Ok(Box::new(git::GitBackend::new(url, None)?)),
-        "ssh" | "http" | "https" | "" if url.ends_with(".git") => {
-            Ok(Box::new(git::GitBackend::new(url, None)?))
-        }
+        "" if url.ends_with(".git") => Ok(Box::new(git::GitBackend::new(url, None)?)),
         "foonote" | "" => Ok(Box::new(
             blob::SingleFileBackend::from_path(&Path::new(path))?.with_trash(true),
         )),
@@ -31,6 +29,7 @@ pub fn open(url: &str) -> Result<Box<dyn TreeBackend<Id = Id>>> {
             "notebackend_python",
             url,
         )?)),
+        _ if url.ends_with(".git") => Ok(Box::new(git::GitBackend::new(url, None)?)),
         _ => Err(io::Error::new(
             io::ErrorKind::InvalidInput,
             format!("invalid backend URL: {}", url),
