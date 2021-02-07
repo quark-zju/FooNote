@@ -28,7 +28,6 @@ type
     // Saved on disk. Changes will trigger callbacks.
     FStayOnTop: boolean;
     FDockSide: TDockSide;
-    FEditorFont: TFont;
     FFeatureLevel: TFeatureLevel;
     FZenMode: boolean;
     FAutoSaveInterval: integer;
@@ -46,6 +45,8 @@ type
     FNodeShowId: boolean;
     FRememberPosition: boolean;
     FLastSelection: Int32;
+    FEditorFont: TFont;
+    FWindowColor: TColor;
 
     // Callback.
     Callbacks: array of TConfigChangeCallback;
@@ -70,12 +71,12 @@ type
     // Trigger callbacks.
     property StayOnTop: boolean read FStayOnTop write SetStayOnTop;
     property DockSide: TDockSide read FDockSide write SetDockSide;
-    property EditorFont: TFont read FEditorFont write FEditorFont;
     property ZenMode: boolean read FZenMode write SetZenMode;
     property FeatureLevel: TFeatureLevel read FFeatureLevel write SetFeatureLevel;
     property AutoSaveInterval: integer read FAutoSaveInterval write SetAutoSaveInterval;
 
     // Do not trigger callbacks.
+    property EditorFont: TFont read FEditorFont write FEditorFont;
     property DockWidth: longint read FDockWidth write FDockWidth;
     property DockNoteSplitTop: longint read FDockNoteSplitTop write FDockNoteSplitTop;
     property NonDockWidth: longint read FNonDockWidth write FNonDockWidth;
@@ -88,6 +89,7 @@ type
     property ShowNodeId: boolean read FNodeShowId write FNodeShowId;
     property RememberPosition: boolean read FRememberPosition write FRememberPosition;
     property LastSelectedId: Int32 read FLastSelection write FLastSelection;
+    property WindowColor: TColor read FWindowColor write FWindowColor;
   end;
 
 const
@@ -207,6 +209,7 @@ initialization
   AppConfig.FAutoSaveInterval := 30;
   AppConfig.FRememberPosition := True;
   AppConfig.ConfigFileName := 'FooNoteConfig.json';
+  AppConfig.WindowColor := clWindow;
 
 finalization
   FreeAndNil(AppConfig);

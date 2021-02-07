@@ -184,6 +184,7 @@ type
     procedure InitI18n;
     procedure ApplyAppConfigToThisForm;
     procedure LoadSplitterPosition;
+    procedure ApplyThisFromToAppConfig; // Reverse of ApplyAppConfigToThisForm.
     procedure SaveConfigFile;
 
     procedure RefreshFullTree;
@@ -432,6 +433,20 @@ begin
     end;
   end;
 
+  // Apply window color.
+  Color := AppConfig.WindowColor;
+end;
+
+procedure TFormFooNoteMain.ApplyThisFromToAppConfig;
+begin
+  if AppConfig.RememberPosition and (AppConfig.DockSide = dsNone) then begin
+    AppConfig.Left := Left;
+    AppConfig.Top := Top;
+  end;
+  AppConfig.LastSelectedId := SelectedId.Id;
+  AppConfig.WindowColor := FormFooNoteMain.Color;
+  DebugLn(' TreeNoteSplitter.Top=%d %d,%d', [SplitterTreeNote.Top, AppConfig.NonDockNoteSplitTop,
+    AppConfig.DockNoteSplitTop]);
 end;
 
 procedure TFormFooNoteMain.SaveConfigFile;
@@ -442,13 +457,6 @@ begin
   if AppConfig.ResetOnNextStartup then begin
     DeleteFile(AppConfig.ConfigFileName);
   end else begin
-    if AppConfig.RememberPosition and (AppConfig.DockSide = dsNone) then begin
-      AppConfig.Left := Left;
-      AppConfig.Top := Top;
-    end;
-    AppConfig.LastSelectedId := SelectedId.Id;
-    DebugLn(' TreeNoteSplitter.Top=%d %d,%d', [SplitterTreeNote.Top, AppConfig.NonDockNoteSplitTop,
-      AppConfig.DockNoteSplitTop]);
     S := AppConfig.ToJSONString();
     F := TFileStream.Create(AppConfig.ConfigFileName, fmOpenWrite or fmCreate);
     try
@@ -679,13 +687,14 @@ end;
 
 procedure TFormFooNoteMain.FormClose(Sender: TObject; var CloseAction: TCloseAction);
 begin
-  SaveConfigFile;
   if not NoteBackend.TryPersist() then begin
     if QuestionDlg('FooNote', RSFailSaveStillExit, mtCustom, [mrYes, RSExitNoSave, mrNo, RSNoExit], '') <>
       mrYes then begin
       CloseAction := caNone;
     end;
   end;
+  ApplyThisFromToAppConfig;
+  SaveConfigFile;
 end;
 
 procedure TFormFooNoteMain.ActionAppQuitExecute(Sender: TObject);
