@@ -662,7 +662,7 @@ end;
 
 procedure TFormFooNoteMain.ActionNewSeparatorExecute(Sender: TObject);
 begin
-  SelectExpandNode(NewNode('-', 'type=separator' + #10 + 'readonly=true' + #10));
+  SelectExpandNode(NewNode('', 'type=separator' + #10 + 'readonly=true' + #10));
 end;
 
 procedure TFormFooNoteMain.MemoNoteChange(Sender: TObject);
@@ -1019,7 +1019,7 @@ begin
   end;
 
   // Separator
-  if (Stage = cdPrePaint) and (Node.Text.StartsWith('-')) and
+  if (Stage = cdPrePaint) and (Node.Text.IsEmpty() or Node.Text.StartsWith('-')) and
     (TTreeNodeData(Node.Data).ExtractMeta('type=') = 'separator') then begin
     C := Sender.Canvas;
     H := (Sender.DefaultItemHeight div 2);
