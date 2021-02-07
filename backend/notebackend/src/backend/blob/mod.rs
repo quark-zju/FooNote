@@ -8,6 +8,7 @@ use super::*;
 use serde::Deserialize;
 use serde::Serialize;
 use std::collections::BTreeMap;
+use std::fmt;
 use std::io;
 use std::io::Read;
 use std::io::Result;
@@ -432,6 +433,20 @@ where
         let mut buf: Vec<u8> = Default::default();
         self.data.dump(&mut buf)?;
         self.blob_io.save(buf)?;
+        Ok(())
+    }
+}
+
+impl PartialEq for MemBackend {
+    fn eq(&self, other: &Self) -> bool {
+        self.blob_io.data == other.blob_io.data && self.has_trash == other.has_trash
+    }
+}
+
+impl fmt::Debug for MemBackend {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str("MemBackend")?;
+        self.blob_io.data.fmt(f)?;
         Ok(())
     }
 }

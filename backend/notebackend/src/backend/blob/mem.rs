@@ -5,7 +5,7 @@ use std::sync::Arc;
 
 #[derive(Clone)]
 pub struct MemBlobIo {
-    data: Arc<Vec<u8>>,
+    pub(crate) data: Arc<Vec<u8>>,
 }
 
 impl AsRef<[u8]> for MemBlobIo {
