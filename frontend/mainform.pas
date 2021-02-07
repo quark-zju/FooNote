@@ -179,8 +179,9 @@ type
     procedure InitOnConfigChange;
 
     procedure Reposition;
-    procedure LoadAppConfigState; // Locale might affect InitPlatformSpecific
-    procedure LoadAppConfig; // Load config that might trigger AppConfig callbacks
+    procedure LoadAppConfigFromDiskWithoutApply;
+    procedure InitI18n;
+    procedure ApplyAppConfigToThisForm;
     procedure LoadSplitterPosition;
     procedure SaveConfigFile;
 
@@ -248,7 +249,7 @@ begin
   end else begin
     Url := DefaultUrl;
   end;
-  AppState.RootTreeUrl := Url;
+  AppConfig.RootTreeUrl := Url;
   MenuItemRootPath.Caption := ExtractFileName(Url);
   MenuItemRootPath.Hint := Url;
   RootId := NoteBackend.Open(Url);
@@ -265,7 +266,7 @@ var
 begin
   This := FormFooNoteMain;
   if (Name = AnyConfigName) or (Name = 'StayOnTop') then begin
-    if Config.StayOnTop and (not AppState.ForceNotTop) then begin
+    if Config.StayOnTop and (not AppConfig.ForceNotTop) then begin
       if This.FormStyle <> fsSystemStayOnTop then begin
         This.FormStyle := fsSystemStayOnTop;
       end;
@@ -285,9 +286,9 @@ begin
     This.PanelDockSplitterLeft.Visible := (Config.DockSide = dsRight);
     This.PanelDockSplitterRight.Visible := (Config.DockSide = dsLeft);
     if Config.DockSide = dsNone then begin
-      I := AppState.NonDockNoteSplitTop;
+      I := AppConfig.NonDockNoteSplitTop;
     end else begin
-      I := AppState.DockNoteSplitTop;
+      I := AppConfig.DockNoteSplitTop;
     end;
     if (I > 0) and (I < This.Height) then begin
       This.SplitterTreeNote.Top := I;
@@ -339,7 +340,7 @@ begin
   Top := Width div 2;
 end;
 
-procedure TFormFooNoteMain.LoadAppConfigState;
+procedure TFormFooNoteMain.LoadAppConfigFromDiskWithoutApply;
 var
   S: string;
 begin
@@ -356,11 +357,11 @@ begin
       on e: EParserError do ;
     end;
   end;
+end;
 
-  if AppState.MaxWidth >= 0 then begin
-    Constraints.MaxWidth := AppState.MaxWidth;
-  end;
-  SetDefaultLang(AppState.Locale, 'locale');
+procedure TFormFooNoteMain.InitI18n;
+begin
+  SetDefaultLang(AppConfig.Locale, 'locale');
 end;
 
 procedure TFormFooNoteMain.LoadSplitterPosition;
@@ -368,12 +369,12 @@ var
   I: integer;
 begin
   if AppConfig.DockSide = dsNone then begin
-    I := AppState.NonDockNoteSplitTop;
+    I := AppConfig.NonDockNoteSplitTop;
     if (I > 0) and (I < Height) then begin
       SplitterTreeNote.Top := I;
     end; // After Height update
   end else begin
-    I := AppState.DockNoteSplitTop;
+    I := AppConfig.DockNoteSplitTop;
     if (I > 0) and (I < Height) then begin
       SplitterTreeNote.Top := I;
     end; // After Height update
@@ -381,37 +382,37 @@ begin
   // DebugLn(' TreeNoteSplitter.Top=%d', [SplitterTreeNote.Top]);
 end;
 
-procedure TFormFooNoteMain.LoadAppConfig;
+procedure TFormFooNoteMain.ApplyAppConfigToThisForm;
 var
   S: string;
   I: integer;
 begin
-  //DebugLn('Before loading AppConfig %d x %d', [Width, Height]);
-  //S := JSONPropAppConfig.ReadString('AppConfig', '');
-  //if not S.IsEmpty then begin
-  //  AppConfig.LoadFromJSON(S);
-  //end; // Might update Height. But docking is updated asyncly.
-  //DebugLn('After  loading AppConfig %d x %d', [Width, Height]);
+  // Apply size constraint.
+  if AppConfig.MaxWidth >= 80 then begin
+    Constraints.MaxWidth := AppConfig.MaxWidth;
+  end;
 
-  //if AppConfig.DockSide = dsNone then begin
-  //  I := AppState.NonDockWidth;
-  //  if (I > 0) then begin
-  //    Width := I;
-  //  end;
-  //  I := AppState.NonDockHeight;
-  //  if (I > 0) then begin
-  //    Height := I;
-  //  end;
-  //  Reposition;
-  //  I := AppState.Left;
-  //  if (I > 0) then begin
-  //    Left := I;
-  //  end;
-  //  I := AppState.Top;
-  //  if (I > 0) then begin
-  //    Top := I;
-  //  end;
-  //end;
+  // Apply window position and size.
+  if AppConfig.DockSide = dsNone then begin
+    I := AppConfig.NonDockWidth;
+    if (I > 0) then begin
+      Width := I;
+    end;
+    I := AppConfig.NonDockHeight;
+    if (I > 0) then begin
+      Height := I;
+    end;
+    Reposition;
+    I := AppConfig.Left;
+    if (I > 0) then begin
+      Left := I;
+    end;
+    I := AppConfig.Top;
+    if (I > 0) then begin
+      Top := I;
+    end;
+  end;
+
   LoadSplitterPosition;
 end;
 
@@ -420,15 +421,15 @@ var
   S: string;
   F: TFileStream;
 begin
-  if AppState.ResetOnNextStartup then begin
+  if AppConfig.ResetOnNextStartup then begin
     DeleteFile(ConfigFileName);
   end else begin
-    if AppState.RememberPosition and (AppConfig.DockSide = dsNone) then begin
-      AppState.Left := Left;
-      AppState.Top := Top;
+    if AppConfig.RememberPosition and (AppConfig.DockSide = dsNone) then begin
+      AppConfig.Left := Left;
+      AppConfig.Top := Top;
     end;
-    DebugLn(' TreeNoteSplitter.Top=%d %d,%d', [SplitterTreeNote.Top, AppState.NonDockNoteSplitTop,
-      AppState.DockNoteSplitTop]);
+    DebugLn(' TreeNoteSplitter.Top=%d %d,%d', [SplitterTreeNote.Top, AppConfig.NonDockNoteSplitTop,
+      AppConfig.DockNoteSplitTop]);
     S := AppConfig.ToJSONString();
     F := TFileStream.Create(ConfigFileName, fmOpenWrite or fmCreate);
     try
@@ -567,12 +568,13 @@ end;
 procedure TFormFooNoteMain.FormCreate(Sender: TObject);
 begin
   InitAppConfigLink; // Link Editor TFont to AppConfig's Font.
-  LoadAppConfigState; // Might affect InitPlatformSpecific (i18n)
-  InitPlatformSpecific; // Register OnConfigChange.
+  LoadAppConfigFromDiskWithoutApply;
+  InitI18n;
+  InitPlatformSpecific; // Register OnConfigChange (affected by i18n).
   InitOnConfigChange;   // Register OnConfigChange.
-  // LoadAppConfig;   // Affect registered OnConfigChange (InitOnConfigChange, InitPlatformSpecific)
   InitRootBackend; // Open the backend. Make NoteBackend APIs working.
-  AppConfig.NotifyAll; // Apply config and states.
+  ApplyAppConfigToThisForm; // Apply non-callback (one-time) configs.
+  AppConfig.NotifyAll; // Trigger "callback" to apply config changes.
 end;
 
 procedure TFormFooNoteMain.FormDestroy(Sender: TObject);
@@ -584,14 +586,14 @@ end;
 
 procedure TFormFooNoteMain.FormResize(Sender: TObject);
 begin
-  if (not AppState.MovingPreview) and (WindowState = wsNormal) then begin
+  if (not AppConfig.MovingPreview) and (WindowState = wsNormal) then begin
     if AppConfig.DockSide = dsNone then begin
-      AppState.NonDockWidth := Width;
-      AppState.NonDockHeight := Height;
+      AppConfig.NonDockWidth := Width;
+      AppConfig.NonDockHeight := Height;
       DebugLn('  NonDockHeight := %d', [Height]);
-      AppState.DockWidth := 0;
+      AppConfig.DockWidth := 0;
     end else begin
-      AppState.DockWidth := Width;
+      AppConfig.DockWidth := Width;
     end;
   end;
 end;
@@ -798,7 +800,7 @@ begin
     Assert(AppConfig.DockSide <> dsNone);
     NewWidth := DockSplitterNewWidth;
     DebugLn('Dock Splitter MouseUp; DockWidth = %d', [NewWidth]);
-    AppState.DockWidth := NewWidth;
+    AppConfig.DockWidth := NewWidth;
     PreviewForm.Hide;
     DockSplitterLeftIsDown := False;
     {$ifdef Windows}
@@ -1321,11 +1323,11 @@ end;
 procedure TFormFooNoteMain.SplitterTreeNoteMoved(Sender: TObject);
 begin
   if AppConfig.DockSide = dsNone then begin
-    AppState.NonDockNoteSplitTop := SplitterTreeNote.Top;
-    AppState.DockNoteSplitTop := 0;
+    AppConfig.NonDockNoteSplitTop := SplitterTreeNote.Top;
+    AppConfig.DockNoteSplitTop := 0;
   end else begin
-    AppState.DockNoteSplitTop := SplitterTreeNote.Top;
-    // AppState.NonDockNoteSplitTop := 0;
+    AppConfig.DockNoteSplitTop := SplitterTreeNote.Top;
+    // AppConfig.NonDockNoteSplitTop := 0;
   end;
 end;
 

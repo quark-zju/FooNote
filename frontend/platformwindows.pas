@@ -125,18 +125,18 @@ var
   Width: longint;
 begin
   if side = dsNone then begin
-    rc.Width := AppState.NonDockWidth + OuterBorderWidth;
-    rc.Height := AppState.NonDockHeight + OuterBorderHeight;
+    rc.Width := AppConfig.NonDockWidth + OuterBorderWidth;
+    rc.Height := AppConfig.NonDockHeight + OuterBorderHeight;
     exit;
   end;
 
   if RefForm.WindowState = wsMinimized then begin
     Width := 0;
   end else begin
-    if AppState.DockWidth = 0 then begin
-      Width := AppState.NonDockWidth + OuterBorderWidth;
+    if AppConfig.DockWidth = 0 then begin
+      Width := AppConfig.NonDockWidth + OuterBorderWidth;
     end else begin
-      Width := AppState.DockWidth;
+      Width := AppConfig.DockWidth;
     end;
   end;
 
@@ -271,21 +271,21 @@ begin
   if Side = dsNone then begin
     // Undock
     DebugLn('  Undock');
-    AppState.MovingPreview := True;
+    AppConfig.MovingPreview := True;
     UnregisterAppBar;
     // Restore position and style.
     RefForm.BorderStyle := bsSizeable;
     RefForm.BorderIcons := RefForm.BorderIcons + [biMinimize, biSystemMenu];
     RefForm.SetBounds(OrigRect.Left - OuterBorderLeft, OrigRect.Top - OuterBorderTop,
-      AppState.NonDockWidth, AppState.NonDockHeight);
+      AppConfig.NonDockWidth, AppConfig.NonDockHeight);
     //MoveWindow(RefForm.Handle, OrigRect.Left, OrigRect.Top,
-    //  AppState.NonDockWidth + OuterBorderWidth,
-    //  AppState.NonDockHeight + OuterBorderHeight, True);
+    //  AppConfig.NonDockWidth + OuterBorderWidth,
+    //  AppConfig.NonDockHeight + OuterBorderHeight, True);
     // LCL might add biMaximize automatically. Drop it.
     // Without biMaximize, "Snap assistant" won't try to snap to left/right half of the screen.
     RefForm.BorderIcons := RefForm.BorderIcons - [biMaximize];
     EnsureWrappedWndProc;
-    AppState.MovingPreview := False;
+    AppConfig.MovingPreview := False;
   end else begin
     // Dock
     RefForm.BorderStyle := bsNone;
@@ -369,7 +369,7 @@ begin
     end;
   end else if (uMsg = WM_ENTERSIZEMOVE) then begin
     DebugLn('EnterSizeMove');
-    AppState.MovingPreview := True;
+    AppConfig.MovingPreview := True;
     GetWindowRect(RefForm.Handle, MovingStartRect);
     MovingStartCursorPos := Mouse.CursorPos;
     MovingHasMoved := False;
@@ -381,7 +381,7 @@ begin
       AppConfig.DockSide := Side;
     end;
     MovingHasMoved := False;
-    AppState.MovingPreview := False;
+    AppConfig.MovingPreview := False;
     // OnResize was called before WrappedWndProc with AppConfigMovingPreview = True.
     RefForm.OnResize(RefForm);
   end else if (uMsg = WM_MOVING) then begin
@@ -411,7 +411,7 @@ begin
         DebugLn(' ABN_FULLSCREENAPP %d', [lParam]);
         // Fullscreen app starts or exits.
         // Avoid "Stay on Top" if a fullscreen app is running.
-        AppState.ForceNotTop := (lParam <> 0);
+        AppConfig.ForceNotTop := (lParam <> 0);
         // Trigger updating window style.
         if lParam = 0 then begin
           // Refresh "On Top" setting.

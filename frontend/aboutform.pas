@@ -58,7 +58,7 @@ procedure TAboutFooNoteForm.FormCreate(Sender: TObject);
 begin
   LabelVersionNumber.Caption := VersionText;
   LabelBuildDateValue.Caption := BuildDateText;
-  EditRootTreeUrl.Text := AppState.RootTreeUrl;
+  EditRootTreeUrl.Text := AppConfig.RootTreeUrl;
 end;
 
 procedure TAboutFooNoteForm.LabelLinkClick(Sender: TObject);

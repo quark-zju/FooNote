@@ -27,7 +27,7 @@ procedure ApplyData(View: TTreeNode; Data: TTreeNodeData);
 begin
   assert(Assigned(View) and Assigned(Data));
 
-  if AppState.ShowNodeId then begin
+  if AppConfig.ShowNodeId then begin
     View.Text := Format('%s [%s]', [Data.GetTitle(), Data.Id.ToString()]);
   end else begin
     View.Text := Data.GetTitle();

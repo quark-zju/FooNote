@@ -22,9 +22,18 @@ type
     procedure LoadFromJSONString(json: TJSONStringType);
   end;
 
-  // Internal config or temporary state.
-  TAppState = class(TJsonSerializable)
+  // Main state.
+  TAppConfig = class(TJsonSerializable)
   private
+    // Saved on disk. Changes will trigger callbacks.
+    FStayOnTop: boolean;
+    FDockSide: TDockSide;
+    FEditorFont: TFont;
+    FFeatureLevel: TFeatureLevel;
+    FZenMode: boolean;
+    FAutoSaveInterval: integer;
+
+    // Saved on disk. But changes do not trigger callbacks.
     FDockWidth: longint;
     FDockNoteSplitTop: longint;
     FNonDockWidth: longint;
@@ -36,34 +45,8 @@ type
     FLocale: string;
     FNodeShowId: boolean;
     FRememberPosition: boolean;
-  public
-    ForceNotTop: boolean;
-    MovingPreview: boolean;
-    ResetOnNextStartup: boolean;
-    RootTreeUrl: string;
-  published
-    property DockWidth: longint read FDockWidth write FDockWidth;
-    property DockNoteSplitTop: longint read FDockNoteSplitTop write FDockNoteSplitTop;
-    property NonDockWidth: longint read FNonDockWidth write FNonDockWidth;
-    property NonDockHeight: longint read FNonDockHeight write FNonDockHeight;
-    property NonDockNoteSplitTop: longint read FNonDockNoteSplitTop write FNonDockNoteSplitTop;
-    property Left: longint read FLeft write FLeft;
-    property Top: longint read FTop write FTop;
-    property MaxWidth: longint read FMaxWidth write FMaxWidth default -1;
-    property Locale: string read FLocale write FLocale;
-    property ShowNodeId: boolean read FNodeShowId write FNodeShowId;
-  end;
 
-  // Publicly editable config.
-  TAppConfig = class(TJsonSerializable)
-  private
-    FStayOnTop: boolean;
-    FDockSide: TDockSide;
-    FEditorFont: TFont;
-    FFeatureLevel: TFeatureLevel;
-    FZenMode: boolean;
-    FAutoSaveInterval: integer;
-    FState: TAppState;
+    // Callback.
     Callbacks: array of TConfigChangeCallback;
 
     procedure RunCallbacks(Name: string);
@@ -73,15 +56,35 @@ type
     procedure SetZenMode(Value: boolean);
     procedure SetAutoSaveInterval(Value: integer);
   public
+    // Not saved on disk. Do not trigger callbacks.
+    ForceNotTop: boolean;
+    MovingPreview: boolean;
+    ResetOnNextStartup: boolean;
+    RootTreeUrl: string;
+
     procedure RegisterOnChangeCallback(callback: TConfigChangeCallback);
     procedure NotifyAll;
   published
+    // Trigger callbacks.
     property StayOnTop: boolean read FStayOnTop write SetStayOnTop;
     property DockSide: TDockSide read FDockSide write SetDockSide;
     property EditorFont: TFont read FEditorFont write FEditorFont;
     property ZenMode: boolean read FZenMode write SetZenMode;
     property FeatureLevel: TFeatureLevel read FFeatureLevel write SetFeatureLevel;
     property AutoSaveInterval: integer read FAutoSaveInterval write SetAutoSaveInterval;
+
+    // Do not trigger callbacks.
+    property DockWidth: longint read FDockWidth write FDockWidth;
+    property DockNoteSplitTop: longint read FDockNoteSplitTop write FDockNoteSplitTop;
+    property NonDockWidth: longint read FNonDockWidth write FNonDockWidth;
+    property NonDockHeight: longint read FNonDockHeight write FNonDockHeight;
+    property NonDockNoteSplitTop: longint read FNonDockNoteSplitTop write FNonDockNoteSplitTop;
+    property Left: longint read FLeft write FLeft;
+    property Top: longint read FTop write FTop;
+    property MaxWidth: longint read FMaxWidth write FMaxWidth;
+    property Locale: string read FLocale write FLocale;
+    property ShowNodeId: boolean read FNodeShowId write FNodeShowId;
+    property RememberPosition: boolean read FRememberPosition write FRememberPosition;
   end;
 
 const
@@ -89,8 +92,6 @@ const
 
 var
   AppConfig: TAppConfig;
-  AppState: TAppState;   // Part of AppConfig
-
 
 implementation
 
@@ -196,17 +197,13 @@ end;
 
 
 initialization
-  AppState := TAppState.Create;
   AppConfig := TAppConfig.Create;
-  AppConfig.FState := AppState;
 
   // Defaults
-  AppState.FMaxWidth := 600;
-  AppConfig.AutoSaveInterval := 30;
-  AppState.RememberPosition := True;
+  AppConfig.FMaxWidth := 600;
+  AppConfig.FAutoSaveInterval := 30;
+  AppConfig.FRememberPosition := True;
 
 finalization
-  FreeAndNil(AppState);
-  AppConfig.FState := nil;
   FreeAndNil(AppConfig);
 end.
