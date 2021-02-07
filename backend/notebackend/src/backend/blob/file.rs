@@ -75,13 +75,13 @@ mod tests {
 
             // Check persist.
             backend.remove_unreachable();
-            let debug = format!("{:?}", &backend.data);
+            let orig_data = backend.data.clone();
             backend.persist().unwrap();
             drop(backend); // Free the lock.
 
             let mut backend = BlobBackend::from_path(&path).unwrap().with_trash(trash);
             backend.remove_unreachable();
-            assert_eq!(format!("{:?}", &backend.data), debug);
+            assert_eq!(orig_data, backend.data);
         }
     }
 

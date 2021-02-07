@@ -5,6 +5,7 @@ mod file;
 mod mem;
 
 use super::*;
+use crate::manifest::Manifest;
 use serde::Deserialize;
 use serde::Serialize;
 use std::collections::BTreeMap;
@@ -13,6 +14,8 @@ use std::io;
 use std::io::Read;
 use std::io::Result;
 use std::io::Write;
+use std::ops::Deref;
+use std::ops::DerefMut;
 
 pub type SingleFileBackend = BlobBackend<file::FileBlobIo>;
 pub type MemBackend = BlobBackend<mem::MemBlobIo>;
@@ -35,37 +38,32 @@ pub trait BlobIo: Send + Sync + 'static {
 }
 
 /// Tree Data that can be converted from/to bytes.
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq)]
 pub(crate) struct TreeData {
-    next_id: Id,
+    #[serde(default)]
     texts: BTreeMap<Id, String>,
-    metas: BTreeMap<Id, String>,
-    #[serde(skip)]
-    parents: BTreeMap<Id, Id>,
-    children: BTreeMap<Id, Vec<Id>>,
+    #[serde(default)]
+    manifest: Manifest,
 }
 
 const ROOT_ID: Id = 0;
 const TRASH_ID: Id = 1;
 
-impl Default for TreeData {
-    fn default() -> Self {
-        let mut result = Self {
-            texts: Default::default(),
-            metas: Default::default(),
-            children: Default::default(),
-            parents: Default::default(),
-            next_id: TRASH_ID + 1,
-        };
-        result
-            .metas
-            .insert(ROOT_ID, "type=root\nreadonly=true\n".to_string());
-        result.rebuild_parents();
-        result
+const HEADER_V1: &[u8] = b"FOONOTE1\n\0";
+
+impl Deref for TreeData {
+    type Target = Manifest;
+
+    fn deref(&self) -> &Self::Target {
+        &self.manifest
     }
 }
 
-const HEADER_V1: &[u8] = b"FOONOTE1\n\0";
+impl DerefMut for TreeData {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.manifest
+    }
+}
 
 impl TreeData {
     /// Load from a reader.
@@ -90,86 +88,9 @@ impl TreeData {
             .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
     }
 
-    /// Rebuild children from parents data.
-    fn rebuild_parents(&mut self) {
-        let mut parents: BTreeMap<Id, Id> = BTreeMap::new();
-        for (parent_id, children) in &self.children {
-            for id in children {
-                parents.insert(*id, *parent_id);
-            }
-        }
-        self.parents = parents;
-    }
-
-    /// Find unreachable ids.
-    fn unreachable_ids(&mut self, roots: &[Id]) -> Vec<Id> {
-        let mut cache: BTreeMap<Id, bool> = BTreeMap::new();
-        self.parents
-            .keys()
-            .cloned()
-            .filter(|&id| !self.is_reachable_cached(id, &mut cache, roots))
-            .collect()
-    }
-
-    fn is_reachable_cached(&self, id: Id, cache: &mut BTreeMap<Id, bool>, roots: &[Id]) -> bool {
-        if roots.contains(&id) {
-            return true;
-        }
-        match cache.get(&id) {
-            Some(reachable) => *reachable,
-            None => {
-                let result = if let Some(&parent_id) = self.parents.get(&id) {
-                    if parent_id == id {
-                        false
-                    } else {
-                        self.is_reachable_cached(parent_id, cache, roots)
-                    }
-                } else {
-                    false
-                };
-                cache.insert(id, result);
-                result
-            }
-        }
-    }
-
-    fn is_reachable(&self, id: Id, ancestor_id: Id) -> bool {
-        if id == ancestor_id {
-            return true;
-        }
-        let parent_id = self.parents.get(&id).cloned().unwrap_or(id);
-        if parent_id == ancestor_id {
-            true
-        } else if parent_id == id {
-            false
-        } else {
-            self.is_reachable(parent_id, ancestor_id)
-        }
-    }
-
-    /// Remove parent of an id.
-    /// Move to trash on the first time. When deleting again, make
-    /// it "unreachable".
-    fn remove_parent(&mut self, id: Id) {
-        if let Some(parent_id) = self.parents.get(&id) {
-            if let Some(children) = self.children.get_mut(parent_id) {
-                // not stable yet: children.remove_item(&id);
-                if let Some(pos) = children.iter().position(|x| *x == id) {
-                    children.remove(pos);
-                }
-                if children.is_empty() {
-                    self.children.remove(parent_id);
-                }
-            }
-        }
-        self.parents.remove(&id);
-    }
-
     fn remove(&mut self, id: Id) {
-        self.parents.remove(&id);
-        self.children.remove(&id);
         self.texts.remove(&id);
-        self.metas.remove(&id);
+        self.manifest.remove(id);
     }
 }
 
