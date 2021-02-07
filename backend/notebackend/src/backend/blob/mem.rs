@@ -51,6 +51,7 @@ mod tests {
         for &trash in &[false, true] {
             let mut backend = BlobBackend::empty().with_trash(trash);
             backend.check_generic().unwrap();
+            backend.check_generic().unwrap();
 
             let bytes = backend.to_bytes();
             let backend2 = BlobBackend::from_bytes(bytes).unwrap().with_trash(trash);

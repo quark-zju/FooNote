@@ -101,9 +101,24 @@ pub(crate) mod tests {
                 .expect(&format!("{} not found", text))
         }
 
+        fn find_scoped(&self, text: &str, scope: &[Self::Id]) -> Self::Id {
+            if text == "root" {
+                return self.get_root_id();
+            }
+            self.find_within_scoped(text, self.get_root_id(), scope)
+                .expect(&format!("{} not found", text))
+        }
+
         /// Find ids by space-separated titles.
         fn find_ids(&self, texts: &str) -> Vec<Self::Id> {
             texts.split_whitespace().map(|t| self.find(t)).collect()
+        }
+
+        fn find_ids_scoped(&self, texts: &str, scope: &[Self::Id]) -> Vec<Self::Id> {
+            texts
+                .split_whitespace()
+                .map(|t| self.find_scoped(t, scope))
+                .collect()
         }
 
         fn find_or_insert(
@@ -112,7 +127,7 @@ pub(crate) mod tests {
             parent: Self::Id,
             inserted: &mut Vec<Self::Id>,
         ) -> Self::Id {
-            match self.find_within(text, self.get_root_id()) {
+            match self.find_within_scoped(text, self.get_root_id(), &inserted) {
                 Some(id) => id,
                 None => {
                     let id = self
@@ -131,6 +146,24 @@ pub(crate) mod tests {
             let children = self.get_children(id).unwrap();
             for id in children {
                 if let Some(id) = self.find_within(text, id) {
+                    return Some(id);
+                }
+            }
+            None
+        }
+
+        fn find_within_scoped(
+            &self,
+            text: &str,
+            id: Self::Id,
+            scope: &[Self::Id],
+        ) -> Option<Self::Id> {
+            if self.get_text(id).unwrap() == text {
+                return Some(id);
+            }
+            let children = self.get_children(id).unwrap();
+            for id in children.into_iter().filter(|i| scope.contains(i)) {
+                if let Some(id) = self.find_within_scoped(text, id, scope) {
                     return Some(id);
                 }
             }
@@ -413,8 +446,12 @@ pub(crate) mod tests {
                 |  \_ 11 ("K")
                 \_ 12 ("L")"#
             );
-            b.set_parent_batch(&b.find_ids("E C A F G"), b.find("I"), InsertPos::After)
-                .unwrap();
+            b.set_parent_batch(
+                &b.find_ids_scoped("E C A F G", &ids),
+                b.find_scoped("I", &ids),
+                InsertPos::After,
+            )
+            .unwrap();
             assert_eq!(
                 b.draw_ascii(&ids),
                 r#"
@@ -571,14 +608,18 @@ pub(crate) mod tests {
             r#"
                 root
                 \_ 1 ("A")
-                   \_ 2 ("B")
-                   |  \_ 3 ("C")
-                   |  |  \_ 7 ("G")
-                   |  \_ 4 ("D")
-                   |  |  \_ 5 ("E")
-                   |  |  \_ 6 ("F")
-                   |  \_ 9 ("Y")
-                   \_ 8 ("X")"#
+                |  \_ 2 ("B")
+                |     \_ 3 ("C")
+                |     |  \_ 7 ("G")
+                |     \_ 4 ("D")
+                |        \_ 5 ("E")
+                |        \_ 6 ("F")
+                \_ 8 ("A")
+                \_ 9 ("B")
+                \_ 11 ("A")
+                |  \_ 10 ("X")
+                \_ 13 ("B")
+                   \_ 12 ("Y")"#
         );
     }
 }
