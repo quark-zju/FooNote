@@ -60,6 +60,10 @@ msgctxt "taboutfoonoteform.labelbuilddatevalue.caption"
 msgid "1"
 msgstr ""
 
+#: taboutfoonoteform.labelconfigpath.caption
+msgid "Config File Path"
+msgstr "配置文件"
+
 #: taboutfoonoteform.labeldesc.caption
 msgid "Lightweight tree-structured note-taking companion."
 msgstr "树形笔记伴侣。"
@@ -236,4 +240,3 @@ msgstr "回收站"
 #: tsolidcolorpreviewform.caption
 msgid "FooNoteOverlay"
 msgstr ""
-
