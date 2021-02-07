@@ -197,6 +197,8 @@ type
     procedure DrawTreeSelectionPreview;
     property SelectedId: FullId read FSelectedId write SetSelectedId;
     property SelectedIds: VecFullId read GetSelectedIds write SetSelectedIds;
+
+    procedure FocusEditorEnd;
   public
 
   end;
@@ -1099,6 +1101,13 @@ end;
 
 procedure TFormFooNoteMain.TreeViewNoteTreeDblClick(Sender: TObject);
 begin
+  if Assigned(TreeViewNoteTree.Selected) and not IsFolder(NodeData(TreeViewNoteTree.Selected).Id) then begin
+    FocusEditorEnd;
+  end;
+end;
+
+procedure TFormFooNoteMain.FocusEditorEnd;
+begin
   if MemoNote.CanSetFocus and not MemoNote.ReadOnly then begin
     MemoNote.SelStart := 32767;
     MemoNote.SetFocus;
@@ -1224,7 +1233,7 @@ begin
   end else if (key = '.') then begin
     TreeViewNoteTree.PopupMenu.PopUp;
   end else if (Key = #10) or (Key = #13) then begin
-    TreeViewNoteTreeDblClick(Sender);
+    FocusEditorEnd;
   end;
 end;
 
