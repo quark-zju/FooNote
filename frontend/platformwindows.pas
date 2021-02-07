@@ -306,12 +306,13 @@ procedure OnConfigChange(Name: string; Config: TAppConfig);
 var
   SysMenu: HMENU;
 begin
-  if Name = 'StayOnTop' then begin
+  if (Name = AnyConfigName) or (Name = 'StayOnTop') then begin
     SysMenu := GetSystemMenu(RefForm.Handle, False);
     ModifyMenu(SysMenu, WMToggleStayOnTop, MenuFlags(Config.StayOnTop), WMToggleStayOnTop, PChar(RSStayOnTop));
     ModifyMenu(SysMenu, WMDockLeft, MenuFlags(AppConfig.DockSide = dsLeft), WMDockLeft, PChar(RSDockLeft));
     ModifyMenu(SysMenu, WMDockRight, MenuFlags(AppConfig.DockSide = dsRight), WMDockRight, PChar(RSDockRight));
-  end else if Name = 'DockSide' then begin
+  end;
+  if (Name = AnyConfigName) or (Name = 'DockSide') then begin
     ApplyDock;
   end;
 end;

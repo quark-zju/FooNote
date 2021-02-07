@@ -136,6 +136,7 @@ object FormFooNoteMain: TFormFooNoteMain
       ShowCaptions = True
       ShowHint = True
       TabOrder = 0
+      TabStop = True
       Visible = False
       object ToolButtonDockedMenu: TToolButton
         Left = 1
@@ -164,6 +165,7 @@ object FormFooNoteMain: TFormFooNoteMain
       ParentShowHint = False
       ShowHint = True
       TabOrder = 1
+      TabStop = True
       object ToolButtonNew: TToolButton
         Left = 1
         Top = 0
@@ -1425,13 +1427,6 @@ object FormFooNoteMain: TFormFooNoteMain
     object MenuItem19: TMenuItem
       Action = ActionAppQuit
     end
-  end
-  object JSONPropAppConfig: TJSONPropStorage
-    StoredValues = <>
-    JSONFileName = 'FooNoteConfig.json'
-    Formatted = False
-    Left = 176
-    Top = 56
   end
   object IdleTimerWndProc: TIdleTimer
     Interval = 2000

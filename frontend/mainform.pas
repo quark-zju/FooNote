@@ -12,7 +12,7 @@ uses
   ExtCtrls, ComCtrls, ActnList, PairSplitter, StdActns, ClipBrd, LCLType,
   LazUtf8, FGL, LazLogger, Math, NoteBackend, NoteTypes, MemoUtil,
   LCLTranslator, Buttons, JSONPropStorage, TreeNodeData,
-  TreeViewSync, Settings, PreviewForm, AboutForm;
+  TreeViewSync, Settings, PreviewForm, AboutForm, FileUtil;
 
 type
 
@@ -32,7 +32,6 @@ type
     ActionAppAbout: TAction;
     PanelDockSplitterRight: TPanel;
     IdleTimerWndProc: TIdleTimer;
-    JSONPropAppConfig: TJSONPropStorage;
     MenuItem1: TMenuItem;
     MenuItem2: TMenuItem;
     MenuItem23: TMenuItem;
@@ -180,7 +179,7 @@ type
     procedure InitOnConfigChange;
 
     procedure Reposition;
-    procedure LoadAppState; // Locale might affect InitPlatformSpecific
+    procedure LoadAppConfigState; // Locale might affect InitPlatformSpecific
     procedure LoadAppConfig; // Load config that might trigger AppConfig callbacks
     procedure LoadSplitterPosition;
     procedure SaveConfigFile;
@@ -198,6 +197,9 @@ type
   public
 
   end;
+
+const
+  ConfigFileName = 'FooNoteConfig.json';
 
 var
   FormFooNoteMain: TFormFooNoteMain;
@@ -262,7 +264,7 @@ var
   This: TFormFooNoteMain;
 begin
   This := FormFooNoteMain;
-  if Name = 'StayOnTop' then begin
+  if (Name = AnyConfigName) or (Name = 'StayOnTop') then begin
     if Config.StayOnTop and (not AppState.ForceNotTop) then begin
       if This.FormStyle <> fsSystemStayOnTop then begin
         This.FormStyle := fsSystemStayOnTop;
@@ -273,7 +275,8 @@ begin
       end;
     end;
     This.ActionViewStayOnTop.Checked := Config.StayOnTop;
-  end else if Name = 'DockSide' then begin
+  end;
+  if (Name = AnyConfigName) or (Name = 'DockSide') then begin
     // When docked, the title bar is hidden. Show extra controls.
     This.ToolBarDocked.Visible := (Config.DockSide <> dsNone);
     This.ActionViewUndock.Enabled := (Config.DockSide <> dsNone);
@@ -289,11 +292,13 @@ begin
     if (I > 0) and (I < This.Height) then begin
       This.SplitterTreeNote.Top := I;
     end;
-  end else if Name = 'FeatureLevel' then begin
+  end;
+  if (Name = AnyConfigName) or (Name = 'FeatureLevel') then begin
     B := (Config.FeatureLevel >= flAdvanced);
     This.MenuSepMount.Visible := B;
     This.MenuItemMount.Visible := B;
-  end else if Name = 'ZenMode' then begin
+  end;
+  if (Name = AnyConfigName) or (Name = 'ZenMode') then begin
     B := Config.ZenMode;
     This.PanelTop.Visible := not B;
     This.PanelEdit.Visible := not B;
@@ -309,7 +314,8 @@ begin
     if not This.MemoNote.Focused and This.MemoNote.CanSetFocus then begin
       This.MemoNote.SetFocus;
     end;
-  end else if Name = 'AutoSaveInterval' then begin
+  end;
+  if (Name = AnyConfigName) or (Name = 'AutoSaveInterval') then begin
     I := Config.AutoSaveInterval;
     if I < 0 then begin
       I := 0;
@@ -333,13 +339,22 @@ begin
   Top := Width div 2;
 end;
 
-procedure TFormFooNoteMain.LoadAppState;
+procedure TFormFooNoteMain.LoadAppConfigState;
 var
   S: string;
 begin
-  S := JSONPropAppConfig.ReadString('AppState', '');
+  S := '{}';
+  try
+    S := ReadFileToString(ConfigFileName);
+  except
+    on e: EFileNotFoundException do S := '{}';
+  end;
   if not S.IsEmpty then begin
-    AppState.LoadFromJSON(S);
+    try
+      AppConfig.LoadFromJSONString(S);
+    except
+      on e: EParserError do ;
+    end;
   end;
 
   if AppState.MaxWidth >= 0 then begin
@@ -371,50 +386,56 @@ var
   S: string;
   I: integer;
 begin
-  DebugLn('Before loading AppConfig %d x %d', [Width, Height]);
-  S := JSONPropAppConfig.ReadString('AppConfig', '');
-  if not S.IsEmpty then begin
-    AppConfig.LoadFromJSON(S);
-  end; // Might update Height. But docking is updated asyncly.
-  DebugLn('After  loading AppConfig %d x %d', [Width, Height]);
+  //DebugLn('Before loading AppConfig %d x %d', [Width, Height]);
+  //S := JSONPropAppConfig.ReadString('AppConfig', '');
+  //if not S.IsEmpty then begin
+  //  AppConfig.LoadFromJSON(S);
+  //end; // Might update Height. But docking is updated asyncly.
+  //DebugLn('After  loading AppConfig %d x %d', [Width, Height]);
 
-  if AppConfig.DockSide = dsNone then begin
-    I := AppState.NonDockWidth;
-    if (I > 0) then begin
-      Width := I;
-    end;
-    I := AppState.NonDockHeight;
-    if (I > 0) then begin
-      Height := I;
-    end;
-    Reposition;
-    I := AppState.Left;
-    if (I > 0) then begin
-      Left := I;
-    end;
-    I := AppState.Top;
-    if (I > 0) then begin
-      Top := I;
-    end;
-  end;
+  //if AppConfig.DockSide = dsNone then begin
+  //  I := AppState.NonDockWidth;
+  //  if (I > 0) then begin
+  //    Width := I;
+  //  end;
+  //  I := AppState.NonDockHeight;
+  //  if (I > 0) then begin
+  //    Height := I;
+  //  end;
+  //  Reposition;
+  //  I := AppState.Left;
+  //  if (I > 0) then begin
+  //    Left := I;
+  //  end;
+  //  I := AppState.Top;
+  //  if (I > 0) then begin
+  //    Top := I;
+  //  end;
+  //end;
   LoadSplitterPosition;
 end;
 
 procedure TFormFooNoteMain.SaveConfigFile;
+var
+  S: string;
+  F: TFileStream;
 begin
   if AppState.ResetOnNextStartup then begin
-    DeleteFile(JSONPropAppConfig.JSONFileName);
+    DeleteFile(ConfigFileName);
   end else begin
-    if JSONPropAppConfig.ReadBoolean('RememberPosition', True) and (AppConfig.DockSide = dsNone) then begin
+    if AppState.RememberPosition and (AppConfig.DockSide = dsNone) then begin
       AppState.Left := Left;
       AppState.Top := Top;
     end;
     DebugLn(' TreeNoteSplitter.Top=%d %d,%d', [SplitterTreeNote.Top, AppState.NonDockNoteSplitTop,
       AppState.DockNoteSplitTop]);
-
-    JSONPropAppConfig.WriteString('AppConfig', AppConfig.ToJSON());
-    JSONPropAppConfig.WriteString('AppState', AppState.ToJSON());
-    JSONPropAppConfig.Save;
+    S := AppConfig.ToJSONString();
+    F := TFileStream.Create(ConfigFileName, fmOpenWrite or fmCreate);
+    try
+      F.Write(PChar(S)^, Length(S));
+    finally
+      FreeAndNil(F);
+    end;
   end;
 end;
 
@@ -545,12 +566,13 @@ end;
 
 procedure TFormFooNoteMain.FormCreate(Sender: TObject);
 begin
-  InitAppConfigLink;
-  LoadAppState; // Might affect InitPlatformSpecific
-  InitPlatformSpecific; // Might register OnConfigChange
-  InitOnConfigChange;   // After InitPlatformSpecific
-  LoadAppConfig;   // Affect registered OnConfigChange (InitOnConfigChange, InitPlatformSpecific)
-  InitRootBackend;
+  InitAppConfigLink; // Link Editor TFont to AppConfig's Font.
+  LoadAppConfigState; // Might affect InitPlatformSpecific (i18n)
+  InitPlatformSpecific; // Register OnConfigChange.
+  InitOnConfigChange;   // Register OnConfigChange.
+  // LoadAppConfig;   // Affect registered OnConfigChange (InitOnConfigChange, InitPlatformSpecific)
+  InitRootBackend; // Open the backend. Make NoteBackend APIs working.
+  AppConfig.NotifyAll; // Apply config and states.
 end;
 
 procedure TFormFooNoteMain.FormDestroy(Sender: TObject);

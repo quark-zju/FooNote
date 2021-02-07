@@ -6,7 +6,7 @@ unit Settings;
 interface
 
 uses
-  Classes, SysUtils, fpjsonrtti, Graphics, NoteTypes;
+  Classes, SysUtils, fpjsonrtti, Graphics, NoteTypes, FpJson;
 
 type
   TDockSide = (dsNone = 0, dsLeft = 1, dsRight = 2);
@@ -16,8 +16,10 @@ type
 
   TJsonSerializable = class(TPersistent)
   public
-    function ToJSON(): string;
-    procedure LoadFromJSON(json: string);
+    function ToJSON(): TJSONObject;
+    function ToJSONString(): TJSONStringType;
+    procedure LoadFromJSON(json: TJSONObject);
+    procedure LoadFromJSONString(json: TJSONStringType);
   end;
 
   // Internal config or temporary state.
@@ -33,6 +35,7 @@ type
     FMaxWidth: longint;
     FLocale: string;
     FNodeShowId: boolean;
+    FRememberPosition: boolean;
   public
     ForceNotTop: boolean;
     MovingPreview: boolean;
@@ -60,6 +63,7 @@ type
     FFeatureLevel: TFeatureLevel;
     FZenMode: boolean;
     FAutoSaveInterval: integer;
+    FState: TAppState;
     Callbacks: array of TConfigChangeCallback;
 
     procedure RunCallbacks(Name: string);
@@ -70,6 +74,7 @@ type
     procedure SetAutoSaveInterval(Value: integer);
   public
     procedure RegisterOnChangeCallback(callback: TConfigChangeCallback);
+    procedure NotifyAll;
   published
     property StayOnTop: boolean read FStayOnTop write SetStayOnTop;
     property DockSide: TDockSide read FDockSide write SetDockSide;
@@ -79,9 +84,13 @@ type
     property AutoSaveInterval: integer read FAutoSaveInterval write SetAutoSaveInterval;
   end;
 
+const
+  AnyConfigName = '_any_';
+
 var
   AppConfig: TAppConfig;
-  AppState: TAppState;
+  AppState: TAppState;   // Part of AppConfig
+
 
 implementation
 
@@ -90,7 +99,24 @@ begin
   Insert(Callback, Callbacks, 0);
 end;
 
-function TJsonSerializable.ToJSON(): string;
+procedure TAppConfig.NotifyAll;
+begin
+  RunCallbacks(AnyConfigName);
+end;
+
+function TJsonSerializable.ToJSON(): TJSONObject;
+var
+  Streamer: TJSONStreamer;
+begin
+  Streamer := TJSONStreamer.Create(nil);
+  try
+    Result := Streamer.ObjectToJSON(Self);
+  finally
+    FreeAndNil(Streamer);
+  end;
+end;
+
+function TJsonSerializable.ToJSONString(): TJSONStringType;
 var
   Streamer: TJSONStreamer;
 begin
@@ -102,7 +128,19 @@ begin
   end;
 end;
 
-procedure TJsonSerializable.LoadFromJSON(json: string);
+procedure TJsonSerializable.LoadFromJSON(json: TJSONObject);
+var
+  D: TJSONDeStreamer;
+begin
+  D := TJSONDeStreamer.Create(nil);
+  try
+    D.JSONToObject(json, self);
+  finally
+    FreeAndNil(D);
+  end;
+end;
+
+procedure TJsonSerializable.LoadFromJSONString(json: TJSONStringType);
 var
   D: TJSONDeStreamer;
 begin
@@ -158,11 +196,17 @@ end;
 
 
 initialization
-  AppConfig := TAppConfig.Create;
   AppState := TAppState.Create;
+  AppConfig := TAppConfig.Create;
+  AppConfig.FState := AppState;
+
+  // Defaults
+  AppState.FMaxWidth := 600;
+  AppConfig.AutoSaveInterval := 30;
+  AppState.RememberPosition := True;
 
 finalization
-  FreeAndNil(AppConfig);
   FreeAndNil(AppState);
-
+  AppConfig.FState := nil;
+  FreeAndNil(AppConfig);
 end.
