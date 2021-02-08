@@ -8,6 +8,7 @@ use crate::backend::MultiplexBackend;
 use crate::clipboard;
 use crate::search::Search;
 use backend::MemBackend;
+use log::Level::{Debug, Error, Info, Trace, Warn};
 use notebackend_types::InsertPos;
 use notebackend_types::TreeBackend;
 use once_cell::sync::Lazy;
@@ -500,37 +501,51 @@ pub extern "C" fn notebackend_log_max_level() -> i32 {
     }
 }
 
+// Exported "log". Set both "target" and "module" to TARGET.
+macro_rules! export_log {
+    ($lvl:expr, $($arg:tt)+) => ({
+        let lvl = $lvl;
+        if lvl <= ::log::STATIC_MAX_LEVEL && lvl <= ::log::max_level() {
+            ::log::__private_api_log(
+                ::log::__log_format_args!($($arg)+),
+                lvl,
+                &(TARGET, TARGET, ::log::__log_file!(), ::log::__log_line!()),
+            );
+        }
+    });
+}
+
 #[no_mangle]
 pub extern "C" fn notebackend_log_error() {
     if let Ok(s) = stack::pop::<String>() {
-        log::error!(target: TARGET, "{}", s);
+        export_log!(Error, "{}", s)
     }
 }
 
 #[no_mangle]
 pub extern "C" fn notebackend_log_warn() {
     if let Ok(s) = stack::pop::<String>() {
-        log::warn!(target: TARGET, "{}", s);
+        export_log!(Warn, "{}", s)
     }
 }
 
 #[no_mangle]
 pub extern "C" fn notebackend_log_info() {
     if let Ok(s) = stack::pop::<String>() {
-        log::info!(target: TARGET, "{}", s);
+        export_log!(Info, "{}", s)
     }
 }
 
 #[no_mangle]
 pub extern "C" fn notebackend_log_debug() {
     if let Ok(s) = stack::pop::<String>() {
-        log::debug!(target: TARGET, "{}", s);
+        export_log!(Debug, "{}", s)
     }
 }
 
 #[no_mangle]
 pub extern "C" fn notebackend_log_trace() {
     if let Ok(s) = stack::pop::<String>() {
-        log::trace!(target: TARGET, "{}", s);
+        export_log!(Trace, "{}", s)
     }
 }
