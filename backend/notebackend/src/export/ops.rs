@@ -339,7 +339,7 @@ pub extern "C" fn notebackend_persist_async() -> i32 {
     errno::OK
 }
 
-/// () -> (errno: int)
+/// () -> (message: str, errno: int)
 /// - EINVAL: No pending thread. Call notebackend_persist_async().
 /// - EWOULDBLOCK: Result is not ready yet.
 /// - OK: Result is returned as `errno`.
@@ -354,10 +354,11 @@ pub extern "C" fn notebackend_persist_try_wait() -> i32 {
                     errno::EWOULDBLOCK
                 }
                 Some(r) => {
-                    let errno = match r {
-                        Err(e) => errno::from_io_error(&e),
-                        Ok(_) => errno::OK,
+                    let (message, errno) = match r {
+                        Err(e) => (e.to_string(), errno::from_io_error(&e)),
+                        Ok(_) => ("".to_string(), errno::OK),
                     };
+                    stack::push(message);
                     stack::push(errno);
                     errno::OK
                 }
