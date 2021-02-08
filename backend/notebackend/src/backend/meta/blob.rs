@@ -1,10 +1,14 @@
 //! Blob backend. Backend that can be serialized into and deserialized from
 //! a blob.
 
-use crate::backend::*;
 use crate::manifest::Manifest;
+use notebackend_types::Id;
+use notebackend_types::InsertPos;
+use notebackend_types::Mtime;
+use notebackend_types::TreeBackend;
 use serde::Deserialize;
 use serde::Serialize;
+use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::io;
 use std::io::Read;

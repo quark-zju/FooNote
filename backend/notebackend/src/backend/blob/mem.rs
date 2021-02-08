@@ -44,7 +44,7 @@ mod tests {
     use super::*;
     use crate::backend::meta::blob::TRASH_ID;
     use crate::backend::tests::*;
-    use crate::backend::TreeBackend;
+    use notebackend_types::TreeBackend;
 
     #[test]
     fn test_basic() {

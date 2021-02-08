@@ -1,8 +1,11 @@
-//! Clipboard operations (copy, paste) for backends.
+//! Utilities to make clipboard operations (copy, paste) on backends easier.
+//! For example, serialize selected nodes into a binary format.
 
 use crate::backend::blob::MemBackend;
+pub use notebackend_types::BackendId;
 use notebackend_types::InsertPos;
 use notebackend_types::TreeBackend;
+use notebackend_types::TreeMeta;
 use std::io::Result;
 
 /// Copy copyable selected ids and descendants to a temporary backend.
@@ -20,7 +23,7 @@ where
             String::new(),
         )?;
         // Heads are enough."copy" is recursive.
-        crate::backend::copy_replace(src, id, &mut dst, dst_id, None)?;
+        copy_replace(src, id, &mut dst, dst_id, None)?;
     }
 
     Ok(dst)
@@ -40,11 +43,59 @@ where
     for src_id in src.get_children(src.get_root_id())? {
         let new_dst_id = dst.insert(dst_id, pos, String::new(), String::new())?;
         ids.push(new_dst_id);
-        crate::backend::copy_replace(src, src_id, dst, new_dst_id, Some(&mut ids))?;
+        copy_replace(src, src_id, dst, new_dst_id, Some(&mut ids))?;
         pos = InsertPos::After;
         dst_id = new_dst_id;
     }
     Ok(ids)
+}
+
+/// Replace destination with the source, recursively.
+/// The type signature ensures src and dst are different.
+/// This is used by multiplex backend to implement moving.
+pub(crate) fn copy_replace<S: TreeBackend, D: TreeBackend>(
+    src: &S,
+    src_id: S::Id,
+    dst: &mut D,
+    dst_id: D::Id,
+    mut dst_new_ids: Option<&mut Vec<D::Id>>,
+) -> Result<()> {
+    let text = src.get_text(src_id)?;
+    let meta = src.get_raw_meta(src_id)?;
+    dst.set_text(dst_id, text.to_string())?;
+    dst.set_raw_meta(dst_id, meta.to_string())?;
+
+    // Ensure that they have the same number of children.
+    let src_children: Vec<_> = src
+        .get_children(src_id)?
+        .into_iter()
+        .filter(|&c| src.is_copyable(c).unwrap_or(true))
+        .collect();
+    let mut dst_children = dst.get_children(dst_id)?;
+    while src_children.len() < dst_children.len() {
+        if let Some(id) = dst_children.pop() {
+            dst.remove(id)?;
+        }
+    }
+    while src_children.len() > dst_children.len() {
+        let id = dst.insert(
+            dst_id,
+            InsertPos::Append,
+            Default::default(),
+            Default::default(),
+        )?;
+        if let Some(ids) = dst_new_ids.as_deref_mut() {
+            ids.push(id);
+        }
+        dst_children.push(id);
+    }
+
+    // Copy recursively.
+    for (src_id, dst_id) in src_children.into_iter().zip(dst_children.into_iter()) {
+        copy_replace(src, src_id, dst, dst_id, dst_new_ids.as_deref_mut())?;
+    }
+
+    Ok(())
 }
 
 #[cfg(test)]

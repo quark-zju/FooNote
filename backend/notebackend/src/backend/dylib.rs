@@ -1,9 +1,9 @@
 //! Rust library backend. Dynamically load backends at runtime can have other
 //! dependencies.
 
-use super::TreeBackend;
 use libloading::Library;
 use libloading::Symbol;
+use notebackend_types::TreeBackend;
 use notebackend_types::{CreateBackendFunc, Id};
 use std::io;
 pub struct DylibBackend {

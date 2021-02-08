@@ -1,8 +1,8 @@
-use super::Id;
 use crate::backend::meta::manifest::ManifestBasedBackend;
 use crate::backend::meta::manifest::TextIO;
 use crate::manifest::min_next_id;
 use crate::manifest::Manifest;
+use notebackend_types::Id;
 use once_cell::sync::Lazy;
 use parking_lot::lock_api::RwLockUpgradableReadGuard;
 use parking_lot::Mutex;

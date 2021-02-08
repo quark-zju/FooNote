@@ -34,7 +34,7 @@ macro_rules! pop_fid {
             Err(i) => return i,
             Ok(v) => v,
         };
-        let backend_id: crate::backend::BackendId = match stack::pop() {
+        let backend_id: ::notebackend_types::BackendId = match stack::pop() {
             Err(i) => return i,
             Ok(v) => v,
         };

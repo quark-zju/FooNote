@@ -1,12 +1,13 @@
 //! Multiplex backend. Mixing multiple backends together.
 
 use super::null::NullBackend;
-use super::BackendId;
-use super::Id;
-use super::InsertPos;
-use super::Mtime;
-use super::TreeBackend;
+use crate::clipboard;
 use notebackend_types::meta::TreeMeta;
+use notebackend_types::BackendId;
+use notebackend_types::Id;
+use notebackend_types::InsertPos;
+use notebackend_types::Mtime;
+use notebackend_types::TreeBackend;
 use std::collections::HashMap;
 use std::io;
 use std::io::Result;
@@ -111,7 +112,7 @@ impl TreeBackend for MultiplexBackend {
                 }
                 // Do the move.
                 let dst_id = dst.insert(dest_id.1, pos, String::new(), String::new())?;
-                super::copy_replace(&src, id.1, &mut dst, dst_id, None)?;
+                clipboard::copy_replace(&src, id.1, &mut dst, dst_id, None)?;
                 src.remove(id.1)?;
                 Ok((dest_id.0, dst_id))
             })();

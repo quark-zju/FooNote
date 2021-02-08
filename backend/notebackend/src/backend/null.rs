@@ -1,8 +1,9 @@
 //! Null backend. Useful as "umounted" backend in a multiplex backend.
 
-use super::Id;
-use super::InsertPos;
-use super::TreeBackend;
+use notebackend_types::Id;
+use notebackend_types::InsertPos;
+use notebackend_types::Mtime;
+use notebackend_types::TreeBackend;
 use std::borrow::Cow;
 use std::io;
 use std::io::Result;
@@ -27,7 +28,7 @@ impl TreeBackend for NullBackend {
         error()
     }
 
-    fn get_mtime(&self, id: Id) -> Result<super::Mtime> {
+    fn get_mtime(&self, id: Id) -> Result<Mtime> {
         error()
     }
 
@@ -42,7 +43,7 @@ impl TreeBackend for NullBackend {
     fn insert(
         &mut self,
         dest_id: Self::Id,
-        pos: super::InsertPos,
+        pos: InsertPos,
         text: String,
         meta: String,
     ) -> Result<Self::Id> {

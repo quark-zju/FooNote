@@ -63,7 +63,7 @@ impl BlobBackend<FileBlobIo> {
 mod tests {
     use super::*;
     use crate::backend::tests::*;
-    use crate::backend::TreeBackend;
+    use notebackend_types::TreeBackend;
 
     #[test]
     fn test_basic() {

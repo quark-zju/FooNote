@@ -5,64 +5,15 @@ pub(crate) mod meta;
 pub(crate) mod multiplex;
 pub(crate) mod null;
 
-pub use notebackend_types::BackendId;
-use notebackend_types::TreeMeta;
-use notebackend_types::{Id, InsertPos, Mtime, TreeBackend};
-use std::borrow::Cow;
-use std::io::Result;
-
-/// Replace destination with the source, recursively.
-/// The type signature ensures src and dst are different.
-/// This is used by multiplex backend to implement moving.
-pub(crate) fn copy_replace<S: TreeBackend, D: TreeBackend>(
-    src: &S,
-    src_id: S::Id,
-    dst: &mut D,
-    dst_id: D::Id,
-    mut dst_new_ids: Option<&mut Vec<D::Id>>,
-) -> Result<()> {
-    let text = src.get_text(src_id)?;
-    let meta = src.get_raw_meta(src_id)?;
-    dst.set_text(dst_id, text.to_string())?;
-    dst.set_raw_meta(dst_id, meta.to_string())?;
-
-    // Ensure that they have the same number of children.
-    let src_children: Vec<_> = src
-        .get_children(src_id)?
-        .into_iter()
-        .filter(|&c| src.is_copyable(c).unwrap_or(true))
-        .collect();
-    let mut dst_children = dst.get_children(dst_id)?;
-    while src_children.len() < dst_children.len() {
-        if let Some(id) = dst_children.pop() {
-            dst.remove(id)?;
-        }
-    }
-    while src_children.len() > dst_children.len() {
-        let id = dst.insert(
-            dst_id,
-            InsertPos::Append,
-            Default::default(),
-            Default::default(),
-        )?;
-        if let Some(ids) = dst_new_ids.as_deref_mut() {
-            ids.push(id);
-        }
-        dst_children.push(id);
-    }
-
-    // Copy recursively.
-    for (src_id, dst_id) in src_children.into_iter().zip(dst_children.into_iter()) {
-        copy_replace(src, src_id, dst, dst_id, dst_new_ids.as_deref_mut())?;
-    }
-
-    Ok(())
-}
-
 #[cfg(test)]
 pub(crate) mod tests {
-    use super::*;
     use crate::backend::blob::MemBackend;
+    use crate::clipboard::copy_replace;
+    use notebackend_types::Id;
+    use notebackend_types::InsertPos;
+    use notebackend_types::Mtime;
+    use notebackend_types::TreeBackend;
+    use std::io;
 
     // Abstract backend testing.
     pub(crate) trait TestTreeBackend: TreeBackend {
@@ -249,7 +200,7 @@ pub(crate) mod tests {
         }
 
         /// Check various basic APIs.
-        fn check_generic(&mut self) -> Result<()> {
+        fn check_generic(&mut self) -> io::Result<()> {
             let b = self;
             let root_id = b.get_root_id();
             // root
