@@ -491,13 +491,18 @@ const TARGET: &str = "frontend";
 /// Return the current max log level.
 #[no_mangle]
 pub extern "C" fn notebackend_log_max_level() -> i32 {
-    match log::max_level() {
-        log::LevelFilter::Off => 0,
-        log::LevelFilter::Error => 1,
-        log::LevelFilter::Warn => 2,
-        log::LevelFilter::Info => 3,
-        log::LevelFilter::Debug => 4,
-        log::LevelFilter::Trace => 5,
+    if log::log_enabled!(target: TARGET, Trace) {
+        5
+    } else if log::log_enabled!(target: TARGET, Debug) {
+        4
+    } else if log::log_enabled!(target: TARGET, Info) {
+        3
+    } else if log::log_enabled!(target: TARGET, Warn) {
+        2
+    } else if log::log_enabled!(target: TARGET, Error) {
+        1
+    } else {
+        0
     }
 }
 
