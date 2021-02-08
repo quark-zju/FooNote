@@ -6,6 +6,8 @@ use notebackend_types::InsertPos;
 use notebackend_types::Mtime;
 use notebackend_types::TreeBackend;
 use std::io;
+use std::sync::Arc;
+use std::sync::Mutex;
 
 /// APIs about how to operate on "text".
 pub trait TextIO: Send + Sync + 'static {
@@ -13,6 +15,14 @@ pub trait TextIO: Send + Sync + 'static {
     fn set_raw_text(&mut self, id: Id, text: String) -> io::Result<()>;
     fn remove_raw_text(&mut self, id: Id) -> io::Result<()>;
     fn persist_with_manifest(&mut self, manifest: &mut Manifest) -> io::Result<()>;
+    fn persist_async_with_manifest(
+        &mut self,
+        manifest: &mut Manifest,
+        result: Arc<Mutex<Option<io::Result<()>>>>,
+    ) {
+        let r = self.persist_with_manifest(manifest);
+        *result.lock().unwrap() = Some(r);
+    }
 }
 /// Manifest-based tree backend.
 pub struct ManifestBasedBackend<T> {
@@ -196,6 +206,18 @@ impl<T: TextIO> TreeBackend for ManifestBasedBackend<T> {
             self.text_io.remove_raw_text(id)?;
         }
         self.text_io.persist_with_manifest(&mut self.manifest)
+    }
+
+    fn persist_async(&mut self, result: Arc<Mutex<Option<io::Result<()>>>>) {
+        let unreachable = self.manifest.remove_unreachable();
+        for id in unreachable {
+            if let Err(e) = self.text_io.remove_raw_text(id) {
+                *result.lock().unwrap() = Some(Err(e));
+                return;
+            }
+        }
+        self.text_io
+            .persist_async_with_manifest(&mut self.manifest, result);
     }
 
     fn touch(&mut self, id: Self::Id) -> io::Result<()> {

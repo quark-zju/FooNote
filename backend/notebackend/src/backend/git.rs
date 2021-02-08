@@ -21,6 +21,9 @@ use std::process::Child;
 use std::process::Command;
 use std::process::ExitStatus;
 use std::process::Stdio;
+use std::sync::Arc;
+use std::sync::Mutex as StdMutex;
+use std::thread;
 use std::time::SystemTime;
 use std::time::UNIX_EPOCH;
 use tempfile::NamedTempFile;
@@ -36,17 +39,26 @@ use tempfile::NamedTempFile;
 pub type GitBackend = ManifestBasedBackend<GitTextIO>;
 
 pub struct GitTextIO {
-    remote_name: String,
-    repo_path: PathBuf,
-    branch_name: String,
+    info: GitInfo,
     // value of texts: Some((content, modified)) | None (deleted)
     texts: RwLock<HashMap<Id, Option<(String, bool)>>>,
     object_reader: Mutex<Option<Child>>,
-    base_commit: String,
     user: Lazy<String>,
     email: Lazy<String>,
     // for "changed" detection.
     last_manifest: Manifest,
+    // Threads for persist_async() to join.
+    persist_threads: Vec<thread::JoinHandle<()>>,
+}
+
+/// Information about the Git repository.
+/// Can be used to perform "push" without locking "GitTextIO".
+#[derive(Clone)]
+struct GitInfo {
+    remote_name: String,
+    repo_path: PathBuf,
+    branch_name: String,
+    base_commit: String,
 }
 
 const MANIFEST_NAME: &str = "manifest.json";
@@ -86,9 +98,36 @@ impl TextIO for GitTextIO {
 
     fn persist_with_manifest(&mut self, manifest: &mut Manifest) -> io::Result<()> {
         self.commit(manifest)?;
-        self.push()?;
         self.texts.write().clear();
+        self.info.push()?;
         Ok(())
+    }
+
+    fn persist_async_with_manifest(
+        &mut self,
+        manifest: &mut Manifest,
+        result: Arc<StdMutex<Option<io::Result<()>>>>,
+    ) {
+        let sync_result = (|| -> io::Result<()> {
+            self.commit(manifest)?;
+            self.texts.write().clear();
+            Ok(())
+        })();
+        if sync_result.is_err() {
+            *result.lock().unwrap() = Some(sync_result);
+            return;
+        }
+        let info = self.info.clone();
+        let previous_threads: Vec<_> = self.persist_threads.drain(..).collect();
+        let handler = thread::spawn(move || {
+            let async_result = info.push();
+            *result.lock().unwrap() = Some(async_result);
+            // Clean up previous threads.
+            for t in previous_threads {
+                let _ = t.join();
+            }
+        });
+        self.persist_threads.push(handler);
     }
 }
 
@@ -103,19 +142,20 @@ impl GitBackend {
         let branch_name = hash.unwrap_or("master").to_string();
         let base_commit = format!("{}/{}", &remote_name, &branch_name);
         let mut text_io = GitTextIO {
-            remote_name,
-            repo_path,
-            branch_name,
-            base_commit,
+            info: GitInfo {
+                remote_name,
+                repo_path,
+                branch_name,
+                base_commit,
+            },
             texts: Default::default(),
             object_reader: Default::default(),
-            user: Lazy::new(|| git_config("user.name").unwrap_or_else(|| "FooNote".to_string())),
-            email: Lazy::new(|| {
-                git_config("user.email").unwrap_or_else(|| "foonote@example.com".to_string())
-            }),
+            user: Lazy::new(git_config_user),
+            email: Lazy::new(git_config_email),
             last_manifest: Manifest::default(),
+            persist_threads: Default::default(),
         };
-        text_io.fetch()?;
+        text_io.info.fetch()?;
         let manifest = text_io.load_manifest()?;
         Ok(Self::from_manifest_text_io(manifest, text_io))
     }
@@ -127,7 +167,7 @@ impl GitBackend {
     }
 }
 
-impl GitTextIO {
+impl GitInfo {
     /// Fetch the latest commit from the remote.
     /// NOTE: `self.base_commit` is not reset to the fetched commit!
     fn fetch(&self) -> io::Result<()> {
@@ -144,6 +184,39 @@ impl GitTextIO {
         Ok(())
     }
 
+    /// Push the local changes to remote.
+    fn push(&self) -> io::Result<()> {
+        self.run_git(&[
+            "push",
+            self.remote_name.as_str(),
+            &format!(
+                "{}:{}",
+                self.base_commit.as_str(),
+                self.branch_name.as_str()
+            ),
+        ])?;
+        log::info!(
+            "Pushed {} to {}/{}",
+            self.base_commit.as_str(),
+            self.remote_name.as_str(),
+            self.branch_name.as_str()
+        );
+        Ok(())
+    }
+
+    fn run_git(&self, args: &[&str]) -> io::Result<()> {
+        let status = git_command()
+            .arg("--git-dir")
+            .arg(&self.repo_path)
+            .current_dir(&self.repo_path)
+            .args(args)
+            .status()?;
+        check_status(status, || format!("running {:?}", args))?;
+        Ok(())
+    }
+}
+
+impl GitTextIO {
     /// Path for the text object.
     fn text_path(&self, id: Id) -> String {
         format!("notes/{:x}/{:x}", id / 256, id % 256)
@@ -175,20 +248,9 @@ impl GitTextIO {
         Ok(manifest)
     }
 
-    fn run_git(&self, args: &[&str]) -> io::Result<()> {
-        let status = git_command()
-            .arg("--git-dir")
-            .arg(&self.repo_path)
-            .current_dir(&self.repo_path)
-            .args(args)
-            .status()?;
-        check_status(status, || format!("running {:?}", args))?;
-        Ok(())
-    }
-
     /// Read a utf-8 file. Return (oid, text).
     fn read_path_utf8(&self, file_path: &str) -> io::Result<(HexOid, String)> {
-        let spec = format!("{}:{}", &self.base_commit, file_path);
+        let spec = format!("{}:{}", &self.info.base_commit, file_path);
         let (oid, data) = self.read_object(&spec, Some("blob"))?;
         Ok((oid, String::from_utf8_lossy(&data).into_owned()))
     }
@@ -203,8 +265,8 @@ impl GitTextIO {
         if object_reader.is_none() {
             let child = git_command()
                 .arg("--git-dir")
-                .arg(&self.repo_path)
-                .current_dir(&self.repo_path)
+                .arg(&self.info.repo_path)
+                .current_dir(&self.info.repo_path)
                 .args(&["cat-file", "--batch"])
                 .stdin(Stdio::piped())
                 .stdout(Stdio::piped())
@@ -325,15 +387,15 @@ impl GitTextIO {
         }
 
         let payload = self.fast_import_payload(manifest);
-        let mut tmp_file = NamedTempFile::new_in(&self.repo_path)?;
+        let mut tmp_file = NamedTempFile::new_in(&self.info.repo_path)?;
         tmp_file.write_all(&payload.as_bytes())?;
         tmp_file.flush()?;
         let stdin_file = File::open(tmp_file.path())?;
 
         let mut process = git_command()
             .arg("--git-dir")
-            .arg(&self.repo_path)
-            .current_dir(&self.repo_path)
+            .arg(&self.info.repo_path)
+            .current_dir(&self.info.repo_path)
             .args(&["fast-import", "--quiet", "--force"])
             .stdin(Stdio::from(stdin_file))
             .stdout(Stdio::piped())
@@ -354,29 +416,9 @@ impl GitTextIO {
             );
         }
         log::info!("Committed: {}", &commit_oid);
-        self.base_commit = commit_oid.clone();
+        self.info.base_commit = commit_oid.clone();
         self.last_manifest = manifest.clone();
         Ok(Some(commit_oid))
-    }
-
-    /// Push the local changes to remote.
-    fn push(&self) -> io::Result<()> {
-        self.run_git(&[
-            "push",
-            self.remote_name.as_str(),
-            &format!(
-                "{}:{}",
-                self.base_commit.as_str(),
-                self.branch_name.as_str()
-            ),
-        ])?;
-        log::info!(
-            "Pushed {} to {}/{}",
-            self.base_commit.as_str(),
-            self.remote_name.as_str(),
-            self.branch_name.as_str()
-        );
-        Ok(())
     }
 
     /// Fast-import payload for commit().
@@ -401,7 +443,7 @@ impl GitTextIO {
         payload += &blob;
 
         // Prepare the commit object.
-        let local_ref_name = format!("next-{}-{}", &self.remote_name, &self.branch_name);
+        let local_ref_name = format!("next-{}-{}", &self.info.remote_name, &self.info.branch_name);
         let when = format!("{} +0000", epoch());
         let file_modifications = {
             let mut modifications = vec![fast_import_file_modify(MANIFEST_NAME, manifest_id)];
@@ -444,7 +486,7 @@ impl GitTextIO {
             when = when,
             message_len = message.len(),
             message = &message,
-            from = &self.base_commit,
+            from = &self.info.base_commit,
             files = file_modifications.concat(),
         );
         payload += &commit;
@@ -461,6 +503,9 @@ impl Drop for GitTextIO {
             child.stdin = None;
             // Wait for the process to end.
             let _ = child.wait();
+        }
+        for t in self.persist_threads.drain(..) {
+            let _ = t.join();
         }
     }
 }
@@ -620,6 +665,14 @@ fn fast_import_file_modify(path: &str, id: Id) -> String {
 
 fn fast_import_file_delete(path: &str) -> String {
     format!("D {}\n", path)
+}
+
+fn git_config_user() -> String {
+    git_config("user.name").unwrap_or_else(|| "FooNote".to_string())
+}
+
+fn git_config_email() -> String {
+    git_config("user.email").unwrap_or_else(|| "foonote@example.com".to_string())
 }
 
 #[cfg(test)]
