@@ -2,8 +2,8 @@ use crate::backend::meta::manifest::ManifestBasedBackend;
 use crate::backend::meta::manifest::TextIO;
 use crate::manifest::min_next_id;
 use crate::manifest::Manifest;
+use git_cmd::GitCommand;
 use notebackend_types::Id;
-use once_cell::sync::Lazy;
 use parking_lot::lock_api::RwLockUpgradableReadGuard;
 use parking_lot::Mutex;
 use parking_lot::RwLock;
@@ -18,8 +18,6 @@ use std::io::Write;
 use std::path::Path;
 use std::path::PathBuf;
 use std::process::Child;
-use std::process::Command;
-use std::process::ExitStatus;
 use std::process::Stdio;
 use std::sync::Arc;
 use std::sync::Mutex as StdMutex;
@@ -43,8 +41,6 @@ pub struct GitTextIO {
     // value of texts: Some((content, modified)) | None (deleted)
     texts: RwLock<HashMap<Id, Option<(String, bool)>>>,
     object_reader: Mutex<Option<Child>>,
-    user: Lazy<String>,
-    email: Lazy<String>,
     // for "changed" detection.
     last_manifest: Manifest,
     // Threads for persist_async() to join.
@@ -158,8 +154,6 @@ impl GitBackend {
             info: GitInfo::new(repo_path, remote_name, branch_name),
             texts: Default::default(),
             object_reader: Default::default(),
-            user: Lazy::new(git_config_user),
-            email: Lazy::new(git_config_email),
             last_manifest: Manifest::default(),
             persist_threads: Default::default(),
         };
@@ -233,14 +227,12 @@ impl GitInfo {
         Ok(())
     }
 
+    fn git(&self) -> GitCommand {
+        GitCommand::at(&self.repo_path)
+    }
+
     fn run_git(&self, args: &[&str]) -> io::Result<()> {
-        let status = git_command()
-            .arg("--git-dir")
-            .arg(&self.repo_path)
-            .current_dir(&self.repo_path)
-            .args(args)
-            .status()?;
-        check_status(status, || format!("running {:?}", args))?;
+        let _out = GitCommand::at(&self.repo_path).args(args).output()?;
         Ok(())
     }
 }
@@ -292,13 +284,11 @@ impl GitTextIO {
     ) -> io::Result<(HexOid, Vec<u8>)> {
         let mut object_reader = self.object_reader.lock();
         if object_reader.is_none() {
-            let child = git_command()
-                .arg("--git-dir")
-                .arg(&self.info.repo_path)
-                .current_dir(&self.info.repo_path)
-                .args(&["cat-file", "--batch"])
+            let child = self
+                .info
+                .git()
                 .stdin(Stdio::piped())
-                .stdout(Stdio::piped())
+                .args(&["cat-file", "--batch"])
                 .spawn()?;
             *object_reader = Some(child);
         }
@@ -421,13 +411,12 @@ impl GitTextIO {
         tmp_file.flush()?;
         let stdin_file = File::open(tmp_file.path())?;
 
-        let mut process = git_command()
-            .arg("--git-dir")
-            .arg(&self.info.repo_path)
-            .current_dir(&self.info.repo_path)
-            .args(&["fast-import", "--quiet", "--force"])
+        let args = &["fast-import", "--quiet", "--force"];
+        let mut process = self
+            .info
+            .git()
             .stdin(Stdio::from(stdin_file))
-            .stdout(Stdio::piped())
+            .args(args)
             .spawn()?;
 
         let stdout = process.stdout.as_mut().expect("piped stdin");
@@ -435,7 +424,14 @@ impl GitTextIO {
         stdout.read_to_string(&mut commit_oid)?;
 
         let status = process.wait()?;
-        check_status(status, || "fastimport failed".to_string())?;
+        if !status.success() {
+            let code = status.code().unwrap_or_default();
+            log::warn!("fastimport failed (exit code: {})", code);
+            return Err(io::Error::new(
+                io::ErrorKind::Other,
+                format!("fastimport failed (exit code: {})", code),
+            ));
+        }
         drop(tmp_file);
 
         let commit_oid = commit_oid.trim().to_string();
@@ -510,8 +506,8 @@ impl GitTextIO {
             ),
             ref_name = local_ref_name,
             commit_id = commit_id,
-            name = self.user.as_str(),
-            email = self.email.as_str(),
+            name = git_cmd::GIT_USER.as_str(),
+            email = git_cmd::GIT_EMAIL.as_str(),
             when = when,
             message_len = message.len(),
             message = &message,
@@ -547,40 +543,12 @@ fn epoch() -> u64 {
     d.as_secs()
 }
 
-fn git_command() -> Command {
-    Command::new("git")
-}
-
-fn git_config(key: &str) -> Option<String> {
-    let output = git_command()
-        .args(&["config", "--get", key])
-        .output()
-        .ok()?;
-    if output.status.success() {
-        let s: String = String::from_utf8_lossy(&output.stdout).trim().into();
-        if s.is_empty() {
-            // Normalize empty strings to `None` values.
-            None
-        } else {
-            Some(s)
-        }
-    } else {
-        None
-    }
-}
-
 /// Create a remote pointing to the url on demand. Return the remote name.
 fn prepare_remote_name(repo_path: &Path, url: &str) -> io::Result<String> {
     // origin  https://github.com/quark-zju/foonote (fetch)
-    let output = git_command()
-        .arg("--git-dir")
-        .arg(repo_path)
-        .current_dir(repo_path)
-        .args(&["remote", "-v"])
-        .output()?;
+    let text = GitCommand::at(repo_path).args(&["remote", "-v"]).output()?;
 
     // Check existing remote names.
-    let text = String::from_utf8_lossy(&output.stdout);
     let mut taken_names = HashSet::new();
     for line in text.lines() {
         let split: Vec<&str> = line.split('\t').collect();
@@ -607,20 +575,15 @@ fn prepare_remote_name(repo_path: &Path, url: &str) -> io::Result<String> {
         .unwrap();
 
     // Create the new remote name.
-    let status = git_command()
-        .arg("--git-dir")
-        .arg(repo_path)
-        .current_dir(repo_path)
+    let _out = GitCommand::at(repo_path)
         .args(&["remote", "add", remote_name.as_str(), url])
-        .status()?;
-    check_status(status, || {
-        format!(
+        .context(format!(
             "create remote {} for url {} repo at {}",
             remote_name,
             url,
             repo_path.display()
-        )
-    })?;
+        ))
+        .output()?;
 
     Ok(remote_name.to_string())
 }
@@ -658,24 +621,12 @@ fn prepare_bare_staging_repo(cache_dir: Option<&Path>) -> io::Result<PathBuf> {
         return Ok(path);
     }
     std::fs::create_dir_all(&path)?;
-    let status = git_command()
-        .args(&["init", "--bare"])
-        .arg(&path)
-        .status()?;
-    check_status(status, || format!("create bare repo at {}", path.display()))?;
+    let path_str = path.display().to_string();
+    GitCommand::default()
+        .args(&["init", "--bare", path_str.as_str()])
+        .run()?;
     log::info!("staging repo: {}", path.display());
     Ok(path)
-}
-
-fn check_status(status: ExitStatus, msg: impl Fn() -> String) -> io::Result<()> {
-    if !status.success() {
-        Err(io::Error::new(
-            io::ErrorKind::Other,
-            format!("git exited {}: {}", status.code().unwrap_or(-1), msg()),
-        ))
-    } else {
-        Ok(())
-    }
 }
 
 const ID_MARK_OFFSET: Id = 1;
@@ -697,12 +648,176 @@ fn fast_import_file_delete(path: &str) -> String {
     format!("D {}\n", path)
 }
 
-fn git_config_user() -> String {
-    git_config("user.name").unwrap_or_else(|| "FooNote".to_string())
-}
+mod git_cmd {
+    use once_cell::sync::Lazy;
+    use std::io;
+    use std::path::Path;
+    use std::path::PathBuf;
+    use std::process::Child;
+    use std::process::Command;
+    use std::process::Stdio;
 
-fn git_config_email() -> String {
-    git_config("user.email").unwrap_or_else(|| "foonote@example.com".to_string())
+    static GIT: &str = "git";
+    pub(crate) static GIT_USER: Lazy<String> = Lazy::new(git_config_user);
+    pub(crate) static GIT_EMAIL: Lazy<String> = Lazy::new(git_config_email);
+
+    /// Wrapper of `Command` with easier logging / debugging.
+    pub(crate) struct GitCommand {
+        git_dir: Option<PathBuf>,
+        args: Vec<String>,
+        context: Option<String>,
+        stdin: Stdio,
+    }
+
+    impl Default for GitCommand {
+        fn default() -> Self {
+            Self {
+                git_dir: None,
+                args: Default::default(),
+                context: None,
+                stdin: Stdio::null(),
+            }
+        }
+    }
+
+    impl GitCommand {
+        /// At the given directory.
+        pub fn at(dir: &Path) -> Self {
+            Self {
+                git_dir: Some(dir.to_path_buf()),
+                args: Default::default(),
+                context: None,
+                stdin: Stdio::null(),
+            }
+        }
+
+        /// Specify command line arguments.
+        pub fn args(mut self, args: &[&str]) -> Self {
+            self.args.extend(args.iter().map(|s| s.to_string()));
+            self
+        }
+
+        /// Specify stdin.
+        pub fn stdin(mut self, stdin: Stdio) -> Self {
+            self.stdin = stdin;
+            self
+        }
+
+        /// Specify error context.
+        pub fn context(mut self, context: String) -> Self {
+            self.context = Some(context);
+            self
+        }
+
+        /// Run. Check exit code.
+        pub fn run(&mut self) -> io::Result<()> {
+            let _out = self.output()?;
+            Ok(())
+        }
+
+        /// Run the command. Return output. Check exit code.
+        pub fn output(&mut self) -> io::Result<String> {
+            let out = match self.command(|c| c.output()) {
+                Err(e) => {
+                    return Err(self.error(format!("cannot spawn {} {:?} {}", GIT, &self.args, e)));
+                }
+                Ok(o) => o,
+            };
+            let stdout = String::from_utf8_lossy(&out.stdout);
+            let stderr = String::from_utf8_lossy(&out.stderr);
+            if !out.status.success() {
+                let code = out.status.code().unwrap_or_default();
+                log::warn!("{} {:?} exited {}", GIT, &self.args, code);
+                let at = self
+                    .git_dir
+                    .as_ref()
+                    .map(|s| s.display().to_string())
+                    .unwrap_or_else(|| ".".to_string());
+                return Err(self.error(format!(
+                    "{} {:?} at {} exited {} with output [{}][{}]",
+                    GIT, &self.args, at, code, stdout, stderr,
+                )));
+            } else {
+                log::debug!("{} {:?} completed", GIT, &self.args);
+            }
+
+            if !stdout.is_empty() {
+                log::debug!("stdout:\n{}", &stdout);
+            }
+            if !stderr.is_empty() {
+                log::debug!("stderr:\n{}", &stderr);
+            }
+
+            Ok(stdout.to_string())
+        }
+
+        /// Spawn the git process with stdio piped.
+        pub fn spawn(&mut self) -> io::Result<Child> {
+            self.command(|c| c.stdout(Stdio::piped()).spawn())
+                .map_err(|e| self.error(format!("cannot spawn {} {:?} {}", GIT, &self.args, e)))
+        }
+
+        /// Prepare the `Command`. Then call `f` on `Command`.
+        fn command<T>(&mut self, f: impl FnOnce(&mut Command) -> T) -> T {
+            let mut cmd = Command::new(GIT);
+            let mut cmd = cmd
+                .env("GIT_AUTHOR_NAME", "FooNote")
+                .env("GIT_AUTHOR_EMAIL", "<foonote@example.com>")
+                .env("GIT_COMMITTER_NAME", "FooNote")
+                .env("GIT_COMMITTER_EMAIL", "<foonote@example.com>")
+                .stdin({
+                    let mut stdin = Stdio::null();
+                    std::mem::swap(&mut self.stdin, &mut stdin);
+                    stdin
+                });
+            if let Some(dir) = self.git_dir.as_ref() {
+                log::info!("running {} {:?} at {}", GIT, &self.args, dir.display());
+                let cwd = if dir.file_name().unwrap_or_default() == ".git" {
+                    dir.parent().unwrap()
+                } else {
+                    dir
+                };
+                cmd = cmd.arg("--git-dir").arg(dir).current_dir(cwd)
+            } else {
+                log::info!("running {} {:?}", GIT, &self.args);
+            }
+            cmd = cmd.args(&self.args);
+            f(cmd)
+        }
+
+        fn error(&self, mut s: String) -> io::Error {
+            if let Some(context) = self.context.as_ref() {
+                s = format!("{} - {}", context, s)
+            }
+            io::Error::new(io::ErrorKind::Other, s)
+        }
+    }
+
+    fn git_config(key: &str) -> Option<String> {
+        let output = Command::new(GIT)
+            .args(&["config", "--get", key])
+            .output()
+            .ok()?;
+        if output.status.success() {
+            let s: String = String::from_utf8_lossy(&output.stdout).trim().into();
+            if s.is_empty() {
+                // Normalize empty strings to `None` values.
+                None
+            } else {
+                Some(s)
+            }
+        } else {
+            None
+        }
+    }
+
+    fn git_config_user() -> String {
+        git_config("user.name").unwrap_or_else(|| "FooNote".to_string())
+    }
+
+    fn git_config_email() -> String {
+        git_config("user.email").unwrap_or_else(|| "foonote@example.com".to_string())
+    }
 }
 
 #[cfg(test)]
@@ -716,32 +831,22 @@ mod tests {
         let git_repo_path = dir.join("repo");
         let git_dir = git_repo_path.join(".git");
 
-        match git_command()
-            .args(&["-c", "init.defaultBranch=m", "init"])
-            .arg(&git_repo_path)
-            .status()
+        let git_repo_path_str = git_repo_path.display().to_string();
+        match GitCommand::default()
+            .args(&["-c", "init.defaultBranch=m", "init", &git_repo_path_str])
+            .run()
             .ok()
         {
-            None => return None, // skip test: git does not work.
-            Some(s) if !s.success() => return None,
-            Some(s) => {}
+            None => {
+                eprintln!("skip test - git init does not work properly");
+                return None;
+            }
+            Some(_) => {}
         }
 
         // Make a commit on the master branch.
         std::fs::write(git_repo_path.join("x"), b"x").unwrap();
-        let git = |args: &[&str]| {
-            git_command()
-                .arg("--git-dir")
-                .arg(&git_dir)
-                .args(args)
-                .env("GIT_AUTHOR_NAME", "test")
-                .env("GIT_AUTHOR_EMAIL", "<a@example.com>")
-                .env("GIT_COMMITTER_NAME", "test")
-                .env("GIT_COMMITTER_EMAIL", "<a@example.com>")
-                .current_dir(&git_repo_path)
-                .status()
-                .unwrap();
-        };
+        let git = |args: &[&str]| GitCommand::at(&git_dir).args(args).run().unwrap();
         git(&["add", "x"]);
         git(&["commit", "-m", "add x"]);
         git(&["checkout", "-b", "mytrunk"]);
