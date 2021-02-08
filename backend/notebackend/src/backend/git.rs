@@ -731,7 +731,7 @@ mod git_cmd {
                     .map(|s| s.display().to_string())
                     .unwrap_or_else(|| ".".to_string());
                 return Err(self.error(format!(
-                    "{} {:?} at {} exited {} with output [{}][{}]",
+                    "{} {:?} at {} exited {} with output [\n{}][\n{}]",
                     GIT, &self.args, at, code, stdout, stderr,
                 )));
             } else {
@@ -774,7 +774,7 @@ mod git_cmd {
                 cmd = cmd.creation_flags(CREATE_NO_WINDOW);
             }
             if let Some(dir) = self.git_dir.as_ref() {
-                log::info!("running {} {:?} at {}", GIT, &self.args, dir.display());
+                log::debug!("running {} {:?} at {}", GIT, &self.args, dir.display());
                 let cwd = if dir.file_name().unwrap_or_default() == ".git" {
                     dir.parent().unwrap()
                 } else {
