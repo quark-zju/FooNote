@@ -634,6 +634,7 @@ fn prepare_bare_staging_repo(cache_dir: Option<&Path>) -> io::Result<PathBuf> {
         .arg(&path)
         .status()?;
     check_status(status, || format!("create bare repo at {}", path.display()))?;
+    log::info!("staging repo: {}", path.display());
     Ok(path)
 }
 

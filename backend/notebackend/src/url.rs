@@ -6,6 +6,7 @@ use std::{io::Result, path::Path};
 
 /// Load a backend from a URL.
 pub fn open(url: &str) -> Result<Box<dyn TreeBackend<Id = Id>>> {
+    log::info!("open url: {}", url);
     let (scheme, path) = {
         let mut split = url.splitn(2, ':');
         let segment1 = split.next().unwrap_or_default();
