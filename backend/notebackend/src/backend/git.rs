@@ -767,6 +767,12 @@ mod git_cmd {
                     std::mem::swap(&mut self.stdin, &mut stdin);
                     stdin
                 });
+            #[cfg(windows)]
+            {
+                use std::os::windows::process::CommandExt;
+                const CREATE_NO_WINDOW: u32 = 0x08000000;
+                cmd = cmd.creation_flags(CREATE_NO_WINDOW);
+            }
             if let Some(dir) = self.git_dir.as_ref() {
                 log::info!("running {} {:?} at {}", GIT, &self.args, dir.display());
                 let cwd = if dir.file_name().unwrap_or_default() == ".git" {
