@@ -58,7 +58,11 @@ struct GitInfo {
     remote_name: String,
     repo_path: PathBuf,
     branch_name: String,
-    base_commit: String,
+
+    /// Commit of the "unmodified" version.
+    /// - Commit hash form: Locally committed. Not pushed.
+    /// - "remote/branch" form: Pushed. No local changes.
+    base_commit: Arc<RwLock<String>>,
 }
 
 const MANIFEST_NAME: &str = "manifest.json";
@@ -97,7 +101,7 @@ impl TextIO for GitTextIO {
     }
 
     fn persist_with_manifest(&mut self, manifest: &mut Manifest) -> io::Result<()> {
-        if self.commit(manifest)?.is_some() {
+        if self.commit(manifest)?.is_some() || self.info.has_local_changes() {
             self.texts.write().clear();
             self.info.push()?;
         }
@@ -114,12 +118,12 @@ impl TextIO for GitTextIO {
             self.texts.write().clear();
             Ok(base_commit)
         })();
-        match sync_result {
-            Err(e) => {
+        match (sync_result, self.info.has_local_changes()) {
+            (Err(e), _) => {
                 // Error happened committing.
                 *result.lock().unwrap() = Some(Err(e));
             }
-            Ok(None) => {
+            (Ok(None), false) => {
                 // Nothing changed.
                 *result.lock().unwrap() = Some(Ok(()));
             }
@@ -150,14 +154,8 @@ impl GitBackend {
         let repo_path = prepare_bare_staging_repo(cache_dir)?;
         let remote_name = prepare_remote_name(&repo_path, url)?;
         let branch_name = hash.unwrap_or("master").to_string();
-        let base_commit = format!("{}/{}", &remote_name, &branch_name);
         let mut text_io = GitTextIO {
-            info: GitInfo {
-                remote_name,
-                repo_path,
-                branch_name,
-                base_commit,
-            },
+            info: GitInfo::new(repo_path, remote_name, branch_name),
             texts: Default::default(),
             object_reader: Default::default(),
             user: Lazy::new(git_config_user),
@@ -178,6 +176,26 @@ impl GitBackend {
 }
 
 impl GitInfo {
+    fn new(repo_path: PathBuf, remote_name: String, branch_name: String) -> Self {
+        let info = Self {
+            remote_name,
+            repo_path,
+            branch_name,
+            base_commit: Default::default(),
+        };
+        *info.base_commit.write() = info.base_commit_from_remote();
+        info
+    }
+
+    /// The "base commit" name in "remote/branch" form.
+    fn base_commit_from_remote(&self) -> String {
+        format!("{}/{}", &self.remote_name, &self.branch_name)
+    }
+
+    fn has_local_changes(&self) -> bool {
+        self.base_commit.read().as_str() != self.base_commit_from_remote().as_str()
+    }
+
     /// Fetch the latest commit from the remote.
     /// NOTE: `self.base_commit` is not reset to the fetched commit!
     fn fetch(&self) -> io::Result<()> {
@@ -201,16 +219,17 @@ impl GitInfo {
             self.remote_name.as_str(),
             &format!(
                 "{}:{}",
-                self.base_commit.as_str(),
+                self.base_commit.read().as_str(),
                 self.branch_name.as_str()
             ),
         ])?;
         log::info!(
             "Pushed {} to {}/{}",
-            self.base_commit.as_str(),
+            self.base_commit.read().as_str(),
             self.remote_name.as_str(),
             self.branch_name.as_str()
         );
+        *self.base_commit.write() = self.base_commit_from_remote();
         Ok(())
     }
 
@@ -260,7 +279,7 @@ impl GitTextIO {
 
     /// Read a utf-8 file. Return (oid, text).
     fn read_path_utf8(&self, file_path: &str) -> io::Result<(HexOid, String)> {
-        let spec = format!("{}:{}", &self.info.base_commit, file_path);
+        let spec = format!("{}:{}", self.info.base_commit.read().as_str(), file_path);
         let (oid, data) = self.read_object(&spec, Some("blob"))?;
         Ok((oid, String::from_utf8_lossy(&data).into_owned()))
     }
@@ -426,7 +445,7 @@ impl GitTextIO {
             );
         }
         log::info!("Committed: {}", &commit_oid);
-        self.info.base_commit = commit_oid.clone();
+        *self.info.base_commit.write() = commit_oid.clone();
         self.last_manifest = manifest.clone();
         Ok(Some(commit_oid))
     }
@@ -496,7 +515,7 @@ impl GitTextIO {
             when = when,
             message_len = message.len(),
             message = &message,
-            from = &self.info.base_commit,
+            from = self.info.base_commit.read().as_str(),
             files = file_modifications.concat(),
         );
         payload += &commit;
