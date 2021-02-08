@@ -217,6 +217,9 @@ implementation
 var
   BinaryClipboardFormat: TClipboardFormat;
 
+const
+  DefaultUrl: string = 'Default.FooNote';
+
 {$R *.lfm}
 
 type
@@ -238,14 +241,11 @@ begin
 end;
 
 procedure TFormFooNoteMain.InitRootTreeUrlAndConfigFileName;
-const
-  DefaultUrl: string = 'Default.FooNote';
 var
   Url: string;
 begin
   if ParamCount() >= 1 then begin
     Url := ParamStr(1);
-    Caption := Format('%s - FooNote', [ExtractFileName(Url)]);
   end else begin
     Url := DefaultUrl;
   end;
@@ -920,6 +920,11 @@ begin
   // Set it again here.
   LoadSplitterPosition;
 
+  // Update Form Title. Does not seem effective in FormCreate.
+  if AppConfig.RootTreeUrl <> DefaultUrl then begin
+    Caption := Format('FooNote (%s)', [ExtractFileName(AppConfig.RootTreeUrl)]);
+  end;
+
   // Make the preview window "visible" so it won't steal the focus.
   {$ifdef Windows}
   PreviewForm.EnsureInit;
@@ -1390,9 +1395,20 @@ begin
 end;
 
 procedure TFormFooNoteMain.ActionEditSaveExecute(Sender: TObject);
+var
+  Scheduled: boolean;
+  errno: Int32;
 begin
-  // TODO: Print failure.
-  NoteBackend.TryPersist();
+  DebugLn('Save. Checking last result.');
+  if NoteBackend.TryPersistAsyncWait(errno) then begin
+    DebugLn('Save. Last Persist Result: %d', [errno]);
+  end;
+
+  DebugLn('Save. Schedule async save.');
+  Scheduled := NoteBackend.TryPersistAsync();
+  DebugLn('Save. Scheduled: %d', [integer(Scheduled)]);
+
+  TimerAutoSave.Enabled := False;
 end;
 
 procedure TFormFooNoteMain.MemoNoteKeyDown(Sender: TObject; var Key: word; Shift: TShiftState);
