@@ -5,12 +5,7 @@ unit NoteBackend;
 interface
 
 uses
-  Classes, SysUtils, LazLogger, NoteTypes, Math;
-
-const
-  OK: Int32 = 0;
-  ENONE: Int32 = -1;
-  ETYPE: Int32 = -2;
+  Classes, SysUtils, NoteTypes, Math, StackFFI, LogFFI;
 
 // Main APIs.
 
@@ -58,29 +53,6 @@ function TryUmount(Id: FullId): boolean;
 
 implementation
 
-// Communicate with Rust via a stack. References (like string or bytes) are copied
-// when crossing language boundaries.
-
-procedure StackClear(); cdecl; external 'notebackend' Name 'notebackend_stack_clear';
-procedure StackPop(); cdecl; external 'notebackend' Name 'notebackend_stack_pop';
-
-function StackLen(): UInt32; cdecl;
-  external 'notebackend' Name 'notebackend_stack_len';
-procedure StackDebug(); cdecl; external 'notebackend' Name 'notebackend_stack_debug';
-procedure StackPushInt(Value: Int32); cdecl;
-  external 'notebackend' Name 'notebackend_stack_push_i32';
-
-procedure notebackend_stack_push_bytes(Offset: PByte; Length: NativeUInt); cdecl;
-  external 'notebackend';
-procedure notebackend_stack_push_str(Offset: PByte; Length: NativeUInt); cdecl;
-  external 'notebackend';
-
-function notebackend_stack_last_bytes(Offset: PPByte; Length: PNativeUInt): Int32; cdecl;
-  external 'notebackend';
-function notebackend_stack_last_str(Offset: PPByte; Length: PNativeUInt): Int32; cdecl;
-  external 'notebackend';
-function notebackend_stack_last_i32(Value: PInt32): Int32; cdecl;
-  external 'notebackend';
 
 // Main FFI APIs. Their input and output are based on the thread-local stack.
 // The return value is for error codes.
@@ -107,7 +79,6 @@ function notebackend_remove_batch(): Int32; cdecl; external 'notebackend';
 function notebackend_persist(): Int32; cdecl; external 'notebackend';
 function notebackend_persist_async(): Int32; cdecl; external 'notebackend';
 function notebackend_persist_try_wait(): Int32; cdecl; external 'notebackend';
-function notebackend_enable_env_logger(): Int32; cdecl; external 'notebackend';
 function notebackend_copy(): Int32; cdecl; external 'notebackend';
 function notebackend_paste(): Int32; cdecl; external 'notebackend';
 function notebackend_mount(): Int32; cdecl; external 'notebackend';
@@ -120,146 +91,18 @@ function notebackend_search_is_complete(): Int32; cdecl; external 'notebackend';
 function notebackend_search_input(): Int32; cdecl; external 'notebackend';
 procedure notebackend_close_all(); cdecl; external 'notebackend';
 
-procedure StackPushBytes(Bytes: TBytes);
-var
-  L: integer;
-  S: PByte;
-begin
-  S := @Bytes[0];
-  L := Length(Bytes);
-  notebackend_stack_push_bytes(S, L);
-end;
-
-procedure StackPushString(S: string);
-var
-  L: integer;
-  P: PByte;
-  Bytes: TBytes;
-begin
-  Bytes := TEncoding.UTF8.GetAnsiBytes(S);
-  L := Length(Bytes);
-  if L = 0 then begin
-    P := nil;
-  end else begin
-    P := @Bytes[0];
-  end;
-  notebackend_stack_push_str(P, L);
-end;
-
-procedure StackPushFullId(Id: FullId);
-begin
-  StackPushInt(Id.BackendId);
-  StackPushInt(Id.Id);
-end;
-
-procedure StackPushFullIdList(IdList: VecFullId);
-var
-  I, L: integer;
-begin
-  L := Length(IdList);
-  for I := 1 to L do begin
-    StackPushFullId(IdList[L - I]);
-  end;
-  StackPushInt(L);
-end;
-
-function StackLastBytes(): TBytes;
-var
-  L: NativeUInt;
-  S: PByte;
-  R: Int32;
-begin
-  S := nil;
-  L := 0;
-  R := notebackend_stack_last_bytes(@S, @L);
-  if R <> OK then begin
-    raise EExternal.Create('StackLastBytes(): no bytes to return');
-  end;
-  Result := TBytes.Create;
-  SetLength(Result, L);
-  if L > 0 then begin
-    Move(S^, Result[0], L);
-  end;
-end;
-
-function StackLastString(): string;
-var
-  L: NativeUInt;
-  S: PByte;
-  R: Int32;
-  Bytes: TBytes;
-begin
-  S := nil;
-  L := 0;
-  R := notebackend_stack_last_str(@S, @L);
-  if R <> OK then begin
-    raise EExternal.Create('StackLastString(): no string to return');
-  end;
-  Bytes := TBytes.Create;
-  SetLength(Bytes, L);
-  if L > 0 then begin
-    Move(S^, Bytes[0], L);
-  end;
-  Result := TEncoding.UTF8.GetAnsiString(Bytes);
-end;
-
-
-function StackLastInt(): Int32;
-var
-  R: Int32;
-begin
-  R := notebackend_stack_last_i32(@Result);
-  if R <> OK then begin
-    raise EExternal.Create('StackLastInt(): no int to return');
-  end;
-end;
-
-function StackPopBytes(): TBytes;
-begin
-  Result := StackLastBytes();
-  StackPop();
-end;
-
-function StackPopString(): string;
-begin
-  Result := StackLastString();
-  StackPop();
-end;
-
-function StackPopInt(): Int32;
-begin
-  Result := StackLastInt();
-  StackPop();
-end;
-
-function StackPopFullId(): FullId;
-begin
-  Result.Id := StackPopInt();
-  Result.BackendId := StackPopInt();
-end;
-
-function StackPopFullIdList(): VecFullId;
-var
-  I, L: integer;
-begin
-  L := StackPopInt();
-  Result := VecFullId.Create;
-  SetLength(Result, L);
-  for I := 1 to L do begin
-    Result[I - 1] := StackPopFullId();
-  end;
-end;
-
 // Main API implemenation by communicating using stack APIs.
 
-function LogError(ErrNo: integer): integer;
+function LogResultError(ErrNo: integer): integer;
 var
   S: string;
 begin
   if ErrNo <> OK then begin
     S := StackLastString();
     if not S.IsEmpty then begin
-      DebugLn('Error: %s', [S]);
+      if LogHasError then begin
+        LogError(Format('FFI Error: %s', [S]));
+      end;
     end;
   end;
   Result := ErrNo;
@@ -274,7 +117,7 @@ function Open(Url: string): FullId;
 begin
   StackClear();
   StackPushString(Url);
-  if LogError(notebackend_open()) <> OK then begin
+  if LogResultError(notebackend_open()) <> OK then begin
     raise EExternal.Create(Format('Open(%s) failed', [Url]));
   end;
   Result := StackPopFullId();
@@ -295,7 +138,7 @@ var
 begin
   StackClear();
   StackPushFullId(Id);
-  if LogError(notebackend_get_children()) <> OK then begin
+  if LogResultError(notebackend_get_children()) <> OK then begin
     raise EExternal.Create(Format('GetChildren(%s) failed', [Id.ToString()]));
   end;
   Length := StackPopInt();
@@ -310,7 +153,7 @@ function GetParent(Id: FullId): FullId;
 begin
   StackClear();
   StackPushFullId(Id);
-  if LogError(notebackend_get_parent()) <> OK then begin
+  if LogResultError(notebackend_get_parent()) <> OK then begin
     raise EExternal.Create(Format('GetParent(%s) failed', [Id.ToString()]));
   end;
   Result := StackPopFullId();
@@ -340,7 +183,7 @@ function GetMtime(Id: FullId): NodeMtime;
 begin
   StackClear();
   StackPushFullId(Id);
-  if LogError(notebackend_get_mtime()) <> OK then begin
+  if LogResultError(notebackend_get_mtime()) <> OK then begin
     raise EExternal.Create(Format('GetMtime(%s) failed', [Id.ToString()]));
   end;
   Result := StackPopInt();
@@ -350,7 +193,7 @@ function GetText(Id: FullId): string;
 begin
   StackClear();
   StackPushFullId(Id);
-  if LogError(notebackend_get_text()) <> OK then begin
+  if LogResultError(notebackend_get_text()) <> OK then begin
     raise EExternal.Create(Format('GetText(%s) failed', [Id.ToString()]));
   end;
   Result := StackPopString();
@@ -360,7 +203,7 @@ function GetTextFirstLine(Id: FullId): string;
 begin
   StackClear();
   StackPushFullId(Id);
-  if LogError(notebackend_get_text_first_line()) <> OK then begin
+  if LogResultError(notebackend_get_text_first_line()) <> OK then begin
     raise EExternal.Create(Format('GetTextFirstLine(%s) failed', [Id.ToString()]));
   end;
   Result := StackPopString();
@@ -370,7 +213,7 @@ function GetRawMeta(Id: FullId): string;
 begin
   StackClear();
   StackPushFullId(Id);
-  if LogError(notebackend_get_raw_meta()) <> OK then begin
+  if LogResultError(notebackend_get_raw_meta()) <> OK then begin
     raise EExternal.Create(Format('GetMeta(%s) failed', [Id.ToString()]));
   end;
   Result := StackPopString();
@@ -380,7 +223,7 @@ function GetHeads(IdList: VecFullId): VecFullId;
 begin
   StackClear();
   StackPushFullIdList(IdList);
-  if LogError(notebackend_get_heads()) <> OK then begin
+  if LogResultError(notebackend_get_heads()) <> OK then begin
     raise EExternal.Create('GetHeads() failed');
   end;
   Result := StackPopFullIdList();
@@ -392,7 +235,7 @@ begin
   StackClear();
   StackPushFullId(Id);
   StackPushString(Prefix);
-  if LogError(notebackend_extract_meta()) <> OK then begin
+  if LogResultError(notebackend_extract_meta()) <> OK then begin
     raise EExternal.Create(Format('ExtractMeta(%s, %s) failed', [Id.ToString(), Prefix]));
   end;
   Result := StackPopString();
@@ -405,14 +248,14 @@ begin
   StackPushInt(Pos);
   StackPushString(Text);
   StackPushString(meta);
-  if LogError(notebackend_insert()) <> OK then begin
+  if LogResultError(notebackend_insert()) <> OK then begin
     raise EExternal.Create(Format('InsertNode(%s, %d, %s, %s) failed', [Id.ToString(), Pos, Text, meta]));
   end;
   Result := StackPopFullId();
   if autofill then begin
     StackClear();
     StackPushFullId(Result);
-    if LogError(notebackend_autofill()) <> OK then begin
+    if LogResultError(notebackend_autofill()) <> OK then begin
       raise EExternal.Create(Format('Autofill(%s) failed', [Result.ToString()]));
     end;
   end;
@@ -422,7 +265,7 @@ function CopyToBytes(Ids: VecFullId): TBytes;
 begin
   StackClear();
   StackPushFullIdList(Ids);
-  if LogError(notebackend_copy()) <> OK then begin
+  if LogResultError(notebackend_copy()) <> OK then begin
     raise EExternal.Create('CopyToBytes() failed');
   end;
   Result := StackPopBytes();
@@ -434,7 +277,7 @@ begin
   StackPushFullId(DestId);
   StackPushInt(Pos);
   StackPushBytes(Bytes);
-  if LogError(notebackend_paste()) <> OK then begin
+  if LogResultError(notebackend_paste()) <> OK then begin
     raise EExternal.Create('PasteFromBytes() failed');
   end;
   Result := StackPopFullIdList();
@@ -446,7 +289,7 @@ begin
   StackPushFullId(Id);
   StackPushFullId(Parent);
   StackPushInt(Pos);
-  Result := (LogError(notebackend_set_parent()) = OK);
+  Result := (LogResultError(notebackend_set_parent()) = OK);
 end;
 
 function TrySetParent(var Ids: VecFullId; Parent: FullId; Pos: Int32): boolean;
@@ -455,7 +298,7 @@ begin
   StackPushFullIdList(Ids);
   StackPushFullId(Parent);
   StackPushInt(Pos);
-  Result := (LogError(notebackend_set_parent_batch()) = OK);
+  Result := (LogResultError(notebackend_set_parent_batch()) = OK);
   if Result then begin
     Ids := StackPopFullIdList();
   end;
@@ -467,7 +310,7 @@ begin
   StackClear();
   StackPushFullId(Id);
   StackPushString(Text);
-  Result := (LogError(notebackend_set_text()) = OK);
+  Result := (LogResultError(notebackend_set_text()) = OK);
 end;
 
 function TrySetRawMeta(Id: FullId; Meta: string): boolean;
@@ -475,7 +318,7 @@ begin
   StackClear();
   StackPushFullId(Id);
   StackPushString(Meta);
-  Result := (LogError(notebackend_set_raw_meta()) = OK);
+  Result := (LogResultError(notebackend_set_raw_meta()) = OK);
 end;
 
 function TryUpdateMeta(Id: FullId; Prefix, Value: string): boolean;
@@ -484,39 +327,39 @@ begin
   StackPushFullId(Id);
   StackPushString(Prefix);
   StackPushString(Value);
-  Result := (LogError(notebackend_update_meta()) = OK);
+  Result := (LogResultError(notebackend_update_meta()) = OK);
 end;
 
 function TryRemove(Id: FullId): boolean;
 begin
   StackClear();
   StackPushFullId(Id);
-  Result := (LogError(notebackend_remove()) = OK);
+  Result := (LogResultError(notebackend_remove()) = OK);
 end;
 
 function TryRemove(Ids: VecFullId): boolean;
 begin
   StackClear();
   StackPushFullIdList(Ids);
-  Result := (LogError(notebackend_remove_batch()) = OK);
+  Result := (LogResultError(notebackend_remove_batch()) = OK);
 end;
 
 function TryPersist(): boolean;
 begin
   StackClear();
-  Result := (LogError(notebackend_persist()) = OK);
+  Result := (LogResultError(notebackend_persist()) = OK);
 end;
 
 function TryPersistAsync(): boolean;
 begin
   StackClear();
-  Result := (LogError(notebackend_persist_async()) = OK);
+  Result := (LogResultError(notebackend_persist_async()) = OK);
 end;
 
 function TryPersistAsyncWait(var message: string; var errno: Int32): boolean;
 begin
   StackClear();
-  Result := (LogError(notebackend_persist_try_wait()) = OK);
+  Result := (LogResultError(notebackend_persist_try_wait()) = OK);
   if Result then begin
     errno := StackPopInt();
     message := StackPopString();
@@ -536,21 +379,21 @@ begin
   StackClear();
   StackPushFullId(Id);
   StackPushString(Url);
-  Result := (LogError(notebackend_mount()) = OK);
+  Result := (LogResultError(notebackend_mount()) = OK);
 end;
 
 function TryUmount(Id: FullId): boolean;
 begin
   StackClear();
   StackPushFullId(Id);
-  Result := (LogError(notebackend_umount()) = OK);
+  Result := (LogResultError(notebackend_umount()) = OK);
 end;
 
 function IsMount(Id: FullId): boolean;
 begin
   StackClear();
   StackPushFullId(Id);
-  if LogError(notebackend_is_mount()) <> OK then begin
+  if LogResultError(notebackend_is_mount()) <> OK then begin
     raise EExternal.Create('IsMount() failed');
   end;
   Result := StackPopInt() <> 0;
@@ -561,7 +404,7 @@ begin
   StackClear();
   StackPushString(Text);
   StackPushFullIdList(Ids);
-  if LogError(notebackend_search_start()) <> OK then begin
+  if LogResultError(notebackend_search_start()) <> OK then begin
     raise EExternal.Create('StartSearch() failed');
   end;
 end;
@@ -569,7 +412,7 @@ end;
 procedure StopSearch();
 begin
   StackClear();
-  if LogError(notebackend_search_stop()) <> OK then begin
+  if LogResultError(notebackend_search_stop()) <> OK then begin
     raise EExternal.Create('StopSearch() failed');
   end;
 end;
@@ -577,7 +420,7 @@ end;
 function IsSearchComplete(): boolean;
 begin
   StackClear();
-  if LogError(notebackend_search_is_complete()) <> OK then begin
+  if LogResultError(notebackend_search_is_complete()) <> OK then begin
     raise EExternal.Create('IsSearchComplete() failed');
   end;
   Result := StackPopInt() <> 0;
@@ -590,7 +433,7 @@ var
 begin
   StackClear();
   StackPushInt(Skip);
-  if LogError(notebackend_search_result()) <> OK then begin
+  if LogResultError(notebackend_search_result()) <> OK then begin
     raise EExternal.Create('GetSearchResult() failed');
   end;
   N := StackPopInt();
@@ -605,15 +448,11 @@ end;
 function GetSearchInput(): string;
 begin
   StackClear();
-  if LogError(notebackend_search_input()) <> OK then begin
+  if LogResultError(notebackend_search_input()) <> OK then begin
     raise EExternal.Create('GetSearchInput() failed');
   end;
   Result := StackPopString();
 end;
-
-
-initialization
-  notebackend_enable_env_logger();
 
 
 end.

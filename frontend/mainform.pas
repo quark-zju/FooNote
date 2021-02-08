@@ -10,8 +10,8 @@ uses
   {$endif}
   Classes, SysUtils, Forms, Controls, Graphics, Dialogs, StdCtrls, Menus,
   ExtCtrls, ComCtrls, ActnList, PairSplitter, StdActns, ClipBrd, LCLType,
-  LazUtf8, FGL, LazLogger, Math, NoteBackend, NoteTypes, MemoUtil,
-  LCLTranslator, Buttons, JSONPropStorage, TreeNodeData,
+  LazUtf8, FGL, LogFFI, Math, NoteBackend, NoteTypes, MemoUtil,
+  LCLTranslator, Buttons, JSONPropStorage, TreeNodeData, StackFFI,
   TreeViewSync, Settings, PreviewForm, AboutForm, FileUtil, md5,
   savemsgform;
 
@@ -250,7 +250,9 @@ begin
       RootNodeData, True);
     TreeViewNoteTree.EndUpdate;
   end else begin
-    DebugLn('Root Note Not changed');
+    if LogHasDebug then begin
+      LogDebug('Root Note Not changed');
+    end;
   end;
 end;
 
@@ -347,7 +349,9 @@ begin
       // Default: 30 seconds.
       I := 30;
     end;
-    DebugLn('AutoSaveInterval: %d seconds', [I]);
+    if LogHasInfo then begin
+      LogInfo(Format('AutoSaveInterval: %d seconds', [I]));
+    end;
     This.TimerAutoSave.Interval := I * 1000;
   end;
 end;
@@ -402,7 +406,9 @@ begin
       SplitterTreeNote.Top := I;
     end; // After Height update
   end;
-  // DebugLn(' TreeNoteSplitter.Top=%d', [SplitterTreeNote.Top]);
+  if LogHasTrace then begin
+    LogTrace(Format(' TreeNoteSplitter.Top=%d', [SplitterTreeNote.Top]));
+  end;
 end;
 
 procedure TFormFooNoteMain.ApplyAppConfigToThisForm;
@@ -461,8 +467,10 @@ begin
   end;
   AppConfig.LastSelectedId := SelectedId.Id;
   AppConfig.WindowColor := FormFooNoteMain.Color;
-  DebugLn(' TreeNoteSplitter.Top=%d %d,%d', [SplitterTreeNote.Top, AppConfig.NonDockNoteSplitTop,
-    AppConfig.DockNoteSplitTop]);
+  if LogHasDebug then begin
+    LogDebug(Format(' TreeNoteSplitter.Top=%d %d,%d', [SplitterTreeNote.Top, AppConfig.NonDockNoteSplitTop,
+      AppConfig.DockNoteSplitTop]));
+  end;
 end;
 
 procedure TFormFooNoteMain.SaveConfigFile;
@@ -526,10 +534,14 @@ begin
       continue;
     end;
     while Assigned(Node) do begin
-      // DebugLn('Visit %s', [NodeData(Node).Id.ToString()]);
+      if LogHasTrace then begin
+        LogTrace(Format('Visit %s', [NodeData(Node).Id.ToString()]));
+      end;
       if NodeData(Node).Id = Ancestor then begin
         Node.Expand(False);
-        DebugLn(' Expand ancestor %s', [Ancestor.ToString()]);
+        if LogHasDebug then begin
+          LogDebug(Format(' Expand ancestor %s', [Ancestor.ToString()]));
+        end;
         Node := Node.GetFirstChild;
         break; // Next ancestor
       end else begin
@@ -537,14 +549,18 @@ begin
       end;
     end;
     if not Assigned(Node) then begin
-      DebugLn('Cannot find ancestor %s to select %s!', [Ancestor.ToString(), Id.ToString()]);
+      if LogHasWarn then begin
+        LogWarn(Format('Cannot find ancestor %s to select %s!', [Ancestor.ToString(), Id.ToString()]));
+      end;
       Exit;
     end;
   end;
 
   while Assigned(Node) do begin
     if NodeData(Node).Id = Id then begin
-      DebugLn('Select %s', [Id.ToString()]);
+      if LogHasDebug then begin
+        LogDebug(Format('Select %s', [Id.ToString()]));
+      end;
       TreeViewNoteTree.Select(Node);
       SelectedId := Id;
       break;
@@ -553,7 +569,9 @@ begin
     end;
   end;
   if not Assigned(Node) then begin
-    DebugLn('Cannot find %s to select!', [Id.ToString()]);
+    if LogHasWarn then begin
+      LogWarn(Format('Cannot find %s to select!', [Id.ToString()]));
+    end;
   end;
 end;
 
@@ -634,7 +652,9 @@ begin
     if AppConfig.DockSide = dsNone then begin
       AppConfig.NonDockWidth := Width;
       AppConfig.NonDockHeight := Height;
-      DebugLn('  NonDockHeight := %d', [Height]);
+      if LogHasDebug then begin
+        LogDebug(Format('  NonDockHeight := %d', [Height]));
+      end;
       AppConfig.DockWidth := 0;
     end else begin
       AppConfig.DockWidth := Width;
@@ -657,7 +677,9 @@ begin
   P := InsertLocation(SelectedId, NParent, Index);
   Id := NoteBackend.InsertNode(P, Index, AText, AMeta);
 
-  DebugLn('NewNode Id=%d Index=%d Meta=%s', [Id.Id, Index, AMeta.Trim]);
+  if LogHasDebug then begin
+    LogDebug(Format('NewNode Id=%d Index=%d Meta=%s', [Id.Id, Index, AMeta.Trim]));
+  end;
   RefreshFullTree;
   Result := Id;
 
@@ -758,7 +780,9 @@ procedure TFormFooNoteMain.PanelDockSplitterLeftMouseDown(Sender: TObject; Butto
   Shift: TShiftState; X, Y: integer);
 begin
   if (Button = mbLeft) and (not DockSplitterLeftIsDown) and (AppConfig.DockSide <> dsNone) then begin
-    DebugLn('Dock Splitter MouseDown');
+    if LogHasDebug then begin
+      LogDebug('Dock Splitter MouseDown');
+    end;
     DockSplitterLeftDownOrigCursorPos := Mouse.CursorPos;
     DockSplitterLeftDownOrigWidth := Width;
     DockSplitterLeftDownOrigLeft := Left;
@@ -844,7 +868,9 @@ begin
     // Do not use X, Y. They are relative to the form, which is changing.
     NewWidth := DockSplitterNewWidth;
     SplitterWidth := PanelDockSplitterLeft.Width;
-    // DebugLn('Dock Splitter MouseMove; NewWidth = %d', [NewWidth]);
+    if LogHasTrace then begin
+      LogTrace(Format('Dock Splitter MouseMove; NewWidth = %d', [NewWidth]));
+    end;
     if AppConfig.DockSide = dsRight then begin
       PreviewLeft := DockSplitterLeftDownOrigLeft - NewWidth + DockSplitterLeftDownOrigWidth;
     end else begin
@@ -868,7 +894,9 @@ begin
   if DockSplitterLeftIsDown then begin
     Assert(AppConfig.DockSide <> dsNone);
     NewWidth := DockSplitterNewWidth;
-    DebugLn('Dock Splitter MouseUp; DockWidth = %d', [NewWidth]);
+    if LogHasDebug then begin
+      LogDebug(Format('Dock Splitter MouseUp; DockWidth = %d', [NewWidth]));
+    end;
     AppConfig.DockWidth := NewWidth;
     PreviewForm.Hide;
     DockSplitterLeftIsDown := False;
@@ -902,7 +930,9 @@ begin
       // As binary.
       B := NoteBackend.CopyToBytes(Ids);
       S := TBytesStream.Create(B);
-      DebugLn('Copy binary len %d', [Length(B)]);
+      if LogHasDebug then begin
+        LogDebug(Format('Copy binary len %d', [Length(B)]));
+      end;
       ClipBoard.AddFormat(BinaryClipboardFormat, S);
     finally
       ClipBoard.Close;
@@ -928,7 +958,9 @@ begin
       S := TBytesStream.Create;
       if ClipBoard.HasFormat(BinaryClipboardFormat) and ClipBoard.GetFormat(BinaryClipboardFormat, S) then begin
         L := S.Position;
-        DebugLn('Paste binary len %d', [L]);
+        if LogHasDebug then begin
+          LogDebug(Format('Paste binary len %d', [L]));
+        end;
         B := S.bytes;
         SetLength(B, L);
         DestId := InsertLocation(SelectedId, 0, Pos);
@@ -1045,12 +1077,17 @@ var
   Message: string;
 begin
   if NoteBackend.TryPersistAsyncWait(Message, SaveErrno) then begin
-    DebugLn('Save Result: %d %s', [SaveErrno, Message]);
     // Save thread completed. Result in (Message, SaveErrno).
-    if SaveErrno <> NoteBackend.OK then begin
+    if SaveErrno <> StackFFI.OK then begin
+      if LogHasError then begin
+        LogError(Format('Save failed: %d %s', [SaveErrno, Message]));
+      end;
       ActionViewWarnUnsaved.Visible := True;
       AppConfig.SaveFailureMessage := Message;
     end else begin
+      if LogHasInfo then begin
+        LogInfo('Save succeeded');
+      end;
       ActionViewWarnUnsaved.Visible := False;
       AppConfig.SaveFailureMessage := '';
     end;
@@ -1180,7 +1217,9 @@ var
   Ids: VecFullId;
   DestId: FullId;
 begin
-  DebugLn('DragDrop');
+  if LogHasDebug then begin
+    LogDebug('DragDrop');
+  end;
   if CandidateDropNode <> nil then begin
     DestId := NodeData(CandidateDropNode).Id;
     // Move selections to the drop location.
@@ -1307,7 +1346,9 @@ begin
     if not DragOverHappened then begin
       // Take a "screenshot" of the tree view.
       // Do not do it in OnStartDrag to reduce cost.
-      DebugLn('Render Selection Preview');
+      if LogHasDebug then begin
+        LogDebug('Render Selection Preview');
+      end;
       DrawTreeSelectionPreview;
       StartDragCursorPos := Mouse.CursorPos;
       StartDragLocalPos := TPoint.Create(X, Y);
@@ -1386,11 +1427,15 @@ begin
   end;
   TimerSearchResult.Enabled := not NoteBackend.IsSearchComplete();
   if not TimerSearchResult.Enabled then begin
-    DebugLn('Search Completed');
+    if LogHasDebug then begin
+      LogDebug('Search Completed');
+    end;
   end;
   N := TreeViewSearchTree.Items.GetLastNode;
   for S in NoteBackend.GetSearchResult(TreeViewSearchTree.Items.Count) do begin
-    DebugLn('Search Result: %s (%s)', [S.Text, S.Id.ToString()]);
+    if LogHasTrace then begin
+      LogTrace(Format('Search Result: %s (%s)', [S.Text, S.Id.ToString()]));
+    end;
     N := TreeViewSearchTree.Items.Add(N, '');
     D := TTreeNodeData.Create(S.Id);
     D.SyncFromBackend();
@@ -1449,10 +1494,17 @@ end;
 procedure TFormFooNoteMain.ActionEditSaveExecute(Sender: TObject);
 var
   Scheduled: boolean;
-  errno: Int32;
 begin
   Scheduled := NoteBackend.TryPersistAsync();
-  DebugLn('Save. Scheduled: %d', [integer(Scheduled)]);
+  if Scheduled then begin
+    if LogHasDebug then begin
+      LogDebug('Async save started');
+    end;
+  end else begin
+    if LogHasWarn then begin
+      LogWarn('Failed to start async save');
+    end;
+  end;
 
   if Scheduled then begin
     // Prevent stacking the save threads.

@@ -5,7 +5,7 @@ unit PlatformWindows;
 interface
 
 uses
-  Classes, SysUtils, Windows, Forms, Controls, Settings, ShellAPI, LazLogger;
+  Classes, SysUtils, Windows, Forms, Controls, Settings, ShellAPI, LogFFI;
 
 procedure SetupMainForm(Form: TForm);
 procedure StartMoving(Form: TForm);
@@ -86,13 +86,17 @@ end;
 
 procedure StartMoving(Form: TForm);
 begin
-  DebugLn('Start moving via SC_MOVE');
+  if LogHasDebug then begin
+    LogDebug('Start moving via SC_MOVE');
+  end;
   SendMessage(Form.Handle, WM_SYSCOMMAND, SC_MOVE, 0);
 end;
 
 procedure StartResizing(Form: TForm);
 begin
-  DebugLn('Start resizing via SC_SIZE');
+  if LogHasDebug then begin
+    LogDebug('Start resizing via SC_SIZE');
+  end;
   PostMessage(Form.Handle, WM_SYSCOMMAND, SC_SIZE, 0);
 end;
 
@@ -168,8 +172,10 @@ end;
 procedure DebugRectChange(prefix: string; a, b: RECT);
 begin
   if a <> b then begin
-    DebugLn('%s (%d,%d,%dx%d) -> (%d,%d,%dx%d)',
-      [prefix, a.Left, a.Top, a.Width, a.Height, b.Left, b.Top, b.Width, b.Height]);
+    if LogHasDebug then begin
+      LogDebug(Format('%s (%d,%d,%dx%d) -> (%d,%d,%dx%d)', [prefix, a.Left, a.Top, a.Width,
+        a.Height, b.Left, b.Top, b.Width, b.Height]));
+    end;
   end;
 end;
 
@@ -261,7 +267,9 @@ begin
   if BarDockSide = Side then begin
     exit;
   end;
-  DebugLn('ApplyDock %s -> %s', [S1, S2]);
+  if LogHasDebug then begin
+    LogDebug(Format('ApplyDock %s -> %s', [S1, S2]));
+  end;
 
   if BarDockSide = dsNone then begin
     // Remember original position.
@@ -270,7 +278,9 @@ begin
 
   if Side = dsNone then begin
     // Undock
-    DebugLn('  Undock');
+    if LogHasDebug then begin
+      LogDebug('  Undock');
+    end;
     AppConfig.MovingPreview := True;
     UnregisterAppBar;
     // Restore position and style.
@@ -293,7 +303,9 @@ begin
     // WndProc might be overridden by LCL.
     EnsureWrappedWndProc;
     if not RegisterAppBar then begin
-      DebugLn('  Failed to register AppBar');
+      if LogHasWarn then begin
+        LogWarn('  Failed to register AppBar');
+      end;
       exit;
     end;
     RepositionDock;
@@ -353,7 +365,9 @@ var
   Side: TDockSide;
 begin
   if uMsg <> WM_SETCURSOR then begin
-    //DebugLn('WrappedWndProc uMsg=%d wParam=%d', [uMsg, wParam]);
+    if LogHasTrace then begin
+      LogTrace(Format('WrappedWndProc uMsg=%d wParam=%d', [uMsg, wParam]));
+    end;
   end;
   if (uMsg = WM_SYSCOMMAND) then begin
     case wParam of
@@ -368,13 +382,17 @@ begin
       end;
     end;
   end else if (uMsg = WM_ENTERSIZEMOVE) then begin
-    DebugLn('EnterSizeMove');
+    if LogHasDebug then begin
+      LogDebug('EnterSizeMove');
+    end;
     AppConfig.MovingPreview := True;
     GetWindowRect(RefForm.Handle, MovingStartRect);
     MovingStartCursorPos := Mouse.CursorPos;
     MovingHasMoved := False;
   end else if (uMsg = WM_EXITSIZEMOVE) then begin
-    DebugLn('ExitSizeMove: Moved=%d', [Ord(MovingHasMoved)]);
+    if LogHasDebug then begin
+      LogDebug(Format('ExitSizeMove: Moved=%d', [Ord(MovingHasMoved)]));
+    end;
     if MovingHasMoved then begin
       // Do not update DockSize if nothing has moved (ex. resize).
       MovingPreviewRect(Side);
@@ -395,20 +413,28 @@ begin
       SHAppBarMessage(ABM_ACTIVATE, @BarData);
     end;
   end else if wParam = WM_WINDOWPOSCHANGED then begin
-    DebugLn('WindowPosChanged');
+    if LogHasDebug then begin
+      LogDebug('WindowPosChanged');
+    end;
     if BarRegistered then begin
       SHAppBarMessage(ABM_WINDOWPOSCHANGED, @BarData);
     end;
   end else if (uMsg = WMAppBar) then begin
-    DebugLn('WMAppBar');
+    if LogHasDebug then begin
+      LogDebug('WMAppBar');
+    end;
     case wParam of
       ABN_STATECHANGE: begin
-        DebugLn(' ABN_STATECHANGE');
+        if LogHasDebug then begin
+          LogDebug(' ABN_STATECHANGE');
+        end;
         // Windows Taskbar "always on top" change. Reposition.
         RepositionDock;
       end;
       ABN_FULLSCREENAPP: begin
-        DebugLn(' ABN_FULLSCREENAPP %d', [lParam]);
+        if LogHasDebug then begin
+          LogDebug(Format(' ABN_FULLSCREENAPP %d', [lParam]));
+        end;
         // Fullscreen app starts or exits.
         // Avoid "Stay on Top" if a fullscreen app is running.
         AppConfig.ForceNotTop := (lParam <> 0);
@@ -426,7 +452,9 @@ begin
       end;
       ABN_POSCHANGED: begin
         // Other AppBar changed. AppBar needs to be resized.
-        DebugLn(' ABN_POSCHANGED');
+        if LogHasDebug then begin
+          LogDebug(' ABN_POSCHANGED');
+        end;
         RepositionDock;
       end;
     end;
@@ -454,7 +482,9 @@ begin
   if GetWindowLongPtr(Handle, GWL_WNDPROC) = PtrUInt(@WrappedWndProc) then begin
     exit;
   end;
-  DebugLn('Setup WndProc');
+  if LogHasDebug then begin
+    LogDebug('Setup WndProc');
+  end;
   Handle := RefForm.Handle;
   BarData.hWnd := Handle;
   SysMenu := GetSystemMenu(Handle, False);

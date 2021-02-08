@@ -5,7 +5,7 @@ unit TreeViewSync;
 interface
 
 uses
-  Classes, SysUtils, ComCtrls, TreeNodeData, NoteBackend, NoteTypes, FGL, LazLogger, Settings;
+  Classes, SysUtils, ComCtrls, TreeNodeData, NoteBackend, NoteTypes, FGL, LogFFI, Settings;
 
 // Update a tree view node from backend. Prepare its children (for +/- sign).
 procedure SyncTreeNode(View: TTreeNode; ForceChild: boolean = False);
@@ -84,7 +84,9 @@ begin
   for Id in Data.ChildIds do begin
     if ChildView = nil then begin
       // New node.
-      DebugLn(' Allocating new node for %s', [Id.ToString()]);
+      if LogHasDebug then begin
+        LogDebug(Format(' Allocating new node for %s', [Id.ToString()]));
+      end;
       ChildView := TreeView.Items.AddChild(Parent, '...');
       ChildView.Data := TTreeNodeData.Create(Id);
     end else begin
@@ -93,13 +95,17 @@ begin
       if not (D.Id = Id) then begin
         if IdMap.TryGetData(Id, N) then begin
           // Move existing node N to the current position.
-          DebugLn(' Moving node %s before node %s', [Id.ToString(), D.Id.ToString()]);
+          if LogHasDebug then begin
+            LogDebug(Format(' Moving node %s before node %s', [Id.ToString(), D.Id.ToString()]));
+          end;
           N.MoveTo(ChildView, naInsert);
           ChildView := N;
           IdMap.Remove(Id);
         end else begin
           // Create a new node.
-          DebugLn(' Allocating new node for %s', [Id.ToString()]);
+          if LogHasDebug then begin
+            LogDebug(Format(' Allocating new node for %s', [Id.ToString()]));
+          end;
           ChildView := TreeView.Items.Insert(ChildView, '...');
           ChildView.Data := TTreeNodeData.Create(Id);
         end;
@@ -116,7 +122,9 @@ begin
   while ChildView <> nil do begin
     N := ChildView;
     D := TTreeNodeData(ChildView.Data);
-    DebugLn(' Removing node %s', [D.Id.ToString()]);
+    if LogHasDebug then begin
+      LogDebug(Format(' Removing node %s', [D.Id.ToString()]));
+    end;
     ChildView := ChildView.GetNextSibling;
     N.Delete;
   end;

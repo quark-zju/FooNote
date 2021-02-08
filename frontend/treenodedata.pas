@@ -5,7 +5,7 @@ unit TreeNodeData;
 interface
 
 uses
-  Classes, SysUtils, ComCtrls, NoteTypes, NoteBackend, ImageIndex, LazLogger;
+  Classes, SysUtils, ComCtrls, NoteTypes, NoteBackend, ImageIndex, LogFFI;
 
 type
   TTreeNodeData = class
@@ -76,7 +76,9 @@ begin
   // Mount on demand.
   url := ExtractMeta('mount=');
   if (not url.IsEmpty) and (not NoteBackend.IsMount(Id)) then begin
-    DebugLn('Try mount %s on %s', [Url, Id.ToString()]);
+    if LogHasDebug then begin
+      LogDebug(Format('Try mount %s on %s', [Url, Id.ToString()]));
+    end;
     NoteBackend.TryMount(Id, Url);
   end;
 
