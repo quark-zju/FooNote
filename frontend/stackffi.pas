@@ -11,6 +11,10 @@ const
   OK: Int32 = 0;
   ENONE: Int32 = -1;
   ETYPE: Int32 = -2;
+  EIO: Int32 = -3;
+  EINVAL: Int32 = -4;
+  EWOULDBLOCK: Int32 = -5;
+
 
 
 // Communicate with Rust via a stack. References (like string or bytes) are copied

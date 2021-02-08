@@ -53,7 +53,6 @@ function TryUmount(Id: FullId): boolean;
 
 implementation
 
-
 // Main FFI APIs. Their input and output are based on the thread-local stack.
 // The return value is for error codes.
 
@@ -93,19 +92,36 @@ procedure notebackend_close_all(); cdecl; external 'notebackend';
 
 // Main API implemenation by communicating using stack APIs.
 
-function LogResultError(ErrNo: integer): integer;
+function LogResultErrorMessage(ErrNo: integer; var ErrorMessage: string): integer;
 var
   S: string;
 begin
-  if ErrNo <> OK then begin
-    S := StackLastString();
-    if not S.IsEmpty then begin
-      if LogHasError then begin
+  if ErrNo = EWOULDBLOCK then begin
+    // Can happen by TimerCheckSaveResult frequently. Log in TRACE level.
+    if LogHasTrace then begin
+      S := StackLastString();
+      if not S.IsEmpty then begin
+        ErrorMessage := S;
+        LogTrace(Format('FFI Error: %s', [S]));
+      end;
+    end;
+  end else if ErrNo <> OK then begin
+    if LogHasError then begin
+      S := StackLastString();
+      if not S.IsEmpty then begin
+        ErrorMessage := S;
         LogError(Format('FFI Error: %s', [S]));
       end;
     end;
   end;
   Result := ErrNo;
+end;
+
+function LogResultError(ErrNo: integer): integer;
+var
+  S: string;
+begin
+  Result := LogResultErrorMessage(ErrNo, S);
 end;
 
 procedure CloseAll;
@@ -114,11 +130,13 @@ begin
 end;
 
 function Open(Url: string): FullId;
+var
+  S: string;
 begin
   StackClear();
   StackPushString(Url);
-  if LogResultError(notebackend_open()) <> OK then begin
-    raise EExternal.Create(Format('Open(%s) failed', [Url]));
+  if LogResultErrorMessage(notebackend_open(), S) <> OK then begin
+    raise EExternal.Create(Format('Open(%s) failed: %s', [Url, S]));
   end;
   Result := StackPopFullId();
 end;

@@ -198,6 +198,7 @@ type
 
     procedure ScheduleAutoSave;
 
+    procedure UpdateTitle;
     procedure RefreshFullTree;
     function InsertLocation(Id: FullId; NParent: integer; out Pos: integer): FullId;
     function NewNode(AText, AMeta: string; NParent: integer = 0): FullId;
@@ -225,6 +226,9 @@ resourcestring
   RSNoExit = 'Do not exit';
   RSYesReload = 'Reload';
   RSNoReload = 'Do not reload';
+  RSFailOpenUrl = 'Failed to open [%s]: %s. What to do?';
+  RSOpenFallbackNote = 'Open Fallback Note';
+  RSExit = 'Exit';
 
 implementation
 
@@ -267,20 +271,38 @@ begin
   end;
   AppConfig.ConfigFileName := Format('FooNote-%s.cfg', [MDPrint(MD5String(url)).Substring(0, 7)]);
   AppConfig.RootTreeUrl := Url;
-  MenuItemRootPath.Caption := ExtractFileName(Url);
-  MenuItemRootPath.Hint := Url;
 end;
 
 procedure TFormFooNoteMain.InitRootBackend;
 var
   RootId: FullId;
   Url: string;
+const
+  FallbackUrl = 'memory:memory';
 begin
   Url := AppConfig.RootTreeUrl;
-  RootId := NoteBackend.Open(Url);
+  try
+    RootId := NoteBackend.Open(Url);
+  except
+    on e: EExternal do begin
+      // Use fallback Url.
+      AppConfig.RootTreeUrl := FallbackUrl;
+      RootId := NoteBackend.Open(FallbackUrl);
+      if QuestionDlg('FooNote', Format(RSFailOpenUrl, [Url, e.Message]), mtWarning,
+        [mrYes, RSOpenFallbackNote, mrNo, RSExit], '') = mrNo then begin
+        Close;
+      end;
+    end;
+  end;
+
+  FreeAndNil(RootNodeData);
   RootNodeData := TTreeNodeData.Create(RootId);
   SelectedId := RootId;
   RefreshFullTree;
+  MenuItemRootPath.Caption := ExtractFileName(Url);
+  ActionViewWarnUnsaved.Visible := False;
+
+  UpdateTitle;
 end;
 
 procedure OnConfigChange(Name: string; Config: TAppConfig);
@@ -628,6 +650,7 @@ end;
 
 procedure TFormFooNoteMain.FormCreate(Sender: TObject);
 begin
+  InitLogFFI; // Run after AllocConsole for env_logger to detect colors.
   InitRootTreeUrlAndConfigFileName; // Affects config name.
   InitAppConfigLink; // Link Editor TFont to AppConfig's Font.
   LoadAppConfigFromDiskWithoutApply;
@@ -991,15 +1014,22 @@ begin
   // Set it again here.
   LoadSplitterPosition;
 
-  // Update Form Title. Does not seem effective in FormCreate.
-  if AppConfig.RootTreeUrl <> DefaultUrl then begin
-    Caption := Format('FooNote (%s)', [ExtractFileName(AppConfig.RootTreeUrl)]);
-  end;
+  UpdateTitle;
 
   // Make the preview window "visible" so it won't steal the focus.
   {$ifdef Windows}
   PreviewForm.EnsureInit;
   {$endif}
+end;
+
+procedure TFormFooNoteMain.UpdateTitle;
+begin
+  // Update Form Title. Does not seem effective in FormCreate.
+  if AppConfig.RootTreeUrl <> DefaultUrl then begin
+    Caption := Format('FooNote (%s)', [ExtractFileName(AppConfig.RootTreeUrl)]);
+  end else begin
+    Caption := 'FooNote';
+  end;
 end;
 
 procedure TFormFooNoteMain.IdleTimerWndProcTimer(Sender: TObject);
@@ -1019,7 +1049,7 @@ begin
   if Id = RootNodeData.Id then begin
     exit;
   end;
-  url := InputBox('Mount', 'URL', 'file:1.foonote');
+  url := InputBox('Mount', 'URL', '1.foonote');
   if url.IsEmpty then begin
     exit;
   end;

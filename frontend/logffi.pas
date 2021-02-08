@@ -18,6 +18,8 @@ procedure LogInfo(S: string);
 procedure LogDebug(S: string);
 procedure LogTrace(S: string);
 
+procedure InitLogFFI;
+
 implementation
 
 var
@@ -31,6 +33,17 @@ procedure notebackend_log_info(); cdecl; external 'notebackend';
 procedure notebackend_log_debug(); cdecl; external 'notebackend';
 procedure notebackend_log_trace(); cdecl; external 'notebackend';
 
+procedure InitLogFFI;
+begin
+  notebackend_enable_env_logger();
+  LogLevel := notebackend_log_max_level();
+  LogHasTrace := (LogLevel >= 5);
+  LogHasDebug := (LogLevel >= 4);
+  LogHasInfo := (LogLevel >= 3);
+  LogHasWarn := (LogLevel >= 2);
+  LogHasError := (LogLevel >= 1);
+  LogInfo(Format('Frontend Log Level: %d', [LogLevel]));
+end;
 
 procedure LogError(S: string);
 begin
@@ -63,16 +76,6 @@ begin
 end;
 
 initialization
-
-  notebackend_enable_env_logger();
-  LogLevel := notebackend_log_max_level();
-  LogHasTrace := (LogLevel >= 5);
-  LogHasDebug := (LogLevel >= 4);
-  LogHasInfo := (LogLevel >= 3);
-  LogHasWarn := (LogLevel >= 2);
-  LogHasError := (LogLevel >= 1);
-
-  LogInfo(Format('Frontend Log Level: %d', [LogLevel]));
 
 end.
 

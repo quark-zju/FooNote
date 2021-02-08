@@ -1,13 +1,13 @@
 object FormSaveFailure: TFormSaveFailure
   Left = 608
-  Height = 271
+  Height = 320
   Top = 340
-  Width = 412
+  Width = 432
   BorderIcons = []
   BorderStyle = bsDialog
   Caption = 'Failed to save'
-  ClientHeight = 271
-  ClientWidth = 412
+  ClientHeight = 320
+  ClientWidth = 432
   OnShow = FormShow
   LCLVersion = '2.0.10.0'
   object MemoErrorMessage: TMemo
@@ -17,14 +17,16 @@ object FormSaveFailure: TFormSaveFailure
     AnchorSideRight.Control = Owner
     AnchorSideRight.Side = asrBottom
     Left = 10
-    Height = 91
+    Height = 147
     Top = 37
-    Width = 392
+    Width = 412
     Anchors = [akTop, akLeft, akRight]
     BorderSpacing.Around = 10
     Color = clForm
     ReadOnly = True
+    ScrollBars = ssAutoBoth
     TabOrder = 0
+    WordWrap = False
   end
   object Label1: TLabel
     AnchorSideLeft.Control = Owner
@@ -35,7 +37,7 @@ object FormSaveFailure: TFormSaveFailure
     Left = 10
     Height = 17
     Top = 10
-    Width = 392
+    Width = 412
     Anchors = [akTop, akLeft, akRight]
     BorderSpacing.Around = 10
     Caption = 'The last attempt to save has failed with error message:'
@@ -50,8 +52,8 @@ object FormSaveFailure: TFormSaveFailure
     AnchorSideBottom.Side = asrBottom
     Left = 328
     Height = 27
-    Top = 234
-    Width = 74
+    Top = 283
+    Width = 94
     Anchors = [akLeft, akRight, akBottom]
     AutoSize = True
     BorderSpacing.Top = 10
@@ -70,8 +72,8 @@ object FormSaveFailure: TFormSaveFailure
     AnchorSideRight.Side = asrBottom
     Left = 10
     Height = 34
-    Top = 138
-    Width = 392
+    Top = 194
+    Width = 412
     Anchors = [akTop, akLeft, akRight]
     BorderSpacing.Around = 10
     Caption = 'If this is caused by unrecoverable network issues, you can start a new FooNote instance and copy-paste changes there.'
@@ -85,8 +87,8 @@ object FormSaveFailure: TFormSaveFailure
     AnchorSideRight.Control = ButtonNewInstance
     Left = 10
     Height = 25
-    Top = 182
-    Width = 274
+    Top = 238
+    Width = 294
     Anchors = [akTop, akLeft, akRight]
     BorderSpacing.Around = 10
     OnChange = EditNewUrlChange
@@ -100,9 +102,9 @@ object FormSaveFailure: TFormSaveFailure
     AnchorSideRight.Side = asrBottom
     AnchorSideBottom.Control = EditNewUrl
     AnchorSideBottom.Side = asrBottom
-    Left = 294
+    Left = 314
     Height = 27
-    Top = 181
+    Top = 237
     Width = 108
     Anchors = [akTop, akRight]
     AutoSize = True

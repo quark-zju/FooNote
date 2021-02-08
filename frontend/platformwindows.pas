@@ -515,6 +515,13 @@ end;
 initialization
   BarData.cbSize := sizeof(BarData);
 
+  if not SysUtils.GetEnvironmentVariable('FOONOTE_LOG').IsEmpty() then begin
+    // Allocate a console if logging is enabled.
+    AllocConsole;
+    // AttachConsole does not work well - parent cmd.exe won't wait for us.
+    // AttachConsole(ATTACH_PARENT_PROCESS);
+  end;
+
 finalization
   UnregisterAppBar;
 
