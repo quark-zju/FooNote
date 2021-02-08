@@ -797,20 +797,17 @@ mod git_cmd {
     }
 
     fn git_config(key: &str) -> Option<String> {
-        let output = Command::new(GIT)
+        let output = GitCommand::default()
             .args(&["config", "--get", key])
             .output()
-            .ok()?;
-        if output.status.success() {
-            let s: String = String::from_utf8_lossy(&output.stdout).trim().into();
-            if s.is_empty() {
-                // Normalize empty strings to `None` values.
-                None
-            } else {
-                Some(s)
-            }
-        } else {
+            .unwrap_or_default()
+            .trim()
+            .to_string();
+        if output.is_empty() {
+            // Normalize empty strings to `None` values.
             None
+        } else {
+            Some(output)
         }
     }
 
