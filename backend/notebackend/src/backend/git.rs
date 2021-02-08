@@ -492,7 +492,7 @@ impl GitTextIO {
         let message = "FooNote Checkpoint";
         let commit = format!(
             concat!(
-                "commit {ref_name}\n",
+                "commit refs/tags/{ref_name}\n",
                 "mark :{commit_id}\n",
                 "committer {name} <{email}> {when}\n",
                 "data {message_len}\n{message}\n",
@@ -500,9 +500,6 @@ impl GitTextIO {
                 "{files}",
                 "\n",
                 "get-mark :{commit_id}\n",
-                "reset refs/tags/{ref_name}\n",
-                "from :{commit_id}\n",
-                "\n",
             ),
             ref_name = local_ref_name,
             commit_id = commit_id,
