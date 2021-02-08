@@ -43,6 +43,8 @@ function GetSearchInput(): string;
 // Return True on success.
 
 function TryPersist(): boolean;
+function TryPersistAsync(): boolean;
+function TryPersistAsyncWait(var errno: Int32): boolean;
 function TryRemove(Id: FullId): boolean;
 function TryRemove(Ids: VecFullId): boolean;
 function TrySetRawMeta(Id: FullId; Meta: string): boolean;
@@ -103,6 +105,9 @@ function notebackend_update_meta(): Int32; cdecl; external 'notebackend';
 function notebackend_remove(): Int32; cdecl; external 'notebackend';
 function notebackend_remove_batch(): Int32; cdecl; external 'notebackend';
 function notebackend_persist(): Int32; cdecl; external 'notebackend';
+function notebackend_persist_async(): Int32; cdecl; external 'notebackend';
+function notebackend_persist_try_wait(): Int32; cdecl; external 'notebackend';
+function notebackend_enable_env_logger(): Int32; cdecl; external 'notebackend';
 function notebackend_copy(): Int32; cdecl; external 'notebackend';
 function notebackend_paste(): Int32; cdecl; external 'notebackend';
 function notebackend_mount(): Int32; cdecl; external 'notebackend';
@@ -502,6 +507,21 @@ begin
   Result := (LogError(notebackend_persist()) = OK);
 end;
 
+function TryPersistAsync(): boolean;
+begin
+  StackClear();
+  Result := (LogError(notebackend_persist_async()) = OK);
+end;
+
+function TryPersistAsyncWait(var errno: Int32): boolean;
+begin
+  StackClear();
+  Result := (LogError(notebackend_persist_try_wait()) = OK);
+  if Result then begin
+    errno := StackPopInt();
+  end;
+end;
+
 function IsFolder(Id: FullId): boolean;
 var
   S: string;
@@ -589,6 +609,10 @@ begin
   end;
   Result := StackPopString();
 end;
+
+
+initialization
+  notebackend_enable_env_logger();
 
 
 end.

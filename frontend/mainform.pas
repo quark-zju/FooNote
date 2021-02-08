@@ -992,10 +992,16 @@ end;
 
 procedure TFormFooNoteMain.TimerAutoSaveTimer(Sender: TObject);
 var
-  Saved: boolean;
+  Scheduled: boolean;
+  errno: Int32;
 begin
-  Saved := ActionEditSave.Execute;
-  DebugLn('AutoSave. Succeeded: %d', [integer(Saved)]);
+  if NoteBackend.TryPersistAsyncWait(errno) then begin
+    DebugLn('AutoSave. Last Persist Result: %d', [errno]);
+  end;
+
+  Scheduled := NoteBackend.TryPersistAsync();
+  DebugLn('AutoSave. Scheduled: %d', [integer(Scheduled)]);
+
   TimerAutoSave.Enabled := False;
 end;
 
