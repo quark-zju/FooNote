@@ -14,7 +14,7 @@ use std::io::Result;
 /// Replace destination with the source, recursively.
 /// The type signature ensures src and dst are different.
 /// This is used by multiplex backend to implement moving.
-pub(crate) fn copy<S: TreeBackend, D: TreeBackend>(
+pub(crate) fn copy_replace<S: TreeBackend, D: TreeBackend>(
     src: &S,
     src_id: S::Id,
     dst: &mut D,
@@ -53,7 +53,7 @@ pub(crate) fn copy<S: TreeBackend, D: TreeBackend>(
 
     // Copy recursively.
     for (src_id, dst_id) in src_children.into_iter().zip(dst_children.into_iter()) {
-        copy(src, src_id, dst, dst_id, dst_new_ids.as_deref_mut())?;
+        copy_replace(src, src_id, dst, dst_id, dst_new_ids.as_deref_mut())?;
     }
 
     Ok(())
@@ -562,7 +562,7 @@ pub(crate) mod tests {
 
         // Copy. "Trash" is not copied.
         let bd = bl[1];
-        copy(&a, a0, &mut b, bd, Some(&mut bl)).unwrap();
+        copy_replace(&a, a0, &mut b, bd, Some(&mut bl)).unwrap();
         assert_eq!(
             b.draw_ascii(&bl),
             r#"

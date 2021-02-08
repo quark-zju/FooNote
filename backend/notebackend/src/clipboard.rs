@@ -20,7 +20,7 @@ where
             String::new(),
         )?;
         // Heads are enough."copy" is recursive.
-        crate::backend::copy(src, id, &mut dst, dst_id, None)?;
+        crate::backend::copy_replace(src, id, &mut dst, dst_id, None)?;
     }
 
     Ok(dst)
@@ -40,7 +40,7 @@ where
     for src_id in src.get_children(src.get_root_id())? {
         let new_dst_id = dst.insert(dst_id, pos, String::new(), String::new())?;
         ids.push(new_dst_id);
-        crate::backend::copy(src, src_id, dst, new_dst_id, Some(&mut ids))?;
+        crate::backend::copy_replace(src, src_id, dst, new_dst_id, Some(&mut ids))?;
         pos = InsertPos::After;
         dst_id = new_dst_id;
     }

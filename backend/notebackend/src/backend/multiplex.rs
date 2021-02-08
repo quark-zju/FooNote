@@ -111,7 +111,7 @@ impl TreeBackend for MultiplexBackend {
                 }
                 // Do the move.
                 let dst_id = dst.insert(dest_id.1, pos, String::new(), String::new())?;
-                super::copy(&src, id.1, &mut dst, dst_id, None)?;
+                super::copy_replace(&src, id.1, &mut dst, dst_id, None)?;
                 src.remove(id.1)?;
                 Ok((dest_id.0, dst_id))
             })();
