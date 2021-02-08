@@ -245,8 +245,8 @@ impl MultiplexBackend {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::backend::blob::MemBackend;
     use crate::backend::tests::*;
+    use crate::backend::MemBackend;
 
     #[test]
     fn test_basic() {

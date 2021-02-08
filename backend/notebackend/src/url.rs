@@ -1,4 +1,4 @@
-use crate::backend::blob;
+use crate::backend;
 use crate::backend::dylib;
 use crate::backend::git;
 use notebackend_types::Id;
@@ -23,7 +23,7 @@ pub fn open(url: &str) -> Result<Box<dyn TreeBackend<Id = Id>>> {
         "git" => Ok(Box::new(git::GitBackend::new(url, None)?)),
         "" if url.ends_with(".git") => Ok(Box::new(git::GitBackend::new(url, None)?)),
         "foonote" | "" => Ok(Box::new(
-            blob::SingleFileBackend::from_path(&Path::new(path))?.with_trash(true),
+            backend::SingleFileBackend::from_path(&Path::new(path))?.with_trash(true),
         )),
         "python" | "python-base64" => Ok(Box::new(dylib::DylibBackend::open(
             "notebackend_python",

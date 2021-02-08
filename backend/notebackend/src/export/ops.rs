@@ -7,7 +7,7 @@ use crate::backend::multiplex::FullId;
 use crate::backend::multiplex::MultiplexBackend;
 use crate::clipboard;
 use crate::search::Search;
-use backend::blob::MemBackend;
+use backend::MemBackend;
 use notebackend_types::InsertPos;
 use notebackend_types::TreeBackend;
 use once_cell::sync::Lazy;

@@ -129,9 +129,9 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::backend::blob::MemBackend;
     use crate::backend::multiplex::MultiplexBackend;
     use crate::backend::tests::*;
+    use crate::backend::MemBackend;
 
     fn check_search(backend: &Arc<RwLock<MultiplexBackend>>, input: &str, expected: &str) {
         let mut s = Search::new(backend.clone());

@@ -1,19 +1,40 @@
-pub(crate) mod blob;
+use crate::backend::meta::blob::BlobBackend;
+
 pub(crate) mod dylib;
+mod file;
 pub(crate) mod git;
+mod mem;
 pub(crate) mod meta;
 pub(crate) mod multiplex;
 pub(crate) mod null;
 
+pub type SingleFileBackend = BlobBackend<file::FileBlobIo>;
+pub type MemBackend = BlobBackend<mem::MemBlobIo>;
+
 #[cfg(test)]
 pub(crate) mod tests {
-    use crate::backend::blob::MemBackend;
+    use super::MemBackend;
     use crate::clipboard::copy_replace;
     use notebackend_types::Id;
     use notebackend_types::InsertPos;
     use notebackend_types::Mtime;
     use notebackend_types::TreeBackend;
+    use std::fmt;
     use std::io;
+
+    impl PartialEq for MemBackend {
+        fn eq(&self, other: &Self) -> bool {
+            self.blob_io.data == other.blob_io.data && self.has_trash == other.has_trash
+        }
+    }
+
+    impl fmt::Debug for MemBackend {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            f.write_str("MemBackend")?;
+            self.blob_io.data.fmt(f)?;
+            Ok(())
+        }
+    }
 
     // Abstract backend testing.
     pub(crate) trait TestTreeBackend: TreeBackend {

@@ -1,7 +1,7 @@
 //! Utilities to make clipboard operations (copy, paste) on backends easier.
 //! For example, serialize selected nodes into a binary format.
 
-use crate::backend::blob::MemBackend;
+use crate::backend::MemBackend;
 pub use notebackend_types::BackendId;
 use notebackend_types::InsertPos;
 use notebackend_types::TreeBackend;
