@@ -30,4 +30,4 @@ jobs:
       with:
         lazarus-version: ${{ matrix.lazarus-versions }}
     - name: Build GUI
-      run: lazbuild "frontend/foonote.lpi"
+      run: lazbuild --build-mode=Release "frontend/foonote.lpi"
