@@ -470,11 +470,67 @@ pub extern "C" fn notebackend_search_input() -> i32 {
 /// () -> ()
 #[no_mangle]
 pub extern "C" fn notebackend_enable_env_logger() -> i32 {
-    match env_logger::try_init() {
+    match env_logger::builder()
+        .format_timestamp_millis()
+        .parse_env("FOONOTE_LOG")
+        .try_init()
+    {
         Ok(_) => errno::OK,
         Err(e) => {
             stack::push(e.to_string());
             errno::EIO
         }
+    }
+}
+
+/// Log target for the ffi.
+const TARGET: &str = "frontend";
+
+/// () -> ()
+/// Return the current max log level.
+#[no_mangle]
+pub extern "C" fn notebackend_log_max_level() -> i32 {
+    match log::max_level() {
+        log::LevelFilter::Off => 0,
+        log::LevelFilter::Error => 1,
+        log::LevelFilter::Warn => 2,
+        log::LevelFilter::Info => 3,
+        log::LevelFilter::Debug => 4,
+        log::LevelFilter::Trace => 5,
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn notebackend_log_error() {
+    if let Ok(s) = stack::pop::<String>() {
+        log::error!(target: TARGET, "{}", s);
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn notebackend_log_warn() {
+    if let Ok(s) = stack::pop::<String>() {
+        log::warn!(target: TARGET, "{}", s);
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn notebackend_log_info() {
+    if let Ok(s) = stack::pop::<String>() {
+        log::info!(target: TARGET, "{}", s);
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn notebackend_log_debug() {
+    if let Ok(s) = stack::pop::<String>() {
+        log::debug!(target: TARGET, "{}", s);
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn notebackend_log_trace() {
+    if let Ok(s) = stack::pop::<String>() {
+        log::trace!(target: TARGET, "{}", s);
     }
 }
