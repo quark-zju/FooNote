@@ -4,6 +4,8 @@ use notebackend_types::TreeBackend;
 use pyo3::{prelude::*, types::PyDict};
 use std::fs;
 use std::io;
+use std::sync::Arc;
+use std::sync::Mutex;
 
 #[no_mangle]
 pub fn notebackend_create(url: &str) -> io::Result<Box<dyn TreeBackend<Id = Id>>> {
@@ -167,5 +169,10 @@ impl TreeBackend for PythonBackend {
             self.instance.call_method0(py, "persist")?;
             Ok(())
         })
+    }
+
+    fn persist_async(&mut self, result: Arc<Mutex<Option<io::Result<()>>>>) {
+        let r = self.persist();
+        *result.lock().unwrap() = Some(r);
     }
 }
