@@ -1,4 +1,6 @@
 use crate::manifest::Manifest;
+use crate::manifest::ROOT_ID;
+use crate::manifest::TRASH_ID;
 use notebackend_types::Id;
 use notebackend_types::InsertPos;
 use notebackend_types::Mtime;
@@ -28,11 +30,11 @@ impl<T: TextIO> TreeBackend for ManifestBasedBackend<T> {
     type Id = Id;
 
     fn get_children(&self, id: Self::Id) -> io::Result<Vec<Self::Id>> {
-        Ok(self.manifest.children.get(&id).cloned().unwrap_or_default())
+        Ok(self.manifest.get_children(id))
     }
 
     fn get_parent(&self, id: Self::Id) -> io::Result<Option<Self::Id>> {
-        Ok(self.manifest.parents.get(&id).cloned())
+        Ok(self.manifest.get_parent(id))
     }
 
     fn get_mtime(&self, id: Self::Id) -> io::Result<Mtime> {
@@ -103,6 +105,9 @@ impl<T: TextIO> TreeBackend for ManifestBasedBackend<T> {
         dest_id: Self::Id,
         pos: InsertPos,
     ) -> io::Result<Self::Id> {
+        if id == ROOT_ID || id == TRASH_ID {
+            return notebackend_types::error::invalid_input("special nodes cannot be moved");
+        }
         let parent_id = match pos {
             InsertPos::Before | InsertPos::After => self
                 .get_parent(dest_id)?
@@ -169,11 +174,19 @@ impl<T: TextIO> TreeBackend for ManifestBasedBackend<T> {
     }
 
     fn remove(&mut self, id: Self::Id) -> io::Result<()> {
+        if id == ROOT_ID || id == TRASH_ID {
+            return notebackend_types::error::invalid_input("special nodes cannot be removed");
+        }
         self.touch(id)?;
-        let parent = self.get_parent(id)?;
-        self.manifest.remove_parent(id);
-        self.manifest.remove(id);
-        self.text_io.remove_raw_text(id)?;
+        if !self.manifest.has_trash || self.is_ancestor(TRASH_ID, id)? {
+            // Already in trash, or trash disabled. Remove directly.
+            self.manifest.remove_parent(id);
+            self.manifest.remove(id);
+            self.text_io.remove_raw_text(id)?;
+        } else {
+            // Move to trash.
+            self.set_parent(id, TRASH_ID, InsertPos::Append)?;
+        }
         Ok(())
     }
 

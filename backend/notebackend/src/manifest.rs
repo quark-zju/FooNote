@@ -17,10 +17,12 @@ pub struct Manifest {
     pub parents: HashMap<Id, Id>, // derived from children
     #[serde(skip)]
     pub mtime: HashMap<Id, Mtime>, // temporary in-process state
+    #[serde(default)]
+    pub has_trash: bool,
 }
 
-const ROOT_ID: Id = 0;
-const TRASH_ID: Id = 1;
+pub const ROOT_ID: Id = 0;
+pub const TRASH_ID: Id = 1;
 
 impl Default for Manifest {
     fn default() -> Self {
@@ -30,6 +32,7 @@ impl Default for Manifest {
             parents: Default::default(),
             mtime: Default::default(),
             next_id: min_next_id(),
+            has_trash: false,
         };
         result.metas.insert(ROOT_ID, "type=root\n".to_string());
         result.rebuild_parents();
@@ -38,6 +41,44 @@ impl Default for Manifest {
 }
 
 impl Manifest {
+    /// Enable or disable trash.
+    pub fn with_trash(mut self, enabled: bool) -> Self {
+        if self.has_trash != enabled {
+            self.has_trash = enabled;
+            if enabled {
+                self.metas.insert(
+                    TRASH_ID,
+                    "type=trash\ncopyable=false\npin=true\nreadonly=true\n".to_string(),
+                );
+            }
+        }
+        self
+    }
+
+    pub fn get_children(&self, id: Id) -> Vec<Id> {
+        let mut children = self.children.get(&id).cloned().unwrap_or_default();
+        if id == ROOT_ID && self.has_trash {
+            children.push(TRASH_ID);
+        }
+        children
+    }
+
+    pub fn get_parent(&self, id: Id) -> Option<Id> {
+        if id == TRASH_ID {
+            if self.has_trash {
+                return Some(ROOT_ID);
+            } else {
+                return None;
+            }
+        }
+        let parent_id = self.parents.get(&id).cloned().unwrap_or(id);
+        if parent_id == id {
+            None
+        } else {
+            Some(parent_id)
+        }
+    }
+
     /// Rebuild parents from children data.
     pub fn rebuild_parents(&mut self) {
         for (&id, child_ids) in &self.children {
