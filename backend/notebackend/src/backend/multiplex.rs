@@ -11,6 +11,8 @@ use notebackend_types::TreeBackend;
 use std::collections::HashMap;
 use std::io;
 use std::io::Result;
+use std::sync::Arc;
+use std::sync::Mutex;
 
 pub type FullId = (BackendId, Id);
 type BoxBackend = Box<dyn TreeBackend<Id = Id>>;
@@ -167,6 +169,14 @@ impl TreeBackend for MultiplexBackend {
             None => Ok(()),
             Some(e) => Err(e),
         }
+    }
+
+    fn persist_async(&mut self, result: Arc<Mutex<Option<Result<()>>>>) {
+        // XXX: Fast path only works for the 1 backend case.
+        if self.backends.len() == 1 {
+            return self.backends[0].persist_async(result);
+        }
+        *result.lock().unwrap() = Some(self.persist());
     }
 }
 

@@ -7,6 +7,8 @@ use notebackend_types::TreeBackend;
 use std::borrow::Cow;
 use std::io;
 use std::io::Result;
+use std::sync::Arc;
+use std::sync::Mutex;
 pub struct NullBackend;
 
 fn error<T>() -> Result<T> {
@@ -68,5 +70,9 @@ impl TreeBackend for NullBackend {
 
     fn persist(&mut self) -> Result<()> {
         Ok(())
+    }
+
+    fn persist_async(&mut self, result: Arc<Mutex<Option<Result<()>>>>) {
+        *result.lock().unwrap() = Some(Ok(()))
     }
 }

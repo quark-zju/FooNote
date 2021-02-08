@@ -265,10 +265,7 @@ pub trait TreeBackend: Send + Sync + 'static {
     /// Async persistent. Prepare fast changes then kicks off a thread to
     /// do the rest of the job. The thread is independent from `self`,
     /// and will write result to `result`.
-    fn persist_async(&mut self, result: Arc<Mutex<Option<Result<()>>>>) {
-        let r = self.persist();
-        *result.lock().unwrap() = Some(r);
-    }
+    fn persist_async(&mut self, result: Arc<Mutex<Option<Result<()>>>>);
 }
 
 impl TreeBackend for Box<dyn TreeBackend<Id = Id>> {
