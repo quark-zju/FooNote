@@ -72,7 +72,7 @@ initialization
   LogHasWarn := (LogLevel >= 2);
   LogHasError := (LogLevel >= 1);
 
-  LogError(Format('Log Level: %d', [LogLevel]));
+  LogInfo(Format('Frontend Log Level: %d', [LogLevel]));
 
 end.
 
