@@ -66,7 +66,14 @@ impl Manifest {
 
     pub fn get_children(&self, id: Id) -> Vec<Id> {
         let mut children = self.children.get(&id).cloned().unwrap_or_default();
-        if id == ROOT_ID && self.has_trash {
+        if id == ROOT_ID && self.has_trash && {
+            let trash_count = self
+                .children
+                .get(&TRASH_ID)
+                .map(|cs| cs.len())
+                .unwrap_or_default();
+            trash_count > 0
+        } {
             children.push(TRASH_ID);
         }
         children
