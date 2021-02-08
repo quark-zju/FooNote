@@ -27,6 +27,7 @@ pub fn open(url: &str) -> Result<Box<dyn TreeBackend<Id = Id>>> {
             "notebackend_python",
             url,
         )?)),
+        "memory" => Ok(Box::new(backend::MemBackend::empty())),
         _ if url.ends_with(".git") => Ok(Box::new(backend::GitBackend::new(url, None)?)),
         _ => Err(io::Error::new(
             io::ErrorKind::InvalidInput,
