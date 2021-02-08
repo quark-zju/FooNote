@@ -1,12 +1,17 @@
 use crate::backend::meta::blob::BlobBackend;
 
-pub(crate) mod dylib;
+mod dylib;
 mod file;
-pub(crate) mod git;
+mod git;
 mod mem;
 pub(crate) mod meta;
-pub(crate) mod multiplex;
+mod multiplex;
 pub(crate) mod null;
+
+pub use dylib::DylibBackend;
+pub use git::GitBackend;
+pub use multiplex::FullId;
+pub use multiplex::MultiplexBackend;
 
 pub type SingleFileBackend = BlobBackend<file::FileBlobIo>;
 pub type MemBackend = BlobBackend<mem::MemBlobIo>;

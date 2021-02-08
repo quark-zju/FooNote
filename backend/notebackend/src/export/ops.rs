@@ -3,8 +3,8 @@
 use super::errno;
 use super::stack;
 use crate::backend;
-use crate::backend::multiplex::FullId;
-use crate::backend::multiplex::MultiplexBackend;
+use crate::backend::FullId;
+use crate::backend::MultiplexBackend;
 use crate::clipboard;
 use crate::search::Search;
 use backend::MemBackend;

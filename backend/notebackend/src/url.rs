@@ -1,6 +1,4 @@
 use crate::backend;
-use crate::backend::dylib;
-use crate::backend::git;
 use notebackend_types::Id;
 use notebackend_types::TreeBackend;
 use std::io;
@@ -20,16 +18,16 @@ pub fn open(url: &str) -> Result<Box<dyn TreeBackend<Id = Id>>> {
     };
 
     match scheme {
-        "git" => Ok(Box::new(git::GitBackend::new(url, None)?)),
-        "" if url.ends_with(".git") => Ok(Box::new(git::GitBackend::new(url, None)?)),
+        "git" => Ok(Box::new(backend::GitBackend::new(url, None)?)),
+        "" if url.ends_with(".git") => Ok(Box::new(backend::GitBackend::new(url, None)?)),
         "foonote" | "" => Ok(Box::new(
             backend::SingleFileBackend::from_path(&Path::new(path))?.with_trash(true),
         )),
-        "python" | "python-base64" => Ok(Box::new(dylib::DylibBackend::open(
+        "python" | "python-base64" => Ok(Box::new(backend::DylibBackend::open(
             "notebackend_python",
             url,
         )?)),
-        _ if url.ends_with(".git") => Ok(Box::new(git::GitBackend::new(url, None)?)),
+        _ if url.ends_with(".git") => Ok(Box::new(backend::GitBackend::new(url, None)?)),
         _ => Err(io::Error::new(
             io::ErrorKind::InvalidInput,
             format!("invalid backend URL: {}", url),
