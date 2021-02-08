@@ -99,7 +99,7 @@ impl GitBackend {
     /// Creates a Git backend. `url` specifies the repo location.
     /// `cache_dir` can be None, which means using the system default cache
     /// location, or a specified location for testing purpose.
-    pub fn new(url: &str, cache_dir: Option<&Path>) -> io::Result<GitBackend> {
+    pub fn from_git_url(url: &str, cache_dir: Option<&Path>) -> io::Result<GitBackend> {
         let (url, hash) = split_url(url)?;
         let repo_path = prepare_bare_staging_repo(cache_dir)?;
         let remote_name = prepare_remote_name(&repo_path, url)?;
@@ -120,6 +120,12 @@ impl GitBackend {
         text_io.fetch()?;
         let manifest = text_io.load_manifest()?;
         Ok(Self::from_manifest_text_io(manifest, text_io))
+    }
+
+    /// Enable or disable trash.
+    pub fn with_trash(mut self, enabled: bool) -> Self {
+        self.manifest = self.manifest.with_trash(enabled);
+        self
     }
 }
 
@@ -611,7 +617,7 @@ mod tests {
         };
 
         let url = format!("{}#mytrunk", git_repo_path.display());
-        let mut backend = GitBackend::new(&url, Some(&cache_path)).unwrap();
+        let mut backend = GitBackend::from_git_url(&url, Some(&cache_path)).unwrap();
         backend.check_generic().unwrap();
         backend.check_generic().unwrap();
 
@@ -634,12 +640,12 @@ mod tests {
         check(backend);
 
         // Test re-load from the original repo using the same cache.
-        let backend = GitBackend::new(&url, Some(&cache_path)).unwrap();
+        let backend = GitBackend::from_git_url(&url, Some(&cache_path)).unwrap();
         check(backend);
 
         // Test re-load from the original repo using the a different cache.
         let cache_path = dir.path().join("cache2");
-        let backend = GitBackend::new(&url, Some(&cache_path)).unwrap();
+        let backend = GitBackend::from_git_url(&url, Some(&cache_path)).unwrap();
         check(backend);
     }
 }

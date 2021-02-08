@@ -18,9 +18,10 @@ pub fn open(url: &str) -> Result<Box<dyn TreeBackend<Id = Id>>> {
     };
 
     match scheme {
-        "git" => Ok(Box::new(backend::GitBackend::new(url, None)?)),
-        "" if url.ends_with(".git") => Ok(Box::new(backend::GitBackend::new(url, None)?)),
-        "foonote" | "" => Ok(Box::new(
+        "git" => Ok(Box::new(
+            backend::GitBackend::from_git_url(url, None)?.with_trash(true),
+        )),
+        "foonote" => Ok(Box::new(
             backend::SingleFileBackend::from_path(&Path::new(path))?.with_trash(true),
         )),
         "python" | "python-base64" => Ok(Box::new(backend::DylibBackend::open(
@@ -28,7 +29,12 @@ pub fn open(url: &str) -> Result<Box<dyn TreeBackend<Id = Id>>> {
             url,
         )?)),
         "memory" => Ok(Box::new(backend::MemBackend::empty())),
-        _ if url.ends_with(".git") => Ok(Box::new(backend::GitBackend::new(url, None)?)),
+        _ if url.ends_with(".git") => Ok(Box::new(
+            backend::GitBackend::from_git_url(url, None)?.with_trash(true),
+        )),
+        "" => Ok(Box::new(
+            backend::SingleFileBackend::from_path(&Path::new(path))?.with_trash(true),
+        )),
         _ => Err(io::Error::new(
             io::ErrorKind::InvalidInput,
             format!("invalid backend URL: {}", url),
