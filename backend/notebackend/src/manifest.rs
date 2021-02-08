@@ -138,7 +138,7 @@ impl Manifest {
     pub fn touch(&mut self, mut id: Id) {
         loop {
             self.mtime.entry(id).and_modify(|v| *v += 1).or_insert(1);
-            if let Some(&parent_id) = self.parents.get(&id) {
+            if let Some(parent_id) = self.get_parent(id) {
                 if parent_id != id {
                     id = parent_id;
                     continue;
