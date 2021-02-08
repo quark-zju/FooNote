@@ -10,14 +10,16 @@ crate-type = ["cdylib"]
 [dependencies]
 bitflags = "1"
 dirs = "3"
+env_logger = "0.8"
 fs2 = "0.4"
 libloading = "0.6"
+log = "0.4"
+notebackend_types = { path = "../notebackend_types" }
 once_cell = "1"
 parking_lot = "0.11"
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1" }
 tempfile = "3"
-notebackend_types = { path = "../notebackend_types" }
 
 [dev-dependencies]
 drawdag = { package = "esl01-drawdag", version = "0.1" }

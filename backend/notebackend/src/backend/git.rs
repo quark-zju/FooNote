@@ -45,6 +45,8 @@ pub struct GitTextIO {
     base_commit: String,
     user: Lazy<String>,
     email: Lazy<String>,
+    // for "changed" detection.
+    last_manifest: Manifest,
 }
 
 const MANIFEST_NAME: &str = "manifest.json";
@@ -63,12 +65,7 @@ impl TextIO for GitTextIO {
             }
             None => {
                 let mut text = RwLockUpgradableReadGuard::upgrade(text);
-                let path = self.text_path(id);
-                let data = match self.read_path_utf8(&path) {
-                    Err(e) if e.kind() == io::ErrorKind::NotFound => String::new(),
-                    Ok((_oid, data)) => data,
-                    Err(e) => return Err(e),
-                };
+                let data = self.read_text_from_git(id)?;
                 text.insert(id, Some((data.clone(), false)));
                 Ok(data.into())
             }
@@ -116,6 +113,7 @@ impl GitBackend {
             email: Lazy::new(|| {
                 git_config("user.email").unwrap_or_else(|| "foonote@example.com".to_string())
             }),
+            last_manifest: Manifest::default(),
         };
         text_io.fetch()?;
         let manifest = text_io.load_manifest()?;
@@ -131,12 +129,19 @@ impl GitBackend {
 
 impl GitTextIO {
     /// Fetch the latest commit from the remote.
+    /// NOTE: `self.base_commit` is not reset to the fetched commit!
     fn fetch(&self) -> io::Result<()> {
         self.run_git(&[
             "fetch",
             self.remote_name.as_str(),
             self.branch_name.as_str(),
-        ])
+        ])?;
+        log::info!(
+            "Fetched {}/{}",
+            self.remote_name.as_str(),
+            self.branch_name.as_str()
+        );
+        Ok(())
     }
 
     /// Path for the text object.
@@ -144,7 +149,18 @@ impl GitTextIO {
         format!("notes/{:x}/{:x}", id / 256, id % 256)
     }
 
+    fn read_text_from_git(&self, id: Id) -> io::Result<String> {
+        let path = self.text_path(id);
+        let data = match self.read_path_utf8(&path) {
+            Err(e) if e.kind() == io::ErrorKind::NotFound => String::new(),
+            Ok((_oid, data)) => data,
+            Err(e) => return Err(e),
+        };
+        Ok(data)
+    }
+
     /// Load the metadata (parents, children, meta).
+    /// Updates `last_manifest` state.
     fn load_manifest(&mut self) -> io::Result<Manifest> {
         let (oid, manifest_str) = match self.read_path_utf8(MANIFEST_NAME) {
             Err(e) if e.kind() == io::ErrorKind::NotFound => (None, "{}".to_string()),
@@ -155,6 +171,7 @@ impl GitTextIO {
             .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
         manifest.next_id = manifest.next_id.max(min_next_id());
         manifest.rebuild_parents();
+        self.last_manifest = manifest.clone();
         Ok(manifest)
     }
 
@@ -270,9 +287,43 @@ impl GitTextIO {
         Ok((HexOid(oid.to_string()), data))
     }
 
+    /// Mark text that has changed back to original state as "unchanged".
+    /// Return the count of changed "text"s.
+    fn optimize_changed_flags(&mut self) -> io::Result<usize> {
+        let mut changed_count = 0;
+        let mut texts = self.texts.write();
+        for (&id, opt) in texts.iter_mut() {
+            if let Some((text, changed)) = opt {
+                if *changed {
+                    let orig_text = self.read_text_from_git(id)?;
+                    if &orig_text == text {
+                        log::trace!("Text not changed: {}", id);
+                        *changed = false;
+                    } else {
+                        log::trace!("Text changed: {}", id);
+                        changed_count += 1;
+                    }
+                }
+            }
+        }
+        log::debug!("Changed text count: {}", changed_count);
+        Ok(changed_count)
+    }
+
     /// Commit changes. Return the hex commit hash.
     /// Update self.base_commit to the new commit.
-    fn commit(&mut self, manifest: &Manifest) -> io::Result<String> {
+    /// Return None if nothing has changed and there is no need to commit.
+    fn commit(&mut self, manifest: &Manifest) -> io::Result<Option<String>> {
+        // Nothing changed?
+        if self.optimize_changed_flags()? == 0 {
+            if &self.last_manifest == manifest {
+                log::info!("Nothing changed - No need to commit");
+                return Ok(None);
+            } else {
+                log::debug!("Manifest has changed");
+            }
+        }
+
         let payload = self.fast_import_payload(manifest);
         let mut tmp_file = NamedTempFile::new_in(&self.repo_path)?;
         tmp_file.write_all(&payload.as_bytes())?;
@@ -302,8 +353,10 @@ impl GitTextIO {
                 "fastimport did not provide new commit hash",
             );
         }
+        log::info!("Committed: {}", &commit_oid);
         self.base_commit = commit_oid.clone();
-        Ok(commit_oid)
+        self.last_manifest = manifest.clone();
+        Ok(Some(commit_oid))
     }
 
     /// Push the local changes to remote.
@@ -316,7 +369,14 @@ impl GitTextIO {
                 self.base_commit.as_str(),
                 self.branch_name.as_str()
             ),
-        ])
+        ])?;
+        log::info!(
+            "Pushed {} to {}/{}",
+            self.base_commit.as_str(),
+            self.remote_name.as_str(),
+            self.branch_name.as_str()
+        );
+        Ok(())
     }
 
     /// Fast-import payload for commit().

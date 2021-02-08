@@ -398,3 +398,15 @@ pub extern "C" fn notebackend_search_input() -> i32 {
     stack::push(input);
     errno::OK
 }
+
+/// () -> ()
+#[no_mangle]
+pub extern "C" fn notebackend_enable_env_logger() -> i32 {
+    match env_logger::try_init() {
+        Ok(_) => errno::OK,
+        Err(e) => {
+            stack::push(e.to_string());
+            errno::EIO
+        }
+    }
+}

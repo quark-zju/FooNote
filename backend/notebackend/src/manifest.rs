@@ -5,7 +5,7 @@ use serde::Serialize;
 use std::collections::BTreeMap;
 use std::collections::HashMap;
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Manifest {
     #[serde(default)]
     pub children: BTreeMap<Id, Vec<Id>>,
@@ -23,6 +23,15 @@ pub struct Manifest {
 
 pub const ROOT_ID: Id = 0;
 pub const TRASH_ID: Id = 1;
+
+impl PartialEq for Manifest {
+    fn eq(&self, other: &Self) -> bool {
+        // Do not test "parents" and "mtime" - they are derived.
+        &self.children == &other.children
+            && &self.metas == &other.metas
+            && self.has_trash == other.has_trash
+    }
+}
 
 impl Default for Manifest {
     fn default() -> Self {
