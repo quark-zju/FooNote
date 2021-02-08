@@ -1,5 +1,5 @@
-use super::BlobBackend;
-use super::BlobIo;
+use crate::backend::meta::blob::BlobBackend;
+use crate::backend::meta::blob::BlobIo;
 use fs2::FileExt;
 use std::fs;
 use std::io;

@@ -1,5 +1,5 @@
-use super::BlobBackend;
-use super::BlobIo;
+use crate::backend::meta::blob::BlobBackend;
+use crate::backend::meta::blob::BlobIo;
 use std::io;
 use std::sync::Arc;
 
@@ -41,8 +41,8 @@ impl BlobBackend<MemBlobIo> {
 
 #[cfg(test)]
 mod tests {
-    use super::super::TRASH_ID;
     use super::*;
+    use crate::backend::meta::blob::TRASH_ID;
     use crate::backend::tests::*;
     use crate::backend::TreeBackend;
 
