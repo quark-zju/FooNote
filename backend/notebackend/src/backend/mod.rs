@@ -24,14 +24,14 @@ pub(crate) mod tests {
 
     impl PartialEq for MemBackend {
         fn eq(&self, other: &Self) -> bool {
-            self.blob_io.data == other.blob_io.data && self.has_trash == other.has_trash
+            self.text_io.texts == other.text_io.texts && self.manifest == other.manifest
         }
     }
 
     impl fmt::Debug for MemBackend {
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
             f.write_str("MemBackend")?;
-            self.blob_io.data.fmt(f)?;
+            self.text_io.blob_io.data.fmt(f)?;
             Ok(())
         }
     }

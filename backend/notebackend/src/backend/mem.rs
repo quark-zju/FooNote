@@ -42,8 +42,8 @@ impl BlobBackend<MemBlobIo> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::backend::meta::blob::TRASH_ID;
     use crate::backend::tests::*;
+    use crate::manifest::TRASH_ID;
     use notebackend_types::TreeBackend;
 
     #[test]

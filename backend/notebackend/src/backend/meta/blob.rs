@@ -1,30 +1,19 @@
 //! Blob backend. Backend that can be serialized into and deserialized from
 //! a blob.
 
+use crate::backend::meta::manifest::ManifestBasedBackend;
+use crate::backend::meta::manifest::TextIO;
 use crate::manifest::Manifest;
 use notebackend_types::Id;
-use notebackend_types::InsertPos;
-use notebackend_types::Mtime;
-use notebackend_types::TreeBackend;
 use serde::Deserialize;
 use serde::Serialize;
 use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::io;
-use std::io::Read;
 use std::io::Result;
-use std::io::Write;
-use std::ops::Deref;
-use std::ops::DerefMut;
 
-/// Backend that loads and dumps from a single blob.
-pub struct BlobBackend<I> {
-    pub(crate) blob_io: I,
-    pub(crate) data: TreeData,
-    pub(crate) has_trash: bool,
-}
-
-/// How to read or write a blob
+/// How to read or write a blob. The blob contains full information about
+/// a tree of notes.
 pub trait BlobIo: Send + Sync + 'static {
     /// Load blob from backend.
     fn load(&mut self) -> io::Result<Box<dyn AsRef<[u8]>>>;
@@ -33,302 +22,105 @@ pub trait BlobIo: Send + Sync + 'static {
     fn save(&mut self, data: Vec<u8>) -> io::Result<()>;
 }
 
-/// Tree Data that can be converted from/to bytes.
-#[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq)]
-pub(crate) struct TreeData {
-    #[serde(default)]
+pub type BlobBackend<I> = ManifestBasedBackend<BlobTextIo<I>>;
+
+/// Backend that loads and dumps from a single blob.
+pub struct BlobTextIo<I> {
+    pub(crate) blob_io: I,
+    pub(crate) texts: BTreeMap<Id, String>,
+    pub(crate) has_trash: bool,
+}
+
+impl<I: BlobIo> TextIO for BlobTextIo<I> {
+    fn get_raw_text<'a>(&'a self, id: Id) -> Result<Cow<'a, str>> {
+        let s = self.texts.get(&id).map(|s| s.as_str()).unwrap_or("");
+        Ok(Cow::Borrowed(s))
+    }
+
+    fn set_raw_text(&mut self, id: Id, text: String) -> Result<()> {
+        self.texts.insert(id, text);
+        Ok(())
+    }
+
+    fn remove_raw_text(&mut self, id: Id) -> Result<()> {
+        self.texts.remove(&id);
+        Ok(())
+    }
+
+    fn persist_with_manifest(&mut self, manifest: &mut Manifest) -> Result<()> {
+        let data = RefTreeData {
+            texts: &self.texts,
+            manifest: manifest,
+        };
+        let buf =
+            serde_json::to_vec(&data).map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+        self.blob_io.save(buf)?;
+        Ok(())
+    }
+}
+#[derive(Serialize)]
+struct RefTreeData<'a> {
+    #[serde(rename = "notes")]
+    texts: &'a BTreeMap<Id, String>,
+    manifest: &'a Manifest,
+}
+
+#[derive(Deserialize, Default)]
+struct TreeData {
+    #[serde(default, rename = "notes")]
     texts: BTreeMap<Id, String>,
     #[serde(default)]
     manifest: Manifest,
 }
 
-pub(crate) const ROOT_ID: Id = 0;
-pub(crate) const TRASH_ID: Id = 1;
-
-impl Deref for TreeData {
-    type Target = Manifest;
-
-    fn deref(&self) -> &Self::Target {
-        &self.manifest
-    }
-}
-
-impl DerefMut for TreeData {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.manifest
-    }
-}
-
-impl TreeData {
-    /// Load from a reader.
-    pub fn load(reader: &mut impl Read) -> Result<Self> {
-        let mut data: TreeData = serde_json::from_reader(reader)
-            .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
-        data.rebuild_parents();
-        Ok(data)
-    }
-
-    /// Dump the content to a file.
-    pub fn dump(&self, writer: &mut impl Write) -> Result<()> {
-        serde_json::to_writer(writer, self)
-            .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
-    }
-
-    fn remove(&mut self, id: Id) {
-        self.texts.remove(&id);
-        self.manifest.remove(id);
-    }
-}
-
-impl<I> BlobBackend<I> {
-    /// Check if an Id is valid.
-    fn check_id(&self, id: Id) -> Result<()> {
-        if id >= self.data.next_id {
-            Err(io::Error::new(
-                io::ErrorKind::InvalidInput,
-                format!("id {} does not exist", id),
-            ))
-        } else {
-            Ok(())
-        }
-    }
-
+impl<I: BlobIo> BlobBackend<I> {
     /// Remove unreachable nodes.
     pub fn remove_unreachable(&mut self) {
-        let unreachable = self.data.unreachable_ids(&[ROOT_ID, TRASH_ID]);
+        let unreachable = self.manifest.remove_unreachable();
         for id in unreachable {
-            self.data.remove(id);
+            self.text_io.texts.remove(&id);
         }
     }
 
     /// Converts to bytes.
     pub fn to_bytes(&self) -> Vec<u8> {
-        let mut buf = Vec::new();
-        self.data.dump(&mut buf).unwrap();
+        let data = self.to_serializable_data();
+        let buf = serde_json::to_vec(&data).expect("serialize should succeed");
         buf
     }
-}
 
-impl<I> BlobBackend<I>
-where
-    I: BlobIo,
-{
+    /// Convert to serializable data.
+    fn to_serializable_data(&self) -> RefTreeData {
+        RefTreeData {
+            texts: &self.text_io.texts,
+            manifest: &self.manifest,
+        }
+    }
+
+    /// Construct from `BlobIo`.
     pub fn from_blob_io(mut blob_io: I) -> Result<Self> {
         let bytes = blob_io.load()?;
-        let mut buf = (*bytes).as_ref();
-        let data: TreeData = if buf.is_empty() {
+        let buf: &[u8] = (*bytes).as_ref();
+        let mut data: TreeData = if buf.is_empty() {
             Default::default()
         } else {
-            TreeData::load(&mut buf)?
+            serde_json::from_slice(buf)?
         };
+        data.manifest.rebuild_parents();
         let result = Self {
-            data,
-            blob_io,
-            has_trash: false,
+            text_io: BlobTextIo {
+                blob_io,
+                texts: data.texts,
+                has_trash: false,
+            },
+            manifest: data.manifest,
         };
         Ok(result)
     }
 
     /// Enable or disable trash.
     pub fn with_trash(mut self, enabled: bool) -> Self {
-        self.has_trash = enabled;
-        if enabled {
-            self.data.metas.insert(
-                TRASH_ID,
-                "type=trash\ncopyable=false\npin=true\nreadonly=true\n".to_string(),
-            );
-        }
+        self.manifest = self.manifest.with_trash(enabled);
         self
-    }
-}
-
-impl<I> TreeBackend for BlobBackend<I>
-where
-    I: BlobIo,
-{
-    type Id = Id;
-
-    fn get_root_id(&self) -> Id {
-        ROOT_ID
-    }
-
-    fn get_children(&self, id: Id) -> Result<Vec<Id>> {
-        let mut children = self.data.children.get(&id).cloned().unwrap_or_default();
-        if id == ROOT_ID && self.has_trash {
-            children.push(TRASH_ID);
-        }
-        Ok(children)
-    }
-
-    fn get_parent(&self, id: Id) -> Result<Option<Id>> {
-        if id == TRASH_ID {
-            if self.has_trash {
-                return Ok(Some(ROOT_ID));
-            } else {
-                return Ok(None);
-            }
-        }
-        let parent_id = self.data.parents.get(&id).cloned().unwrap_or(id);
-        if parent_id == id {
-            Ok(None)
-        } else {
-            Ok(Some(parent_id))
-        }
-    }
-
-    fn get_mtime(&self, id: Id) -> Result<Mtime> {
-        Ok(self.data.mtime.get(&id).cloned().unwrap_or_default())
-    }
-
-    fn get_text(&self, id: Id) -> Result<Cow<str>> {
-        let s = self.data.texts.get(&id).map(|s| s.as_str()).unwrap_or("");
-        Ok(Cow::Borrowed(s))
-    }
-
-    fn get_raw_meta(&self, id: Id) -> Result<Cow<str>> {
-        let s = self.data.metas.get(&id).map(|s| s.as_str()).unwrap_or("");
-        Ok(Cow::Borrowed(s))
-    }
-
-    fn insert(&mut self, dest_id: Id, pos: InsertPos, text: String, meta: String) -> Result<Id> {
-        self.check_id(dest_id)?;
-        let id = self.data.next_id;
-        self.data.next_id += 1;
-
-        let parent_id = match pos {
-            InsertPos::Append => dest_id,
-            InsertPos::Before | InsertPos::After => self
-                .get_parent(dest_id)?
-                .unwrap_or_else(|| self.get_root_id()),
-        };
-        let children = self.data.children.entry(parent_id).or_default();
-        let index = match pos {
-            InsertPos::Append => -1isize,
-            InsertPos::Before => children.iter().position(|&c| c == dest_id).unwrap_or(0) as isize,
-            InsertPos::After => {
-                children
-                    .iter()
-                    .position(|&c| c == dest_id)
-                    .map(|i| i as isize)
-                    .unwrap_or(-2)
-                    + 1
-            }
-        };
-        if index < 0 || index as usize >= children.len() {
-            children.push(id);
-        } else {
-            children.insert(index as usize, id);
-        }
-        self.data.parents.insert(id, parent_id);
-        if !text.is_empty() {
-            self.set_text(id, text)?;
-        }
-        if !meta.is_empty() {
-            self.set_raw_meta(id, meta)?;
-        }
-        self.touch(id)?;
-        Ok(id)
-    }
-
-    fn set_text(&mut self, id: Id, text: String) -> Result<()> {
-        self.check_id(id)?;
-        let orig_text = self.get_text(id)?;
-        if orig_text != text {
-            self.data.texts.insert(id, text);
-            self.touch(id)?;
-        }
-        Ok(())
-    }
-
-    fn set_raw_meta(&mut self, id: Id, meta: String) -> Result<()> {
-        self.check_id(id)?;
-        let orig_meta = self.get_raw_meta(id)?;
-        if orig_meta != meta {
-            self.data.metas.insert(id, meta);
-            self.touch(id)?;
-        }
-        Ok(())
-    }
-
-    fn touch(&mut self, id: Self::Id) -> Result<()> {
-        self.data.touch(id);
-        Ok(())
-    }
-
-    fn remove(&mut self, id: Id) -> Result<()> {
-        self.check_id(id)?;
-        if id == ROOT_ID || id == TRASH_ID {
-            return notebackend_types::error::invalid_input("special nodes cannot be removed");
-        }
-        self.touch(id)?;
-        if !self.has_trash || self.is_ancestor(TRASH_ID, id)? {
-            // Already in trash, or trash disabled. Remove directly.
-            self.data.remove_parent(id);
-        } else {
-            // Move to trash.
-            self.set_parent(id, TRASH_ID, InsertPos::Append)?;
-        }
-        Ok(())
-    }
-
-    fn set_parent(&mut self, id: Id, dest_id: Id, pos: InsertPos) -> Result<Id> {
-        self.check_id(id)?;
-        self.check_id(dest_id)?;
-        if id == ROOT_ID || id == TRASH_ID {
-            return notebackend_types::error::invalid_input("special nodes cannot be moved");
-        }
-        let parent_id = match pos {
-            InsertPos::Before | InsertPos::After => self
-                .get_parent(dest_id)?
-                .unwrap_or_else(|| self.get_root_id()),
-            InsertPos::Append => dest_id,
-        };
-        if self.is_ancestor(id, parent_id)? {
-            return Err(io::Error::new(
-                io::ErrorKind::InvalidInput,
-                format!(
-                    "{:?} ({}) cannot be moved to be under its descendant {:?} ({})",
-                    self.get_text_first_line(id).unwrap_or_default(),
-                    id,
-                    self.get_text_first_line(parent_id).unwrap_or_default(),
-                    dest_id,
-                ),
-            ));
-        }
-        self.touch(id)?;
-        self.data.remove_parent(id);
-        self.data.parents.insert(id, parent_id);
-        let children = self.data.children.entry(parent_id).or_default();
-        let index = match pos {
-            InsertPos::Append => -1,
-            InsertPos::Before => children
-                .iter()
-                .position(|&i| i == dest_id)
-                .map(|i| i as isize)
-                .unwrap_or(0),
-            InsertPos::After => {
-                children
-                    .iter()
-                    .position(|&i| i == dest_id)
-                    .map(|i| i as isize)
-                    .unwrap_or(-2)
-                    + 1
-            }
-        };
-        if index < 0 || index as usize > children.len() {
-            children.push(id);
-        } else {
-            children.insert(index as usize, id);
-        }
-        self.touch(id)?;
-        Ok(id)
-    }
-
-    fn persist(&mut self) -> Result<()> {
-        self.remove_unreachable();
-        let mut buf: Vec<u8> = Default::default();
-        self.data.dump(&mut buf)?;
-        self.blob_io.save(buf)?;
-        Ok(())
     }
 }

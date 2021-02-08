@@ -191,6 +191,10 @@ impl<T: TextIO> TreeBackend for ManifestBasedBackend<T> {
     }
 
     fn persist(&mut self) -> io::Result<()> {
+        let unreachable = self.manifest.remove_unreachable();
+        for id in unreachable {
+            self.text_io.remove_raw_text(id)?;
+        }
         self.text_io.persist_with_manifest(&mut self.manifest)
     }
 

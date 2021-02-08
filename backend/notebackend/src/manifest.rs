@@ -79,6 +79,15 @@ impl Manifest {
         }
     }
 
+    /// Remove unreachable nodes. Return the unreachable Ids.
+    pub fn remove_unreachable(&mut self) -> Vec<Id> {
+        let unreachable = self.unreachable_ids(&[ROOT_ID, TRASH_ID]);
+        for &id in &unreachable {
+            self.remove(id);
+        }
+        unreachable
+    }
+
     /// Rebuild parents from children data.
     pub fn rebuild_parents(&mut self) {
         for (&id, child_ids) in &self.children {
