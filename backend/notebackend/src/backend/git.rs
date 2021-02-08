@@ -97,9 +97,10 @@ impl TextIO for GitTextIO {
     }
 
     fn persist_with_manifest(&mut self, manifest: &mut Manifest) -> io::Result<()> {
-        self.commit(manifest)?;
-        self.texts.write().clear();
-        self.info.push()?;
+        if self.commit(manifest)?.is_some() {
+            self.texts.write().clear();
+            self.info.push()?;
+        }
         Ok(())
     }
 
@@ -108,26 +109,35 @@ impl TextIO for GitTextIO {
         manifest: &mut Manifest,
         result: Arc<StdMutex<Option<io::Result<()>>>>,
     ) {
-        let sync_result = (|| -> io::Result<()> {
-            self.commit(manifest)?;
+        let sync_result = (|| -> io::Result<Option<String>> {
+            let base_commit = self.commit(manifest)?;
             self.texts.write().clear();
-            Ok(())
+            Ok(base_commit)
         })();
-        if sync_result.is_err() {
-            *result.lock().unwrap() = Some(sync_result);
-            return;
-        }
-        let info = self.info.clone();
-        let previous_threads: Vec<_> = self.persist_threads.drain(..).collect();
-        let handler = thread::spawn(move || {
-            let async_result = info.push();
-            *result.lock().unwrap() = Some(async_result);
-            // Clean up previous threads.
-            for t in previous_threads {
-                let _ = t.join();
+        match sync_result {
+            Err(e) => {
+                // Error happened committing.
+                *result.lock().unwrap() = Some(Err(e));
             }
-        });
-        self.persist_threads.push(handler);
+            Ok(None) => {
+                // Nothing changed.
+                *result.lock().unwrap() = Some(Ok(()));
+            }
+            _ => {
+                // Need push.
+                let info = self.info.clone();
+                let previous_threads: Vec<_> = self.persist_threads.drain(..).collect();
+                let handler = thread::spawn(move || {
+                    let async_result = info.push();
+                    *result.lock().unwrap() = Some(async_result);
+                    // Clean up previous threads.
+                    for t in previous_threads {
+                        let _ = t.join();
+                    }
+                });
+                self.persist_threads.push(handler);
+            }
+        }
     }
 }
 
