@@ -196,6 +196,8 @@ type
     procedure ApplyThisFromToAppConfig; // Reverse of ApplyAppConfigToThisForm.
     procedure SaveConfigFile;
 
+    procedure ScheduleAutoSave;
+
     procedure RefreshFullTree;
     function InsertLocation(Id: FullId; NParent: integer; out Pos: integer): FullId;
     function NewNode(AText, AMeta: string; NParent: integer = 0): FullId;
@@ -658,6 +660,14 @@ begin
   DebugLn('NewNode Id=%d Index=%d Meta=%s', [Id.Id, Index, AMeta.Trim]);
   RefreshFullTree;
   Result := Id;
+
+  ScheduleAutoSave;
+end;
+
+procedure TFormFooNoteMain.ScheduleAutoSave;
+begin
+  TimerAutoSave.Enabled := False;
+  TimerAutoSave.Enabled := True;
 end;
 
 procedure TFormFooNoteMain.ActionNewFolderExecute(Sender: TObject);
@@ -693,8 +703,7 @@ begin
     RefreshFullTree;
   end;
   // Schedule AutoSave
-  TimerAutoSave.Enabled := False;
-  TimerAutoSave.Enabled := True;
+  ScheduleAutoSave;
   // Seems broken after Drag-and-drop move:
   // TreeViewSync.SyncTreeNode(TreeViewNoteTree.Selected);
 end;
@@ -928,6 +937,7 @@ begin
         // For some reason, accessing Selected can SIGSEGV here? RootId?
         // TreeViewNoteTree.Selected.Expanded := True;
         SelectedIds := Ids;
+        ScheduleAutoSave;
       end else begin
         T := ClipBoard.AsText;
         if not T.IsEmpty then begin
@@ -1178,6 +1188,7 @@ begin
     if NoteBackend.TrySetParent(Ids, DestId, CandidateInsertPosition) then begin
       RefreshFullTree;
       SelectedIds := Ids;
+      ScheduleAutoSave;
     end;
   end;
 end;
@@ -1431,6 +1442,7 @@ begin
     NoteBackend.TryRemove(SelectedIds);
     TreeViewNoteTree.Select([]);
     RefreshFullTree;
+    ScheduleAutoSave;
   end;
 end;
 

@@ -535,8 +535,8 @@ object FormFooNoteMain: TFormFooNoteMain
   end
   object ImageListElementaryIcons: TImageList
     Scaled = True
-    Left = 176
-    Top = 200
+    Left = 64
+    Top = 32
     Bitmap = {
       4C690C0000001000000010000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
@@ -1683,7 +1683,7 @@ object FormFooNoteMain: TFormFooNoteMain
     Enabled = False
     Interval = 100
     OnTimer = TimerCheckSaveResultTimer
-    Left = 64
-    Top = 400
+    Left = 176
+    Top = 200
   end
 end
