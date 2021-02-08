@@ -12,12 +12,18 @@ use notebackend_types::InsertPos;
 use notebackend_types::TreeBackend;
 use once_cell::sync::Lazy;
 use parking_lot::RwLock;
+use parking_lot::RwLockUpgradableReadGuard;
+use std::io;
 use std::sync::Arc;
+use std::sync::Mutex as StdMutex;
 
 /// Global state for easier ffi APIs.
 static ROOT_BACKEND: Lazy<Arc<RwLock<MultiplexBackend>>> = Lazy::new(|| Default::default());
 static SEARCH: Lazy<RwLock<Search<MultiplexBackend>>> =
     Lazy::new(|| RwLock::new(Search::new(ROOT_BACKEND.clone())));
+
+static PERSIST_RESULT_LIST: Lazy<RwLock<Vec<Arc<StdMutex<Option<io::Result<()>>>>>>> =
+    Lazy::new(|| Default::default());
 
 macro_rules! pop {
     () => {
@@ -309,6 +315,67 @@ pub extern "C" fn notebackend_autofill() -> i32 {
 #[no_mangle]
 pub extern "C" fn notebackend_persist() -> i32 {
     nop_return!(ROOT_BACKEND.write().persist())
+}
+
+/// () -> ()
+/// Potentially spawns a thread to do the "slow" part of "persist".
+/// The result can be obtained by notebackend_persist_try_wait().
+#[no_mangle]
+pub extern "C" fn notebackend_persist_async() -> i32 {
+    let list = PERSIST_RESULT_LIST.upgradable_read();
+    if !list.is_empty() {
+        // Prevent multiple threads. This is just some protection to avoid
+        // overload the system.
+        stack::push(
+            "persist thread is already running - use notebackend_persist_try_wait()".to_string(),
+        );
+        return errno::EWOULDBLOCK;
+    }
+
+    let mut list = RwLockUpgradableReadGuard::upgrade(list);
+    let result = Arc::new(StdMutex::new(None));
+    list.push(result.clone());
+    ROOT_BACKEND.write().persist_async(result);
+    errno::OK
+}
+
+/// () -> (errno: int)
+/// - EINVAL: No pending thread. Call notebackend_persist_async().
+/// - EWOULDBLOCK: Result is not ready yet.
+/// - OK: Result is returned as `errno`.
+#[no_mangle]
+pub extern "C" fn notebackend_persist_try_wait() -> i32 {
+    let last = PERSIST_RESULT_LIST.write().pop();
+    if let Some(last) = last {
+        let code = match last.try_lock() {
+            Ok(result) => match &*result {
+                None => {
+                    stack::push("persist thread is still running".to_string());
+                    errno::EWOULDBLOCK
+                }
+                Some(r) => {
+                    let errno = match r {
+                        Err(e) => errno::from_io_error(&e),
+                        Ok(_) => errno::OK,
+                    };
+                    stack::push(errno);
+                    errno::OK
+                }
+            },
+            Err(_) => {
+                stack::push("persist thread is still running".to_string());
+                errno::EWOULDBLOCK
+            }
+        };
+        if code != errno::OK {
+            // Push back to the waiting list.
+            PERSIST_RESULT_LIST.write().push(last);
+        }
+        code
+    } else {
+        stack::push("persist thread is not running - use notebackend_persist_async()".to_string());
+        errno::EINVAL
+    }
 }
 
 /// ([id: (i32, i32)], count: i32) -> (bytes: bytes)
