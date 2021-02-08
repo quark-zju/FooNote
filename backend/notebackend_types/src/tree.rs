@@ -5,6 +5,8 @@ use std::hash::Hash;
 use std::io::Result;
 use std::ops::Deref;
 use std::ops::DerefMut;
+use std::sync::Arc;
+use std::sync::Mutex;
 
 pub type Id = i32;
 pub type BackendId = usize;
@@ -259,6 +261,14 @@ pub trait TreeBackend: Send + Sync + 'static {
 
     /// Write changes to the underlying backend.
     fn persist(&mut self) -> Result<()>;
+
+    /// Async persistent. Prepare fast changes then kicks off a thread to
+    /// do the rest of the job. The thread is independent from `self`,
+    /// and will write result to `result`.
+    fn persist_async(&mut self, result: Arc<Mutex<Option<Result<()>>>>) {
+        let r = self.persist();
+        *result.lock().unwrap() = Some(r);
+    }
 }
 
 impl TreeBackend for Box<dyn TreeBackend<Id = Id>> {
@@ -325,6 +335,10 @@ impl TreeBackend for Box<dyn TreeBackend<Id = Id>> {
 
     fn persist(&mut self) -> Result<()> {
         self.deref_mut().persist()
+    }
+
+    fn persist_async(&mut self, result: Arc<Mutex<Option<Result<()>>>>) {
+        self.deref_mut().persist_async(result)
     }
 }
 
