@@ -12,14 +12,18 @@ uses
   ExtCtrls, ComCtrls, ActnList, PairSplitter, StdActns, ClipBrd, LCLType,
   LazUtf8, FGL, LazLogger, Math, NoteBackend, NoteTypes, MemoUtil,
   LCLTranslator, Buttons, JSONPropStorage, TreeNodeData,
-  TreeViewSync, Settings, PreviewForm, AboutForm, FileUtil, md5;
+  TreeViewSync, Settings, PreviewForm, AboutForm, FileUtil, md5,
+  savemsgform;
 
 type
 
   { TFormFooNoteMain }
 
   TFormFooNoteMain = class(TForm)
+    ActionViewWarnUnsaved: TAction;
+    ActionEditReload: TAction;
     MenuItem10: TMenuItem;
+    MenuItem27: TMenuItem;
     MenuItemRootPath: TMenuItem;
     MenuItem3: TMenuItem;
     MenuItem6: TMenuItem;
@@ -41,6 +45,8 @@ type
     MenuItem8: TMenuItem;
     MemoNote: TMemo;
     PanelDockSplitterLeft: TPanel;
+    TimerCheckSaveResult: TTimer;
+    ToolButtonWarning: TToolButton;
     TreeViewNoteTree: TTreeView;
     PanelTree: TPanel;
     PanelEdit: TPanel;
@@ -93,6 +99,8 @@ type
     MenuAddMenu: TPopupMenu;
 
     procedure ActionAppAboutExecute(Sender: TObject);
+    procedure ActionEditReloadExecute(Sender: TObject);
+    procedure ActionViewWarnUnsavedExecute(Sender: TObject);
     procedure PanelDockSplitterLeftMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: integer);
     procedure PanelDockSplitterLeftMouseMove(Sender: TObject; Shift: TShiftState; X, Y: integer);
     procedure PanelDockSplitterLeftMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: integer);
@@ -104,6 +112,7 @@ type
     procedure EditNoteSearchChange(Sender: TObject);
     procedure EditNoteSearchKeyPress(Sender: TObject; var Key: char);
     procedure TimerAutoSaveTimer(Sender: TObject);
+    procedure TimerCheckSaveResultTimer(Sender: TObject);
     procedure TreeViewNoteTreeAdvancedCustomDrawItem(Sender: TCustomTreeView; Node: TTreeNode;
       State: TCustomDrawState; Stage: TCustomDrawStage; var PaintImages, DefaultDraw: boolean);
     procedure TreeViewNoteTreeDblClick(Sender: TObject);
@@ -209,8 +218,11 @@ var
 
 resourcestring
   RSFailSaveStillExit = 'Failed to save changes. Still exit?';
+  RSReloadConfirm = 'Reload will discard unsaved changes. Still reload?';
   RSExitNoSave = 'Exit without saving';
   RSNoExit = 'Do not exit';
+  RSYesReload = 'Reload';
+  RSNoReload = 'Do not reload';
 
 implementation
 
@@ -690,7 +702,7 @@ end;
 procedure TFormFooNoteMain.FormClose(Sender: TObject; var CloseAction: TCloseAction);
 begin
   if not NoteBackend.TryPersist() then begin
-    if QuestionDlg('FooNote', RSFailSaveStillExit, mtCustom, [mrYes, RSExitNoSave, mrNo, RSNoExit], '') <>
+    if QuestionDlg('FooNote', RSFailSaveStillExit, mtWarning, [mrYes, RSExitNoSave, mrNo, RSNoExit], '') <>
       mrYes then begin
       CloseAction := caNone;
     end;
@@ -751,6 +763,23 @@ begin
     Application.CreateForm(TAboutFooNoteForm, AboutFooNoteForm);
   end;
   AboutFooNoteForm.ShowModal;
+end;
+
+procedure TFormFooNoteMain.ActionEditReloadExecute(Sender: TObject);
+begin
+  if QuestionDlg('FooNote', RSReloadConfirm, mtWarning, [mrYes, RSYesReload, mrNo, RSNoReload], '') = mrYes then begin
+    TreeViewNoteTree.Items.Clear;
+    NoteBackend.CloseAll;
+    InitRootBackend;
+  end;
+end;
+
+procedure TFormFooNoteMain.ActionViewWarnUnsavedExecute(Sender: TObject);
+begin
+  if not Assigned(FormSaveFailure) then begin
+    Application.CreateForm(TFormSaveFailure, FormSaveFailure);
+  end;
+  FormSaveFailure.ShowModal;
 end;
 
 procedure TFormFooNoteMain.DrawTreeSelectionPreview;
@@ -996,18 +1025,29 @@ begin
 end;
 
 procedure TFormFooNoteMain.TimerAutoSaveTimer(Sender: TObject);
-var
-  Scheduled: boolean;
-  errno: Int32;
 begin
-  if NoteBackend.TryPersistAsyncWait(errno) then begin
-    DebugLn('AutoSave. Last Persist Result: %d', [errno]);
+  ActionEditSave.Execute;
+end;
+
+procedure TFormFooNoteMain.TimerCheckSaveResultTimer(Sender: TObject);
+var
+  SaveErrno: Int32;
+  Message: string;
+begin
+  if NoteBackend.TryPersistAsyncWait(Message, SaveErrno) then begin
+    DebugLn('Save Result: %d %s', [SaveErrno, Message]);
+    // Save thread completed. Result in (Message, SaveErrno).
+    if SaveErrno <> NoteBackend.OK then begin
+      ActionViewWarnUnsaved.Visible := True;
+      AppConfig.SaveFailureMessage := Message;
+    end else begin
+      ActionViewWarnUnsaved.Visible := False;
+      AppConfig.SaveFailureMessage := '';
+    end;
+    TreeViewNoteTree.Cursor := crDefault;
+    ActionEditSave.Enabled := True;
+    TimerCheckSaveResult.Enabled := False;
   end;
-
-  Scheduled := NoteBackend.TryPersistAsync();
-  DebugLn('AutoSave. Scheduled: %d', [integer(Scheduled)]);
-
-  TimerAutoSave.Enabled := False;
 end;
 
 procedure TFormFooNoteMain.TreeViewNoteTreeAdvancedCustomDrawItem(Sender: TCustomTreeView;
@@ -1399,16 +1439,22 @@ var
   Scheduled: boolean;
   errno: Int32;
 begin
-  DebugLn('Save. Checking last result.');
-  if NoteBackend.TryPersistAsyncWait(errno) then begin
-    DebugLn('Save. Last Persist Result: %d', [errno]);
-  end;
-
-  DebugLn('Save. Schedule async save.');
   Scheduled := NoteBackend.TryPersistAsync();
   DebugLn('Save. Scheduled: %d', [integer(Scheduled)]);
 
-  TimerAutoSave.Enabled := False;
+  if Scheduled then begin
+    // Prevent stacking the save threads.
+    ActionEditSave.Enabled := False;
+
+    // Change cursor to "busy".
+    TreeViewNoteTree.Cursor := crHourGlass;
+
+    // TimerCheckSaveResult will re-enable ActionEditSave.
+    TimerCheckSaveResult.Enabled := True;
+
+    // Cancel auto-save. Auto-save will be re-enabled by text editing.
+    TimerAutoSave.Enabled := False;
+  end;
 end;
 
 procedure TFormFooNoteMain.MemoNoteKeyDown(Sender: TObject; var Key: word; Shift: TShiftState);

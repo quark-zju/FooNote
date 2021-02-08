@@ -44,7 +44,7 @@ function GetSearchInput(): string;
 
 function TryPersist(): boolean;
 function TryPersistAsync(): boolean;
-function TryPersistAsyncWait(var errno: Int32): boolean;
+function TryPersistAsyncWait(var message: string; var errno: Int32): boolean;
 function TryRemove(Id: FullId): boolean;
 function TryRemove(Ids: VecFullId): boolean;
 function TrySetRawMeta(Id: FullId; Meta: string): boolean;
@@ -513,12 +513,13 @@ begin
   Result := (LogError(notebackend_persist_async()) = OK);
 end;
 
-function TryPersistAsyncWait(var errno: Int32): boolean;
+function TryPersistAsyncWait(var message: string; var errno: Int32): boolean;
 begin
   StackClear();
   Result := (LogError(notebackend_persist_try_wait()) = OK);
   if Result then begin
     errno := StackPopInt();
+    message := StackPopString();
   end;
 end;
 

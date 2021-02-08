@@ -65,6 +65,7 @@ type
     ResetOnNextStartup: boolean;
     RootTreeUrl: string;
     ConfigFileName: string;
+    SaveFailureMessage: string;
 
     procedure RegisterOnChangeCallback(callback: TConfigChangeCallback);
     procedure NotifyAll;
