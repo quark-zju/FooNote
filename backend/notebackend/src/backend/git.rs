@@ -1,7 +1,6 @@
 use super::Id;
-use super::InsertPos;
-use super::Mtime;
-use super::TreeBackend;
+use crate::backend::meta::manifest::ManifestBasedBackend;
+use crate::backend::meta::manifest::TextIO;
 use crate::manifest::min_next_id;
 use crate::manifest::Manifest;
 use once_cell::sync::Lazy;
@@ -34,7 +33,9 @@ use tempfile::NamedTempFile;
 // directory, and only use push and fetch to interact with the url.
 
 /// Git backend using the system git binary.
-pub struct GitBackend {
+pub type GitBackend = ManifestBasedBackend<GitTextIO>;
+
+pub struct GitTextIO {
     remote_name: String,
     repo_path: PathBuf,
     branch_name: String,
@@ -42,7 +43,6 @@ pub struct GitBackend {
     texts: RwLock<HashMap<Id, Option<(String, bool)>>>,
     object_reader: Mutex<Option<Child>>,
     base_commit: String,
-    manifest: Manifest,
     user: Lazy<String>,
     email: Lazy<String>,
 }
@@ -52,51 +52,8 @@ const MANIFEST_NAME: &str = "manifest.json";
 #[derive(Clone, Debug)]
 struct HexOid(String);
 
-impl GitBackend {
-    /// Creates a Git backend. `url` specifies the repo location.
-    /// `cache_dir` can be None, which means using the system default cache
-    /// location, or a specified location for testing purpose.
-    pub fn new(url: &str, cache_dir: Option<&Path>) -> io::Result<GitBackend> {
-        let (url, hash) = split_url(url)?;
-        let repo_path = prepare_bare_staging_repo(cache_dir)?;
-        let remote_name = prepare_remote_name(&repo_path, url)?;
-        let branch_name = hash.unwrap_or("master").to_string();
-        let base_commit = format!("{}/{}", &remote_name, &branch_name);
-        let mut backend = Self {
-            remote_name,
-            repo_path,
-            branch_name,
-            base_commit,
-            texts: Default::default(),
-            object_reader: Default::default(),
-            manifest: Default::default(),
-            user: Lazy::new(|| git_config("user.name").unwrap_or_else(|| "FooNote".to_string())),
-            email: Lazy::new(|| {
-                git_config("user.email").unwrap_or_else(|| "foonote@example.com".to_string())
-            }),
-        };
-        backend.fetch()?;
-        backend.load_manifest()?;
-        Ok(backend)
-    }
-}
-
-impl TreeBackend for GitBackend {
-    type Id = Id;
-
-    fn get_children(&self, id: Self::Id) -> io::Result<Vec<Self::Id>> {
-        Ok(self.manifest.children.get(&id).cloned().unwrap_or_default())
-    }
-
-    fn get_parent(&self, id: Self::Id) -> io::Result<Option<Self::Id>> {
-        Ok(self.manifest.parents.get(&id).cloned())
-    }
-
-    fn get_mtime(&self, id: Self::Id) -> io::Result<Mtime> {
-        Ok(self.manifest.mtime.get(&id).cloned().unwrap_or_default())
-    }
-
-    fn get_text<'a>(&'a self, id: Self::Id) -> io::Result<std::borrow::Cow<'a, str>> {
+impl TextIO for GitTextIO {
+    fn get_raw_text<'a>(&'a self, id: Id) -> io::Result<std::borrow::Cow<'a, str>> {
         let text = self.texts.upgradable_read();
         match text.get(&id) {
             Some(Some((data, _modified))) => Ok(data.clone().into()),
@@ -118,145 +75,20 @@ impl TreeBackend for GitBackend {
         }
     }
 
-    fn get_raw_meta<'a>(&'a self, id: Self::Id) -> io::Result<std::borrow::Cow<'a, str>> {
-        Ok(self
-            .manifest
-            .metas
-            .get(&id)
-            .cloned()
-            .unwrap_or_default()
-            .into())
-    }
-
-    fn insert(
-        &mut self,
-        dest_id: Self::Id,
-        pos: InsertPos,
-        text: String,
-        meta: String,
-    ) -> io::Result<Self::Id> {
-        let id = self.manifest.next_id;
-        self.manifest.next_id += 1;
-        let parent_id = match pos {
-            InsertPos::Append => dest_id,
-            InsertPos::Before | InsertPos::After => self
-                .get_parent(dest_id)?
-                .unwrap_or_else(|| self.get_root_id()),
-        };
-        let children = self.manifest.children.entry(parent_id).or_default();
-        let index = match pos {
-            InsertPos::Append => -1isize,
-            InsertPos::Before => children.iter().position(|&c| c == dest_id).unwrap_or(0) as isize,
-            InsertPos::After => {
-                children
-                    .iter()
-                    .position(|&c| c == dest_id)
-                    .map(|i| i as isize)
-                    .unwrap_or(-2)
-                    + 1
-            }
-        };
-        if index < 0 || index as usize >= children.len() {
-            children.push(id);
-        } else {
-            children.insert(index as usize, id);
-        }
-        self.manifest.parents.insert(id, parent_id);
-        if !text.is_empty() {
-            self.set_text(id, text)?;
-        }
-        if !meta.is_empty() {
-            self.set_raw_meta(id, meta)?;
-        }
-        self.touch(id)?;
-        Ok(id)
-    }
-
-    fn set_parent(
-        &mut self,
-        id: Self::Id,
-        dest_id: Self::Id,
-        pos: InsertPos,
-    ) -> io::Result<Self::Id> {
-        let parent_id = match pos {
-            InsertPos::Before | InsertPos::After => self
-                .get_parent(dest_id)?
-                .unwrap_or_else(|| self.get_root_id()),
-            InsertPos::Append => dest_id,
-        };
-        if self.is_ancestor(id, parent_id)? {
-            return Err(io::Error::new(
-                io::ErrorKind::InvalidInput,
-                format!(
-                    "{:?} ({}) cannot be moved to be under its descendant {:?} ({})",
-                    self.get_text_first_line(id).unwrap_or_default(),
-                    id,
-                    self.get_text_first_line(parent_id).unwrap_or_default(),
-                    dest_id,
-                ),
-            ));
-        }
-        self.touch(id)?;
-        self.manifest.remove_parent(id);
-        self.manifest.parents.insert(id, parent_id);
-        let children = self.manifest.children.entry(parent_id).or_default();
-        let index = match pos {
-            InsertPos::Append => -1,
-            InsertPos::Before => children
-                .iter()
-                .position(|&i| i == dest_id)
-                .map(|i| i as isize)
-                .unwrap_or(0),
-            InsertPos::After => {
-                children
-                    .iter()
-                    .position(|&i| i == dest_id)
-                    .map(|i| i as isize)
-                    .unwrap_or(-2)
-                    + 1
-            }
-        };
-        if index < 0 || index as usize > children.len() {
-            children.push(id);
-        } else {
-            children.insert(index as usize, id);
-        }
-        self.touch(id)?;
-        Ok(id)
-    }
-
-    fn set_text(&mut self, id: Self::Id, text: String) -> io::Result<()> {
-        let orig_text = self.get_text(id)?;
-        if orig_text.as_ref() != text.as_str() {
-            let mut texts = self.texts.write();
-            texts.insert(id, Some((text, true)));
-            drop(texts);
-            self.touch(id)?;
-        }
+    fn set_raw_text(&mut self, id: Id, text: String) -> io::Result<()> {
+        let mut texts = self.texts.write();
+        texts.insert(id, Some((text, true)));
         Ok(())
     }
 
-    fn set_raw_meta(&mut self, id: Self::Id, meta: String) -> io::Result<()> {
-        let orig_meta = self.get_raw_meta(id)?;
-        if orig_meta != meta {
-            self.manifest.metas.insert(id, meta);
-            self.touch(id)?;
-        }
-        Ok(())
-    }
-
-    fn remove(&mut self, id: Self::Id) -> io::Result<()> {
-        self.touch(id)?;
-        let parent = self.get_parent(id)?;
-        self.manifest.remove_parent(id);
-        self.manifest.remove(id);
+    fn remove_raw_text(&mut self, id: Id) -> io::Result<()> {
         let mut texts = self.texts.write();
         texts.entry(id).and_modify(|e| *e = None);
         Ok(())
     }
 
-    fn persist(&mut self) -> io::Result<()> {
-        self.commit()?;
+    fn persist_with_manifest(&mut self, manifest: &mut Manifest) -> io::Result<()> {
+        self.commit(manifest)?;
         self.push()?;
         self.texts.write().clear();
         Ok(())
@@ -264,6 +96,34 @@ impl TreeBackend for GitBackend {
 }
 
 impl GitBackend {
+    /// Creates a Git backend. `url` specifies the repo location.
+    /// `cache_dir` can be None, which means using the system default cache
+    /// location, or a specified location for testing purpose.
+    pub fn new(url: &str, cache_dir: Option<&Path>) -> io::Result<GitBackend> {
+        let (url, hash) = split_url(url)?;
+        let repo_path = prepare_bare_staging_repo(cache_dir)?;
+        let remote_name = prepare_remote_name(&repo_path, url)?;
+        let branch_name = hash.unwrap_or("master").to_string();
+        let base_commit = format!("{}/{}", &remote_name, &branch_name);
+        let mut text_io = GitTextIO {
+            remote_name,
+            repo_path,
+            branch_name,
+            base_commit,
+            texts: Default::default(),
+            object_reader: Default::default(),
+            user: Lazy::new(|| git_config("user.name").unwrap_or_else(|| "FooNote".to_string())),
+            email: Lazy::new(|| {
+                git_config("user.email").unwrap_or_else(|| "foonote@example.com".to_string())
+            }),
+        };
+        text_io.fetch()?;
+        let manifest = text_io.load_manifest()?;
+        Ok(Self::from_manifest_text_io(manifest, text_io))
+    }
+}
+
+impl GitTextIO {
     /// Fetch the latest commit from the remote.
     fn fetch(&self) -> io::Result<()> {
         self.run_git(&[
@@ -273,19 +133,13 @@ impl GitBackend {
         ])
     }
 
-    /// Bump mtime of id and its parents.
-    fn touch(&mut self, id: Id) -> io::Result<()> {
-        self.manifest.touch(id);
-        Ok(())
-    }
-
     /// Path for the text object.
     fn text_path(&self, id: Id) -> String {
         format!("notes/{:x}/{:x}", id / 256, id % 256)
     }
 
     /// Load the metadata (parents, children, meta).
-    fn load_manifest(&mut self) -> io::Result<()> {
+    fn load_manifest(&mut self) -> io::Result<Manifest> {
         let (oid, manifest_str) = match self.read_path_utf8(MANIFEST_NAME) {
             Err(e) if e.kind() == io::ErrorKind::NotFound => (None, "{}".to_string()),
             Ok((oid, s)) => (Some(oid), s),
@@ -295,8 +149,7 @@ impl GitBackend {
             .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
         manifest.next_id = manifest.next_id.max(min_next_id());
         manifest.rebuild_parents();
-        self.manifest = manifest;
-        Ok(())
+        Ok(manifest)
     }
 
     fn run_git(&self, args: &[&str]) -> io::Result<()> {
@@ -413,8 +266,8 @@ impl GitBackend {
 
     /// Commit changes. Return the hex commit hash.
     /// Update self.base_commit to the new commit.
-    fn commit(&mut self) -> io::Result<String> {
-        let payload = self.fast_import_payload();
+    fn commit(&mut self, manifest: &Manifest) -> io::Result<String> {
+        let payload = self.fast_import_payload(manifest);
         let mut tmp_file = NamedTempFile::new_in(&self.repo_path)?;
         tmp_file.write_all(&payload.as_bytes())?;
         tmp_file.flush()?;
@@ -461,7 +314,7 @@ impl GitBackend {
     }
 
     /// Fast-import payload for commit().
-    fn fast_import_payload(&self) -> String {
+    fn fast_import_payload(&self, manifest: &Manifest) -> String {
         // Prepare fast-import payload.
         let mut payload = String::with_capacity(4096);
 
@@ -475,10 +328,10 @@ impl GitBackend {
         }
 
         // Prepare the manifest.
-        let manifest =
-            serde_json::to_string_pretty(&self.manifest).expect("Manifest can be encoded");
-        let manifest_id = self.manifest.next_id + ID_MARK_OFFSET;
-        let blob = fast_import_blob(&manifest, manifest_id);
+        let manifest_str =
+            serde_json::to_string_pretty(&manifest).expect("Manifest can be encoded");
+        let manifest_id = manifest.next_id + ID_MARK_OFFSET;
+        let blob = fast_import_blob(&manifest_str, manifest_id);
         payload += &blob;
 
         // Prepare the commit object.
@@ -534,7 +387,7 @@ impl GitBackend {
     }
 }
 
-impl Drop for GitBackend {
+impl Drop for GitTextIO {
     fn drop(&mut self) {
         let mut object_reader = self.object_reader.lock();
         if let Some(ref mut child) = *object_reader {
@@ -708,6 +561,7 @@ mod tests {
     use super::*;
     use crate::backend::tests::*;
     use crate::clipboard;
+    use notebackend_types::TreeBackend;
 
     fn populate_git_repo(dir: &Path) -> Option<PathBuf> {
         let git_repo_path = dir.join("repo");
