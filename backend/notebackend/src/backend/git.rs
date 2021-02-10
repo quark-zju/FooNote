@@ -385,7 +385,7 @@ impl GitTextIO {
 
     /// Mark text that has changed back to original state as "unchanged".
     /// Return the count of changed "text"s.
-    fn optimize_changed_flags(&mut self, manifest: &mut Manifest) -> io::Result<usize> {
+    fn optimize_then_count_changed_files(&mut self, manifest: &mut Manifest) -> io::Result<usize> {
         let mut changed_count = 0;
         let mut texts = self.texts.write();
 
@@ -420,7 +420,7 @@ impl GitTextIO {
     /// Return None if nothing has changed and there is no need to commit.
     fn commit(&mut self, manifest: &mut Manifest) -> io::Result<Option<String>> {
         // Nothing changed?
-        if self.optimize_changed_flags(manifest)? == 0 {
+        if self.optimize_then_count_changed_files(manifest)? == 0 {
             if &self.last_manifest == manifest {
                 log::info!("Nothing changed - No need to commit");
                 return Ok(None);
@@ -429,7 +429,7 @@ impl GitTextIO {
             }
         }
 
-        let payload = self.fast_import_payload(manifest);
+        let payload = self.fast_import_payload_for_manifest(manifest);
         let mut tmp_file = NamedTempFile::new_in(&self.info.repo_path)?;
         tmp_file.write_all(&payload.as_bytes())?;
         tmp_file.flush()?;
@@ -471,74 +471,88 @@ impl GitTextIO {
     }
 
     /// Fast-import payload for commit().
-    fn fast_import_payload(&self, manifest: &Manifest) -> String {
+    fn fast_import_payload_for_manifest(&self, manifest: &Manifest) -> String {
         // Prepare fast-import payload.
-        let mut payload = String::with_capacity(4096);
-
-        // Prepare the blobs.
-        let texts = self.texts.read();
-        for (&id, text) in texts.iter() {
-            if let Some((text, true /* modified */)) = text {
-                let blob = fast_import_blob(text, id);
-                payload += &blob;
-            }
-        }
-
-        // Prepare the manifest.
         let manifest_str =
             serde_json::to_string_pretty(&manifest).expect("Manifest can be encoded");
-        let manifest_id = manifest.next_id + ID_MARK_OFFSET;
-        let blob = fast_import_blob(&manifest_str, manifest_id);
-        payload += &blob;
+        let texts = self.texts.read();
+        let file_changes: Vec<(String, Option<&str>)> =
+            std::iter::once((MANIFEST_NAME.to_string(), Some(manifest_str.as_str())))
+                .chain(texts.iter().filter_map(|(&id, data)| {
+                    match data {
+                Some((data, true /* modified */ )) => Some((self.text_path(id), Some(data.as_str()))),
+                None /* deletion */ => Some((self.text_path(id), None)),
+                Some((data, false /* not modified */ )) => None,
+            }
+                }))
+                .collect();
 
-        // Prepare the commit object.
-        let local_ref_name = format!("next-{}-{}", &self.info.remote_name, &self.info.branch_name);
-        let when = format!("{} +0000", epoch());
-        let file_modifications = {
-            let mut modifications = vec![fast_import_file_modify(MANIFEST_NAME, manifest_id)];
-            for (&id, text) in texts.iter() {
-                match text {
-                    Some((text, true)) => {
-                        let path = self.text_path(id);
-                        modifications.push(fast_import_file_modify(&path, id));
-                    }
-                    None => {
-                        let path = self.text_path(id);
-                        modifications.push(fast_import_file_delete(&path));
-                    }
-                    Some((_, false)) => { /* skip - not modified */ }
+        fast_import_payload(&self.info, &file_changes, "FooNote Checkpoint")
+    }
+}
+
+/// Prepare payload for git fastimport.
+fn fast_import_payload(
+    info: &GitInfo,
+    // (path, content)
+    files: &[(String, Option<&str>)],
+    // commit message
+    message: &str,
+) -> String {
+    // Prepare fast-import payload.
+    let mut payload = String::with_capacity(4096);
+
+    // Prepare the blobs.
+    for (i, &(ref path, text)) in files.iter().enumerate() {
+        if let Some(text) = text {
+            let blob = fast_import_blob(text, i);
+            payload += &blob;
+        }
+    }
+
+    // Prepare the commit object.
+    let local_ref_name = format!("next-{}-{}", info.remote_name, info.branch_name);
+    let when = format!("{} +0000", epoch());
+    let file_modifications = {
+        let mut modifications = vec![];
+        for (i, &(ref path, text)) in files.iter().enumerate() {
+            match text {
+                Some(text) => {
+                    modifications.push(fast_import_file_modify(&path, i));
+                }
+                None => {
+                    modifications.push(fast_import_file_delete(&path));
                 }
             }
-            modifications
-        };
+        }
+        modifications
+    };
 
-        let commit_id = manifest_id + 1;
-        let message = "FooNote Checkpoint";
-        let commit = format!(
-            concat!(
-                "commit refs/tags/{ref_name}\n",
-                "mark :{commit_id}\n",
-                "committer {name} <{email}> {when}\n",
-                "data {message_len}\n{message}\n",
-                "from {from}\n",
-                "{files}",
-                "\n",
-                "get-mark :{commit_id}\n",
-            ),
-            ref_name = local_ref_name,
-            commit_id = commit_id,
-            name = git_cmd::GIT_USER.as_str(),
-            email = git_cmd::GIT_EMAIL.as_str(),
-            when = when,
-            message_len = message.len(),
-            message = &message,
-            from = self.info.base_commit.read().as_str(),
-            files = file_modifications.concat(),
-        );
-        payload += &commit;
+    let commit_id = files.len() + FASTIMPORT_ID_MARK_OFFSET;
+    let commit = format!(
+        concat!(
+            "commit refs/tags/{ref_name}\n",
+            "mark :{commit_id}\n",
+            "committer {name} <{email}> {when}\n",
+            "data {message_len}\n{message}\n",
+            "from {from}\n",
+            "{files}",
+            "\n",
+            "get-mark :{commit_id}\n",
+        ),
+        ref_name = local_ref_name,
+        commit_id = commit_id,
+        name = git_cmd::GIT_USER.as_str(),
+        email = git_cmd::GIT_EMAIL.as_str(),
+        when = when,
+        message_len = message.len(),
+        message = &message,
+        from = info.base_commit.read().as_str(),
+        files = file_modifications.concat(),
+    );
+    payload += &commit;
 
-        payload
-    }
+    payload
 }
 
 impl Drop for GitTextIO {
@@ -650,19 +664,19 @@ fn prepare_bare_staging_repo(cache_dir: Option<&Path>) -> io::Result<PathBuf> {
     Ok(path)
 }
 
-const ID_MARK_OFFSET: Id = 1;
+const FASTIMPORT_ID_MARK_OFFSET: usize = 1;
 
-fn fast_import_blob(text: &str, id: Id) -> String {
+fn fast_import_blob(text: &str, id: usize) -> String {
     format!(
         "blob\nmark :{}\ndata {}\n{}\n",
-        id + ID_MARK_OFFSET,
+        id + FASTIMPORT_ID_MARK_OFFSET,
         text.len(),
         text
     )
 }
 
-fn fast_import_file_modify(path: &str, id: Id) -> String {
-    format!("M 100644 :{} {}\n", id + ID_MARK_OFFSET, path)
+fn fast_import_file_modify(path: &str, id: usize) -> String {
+    format!("M 100644 :{} {}\n", id + FASTIMPORT_ID_MARK_OFFSET, path)
 }
 
 fn fast_import_file_delete(path: &str) -> String {
