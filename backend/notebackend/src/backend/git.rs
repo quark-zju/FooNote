@@ -40,7 +40,6 @@ pub struct GitTextIO {
     info: GitInfo,
     // value of texts: Some((content, modified)) | None (deleted)
     texts: RwLock<HashMap<Id, Option<(String, bool)>>>,
-    object_reader: Mutex<Option<Child>>,
     // for "changed" detection.
     last_manifest: Manifest,
     // Threads for persist_async() to join.
@@ -59,6 +58,8 @@ struct GitInfo {
     /// - Commit hash form: Locally committed. Not pushed.
     /// - "remote/branch" form: Pushed. No local changes.
     base_commit: Arc<RwLock<String>>,
+
+    object_reader: Arc<Mutex<Option<Child>>>,
 }
 
 const MANIFEST_NAME: &str = "manifest.json";
@@ -153,7 +154,6 @@ impl GitBackend {
         let mut text_io = GitTextIO {
             info: GitInfo::new(repo_path, remote_name, branch_name),
             texts: Default::default(),
-            object_reader: Default::default(),
             last_manifest: Manifest::default(),
             persist_threads: Default::default(),
         };
@@ -176,6 +176,7 @@ impl GitInfo {
             repo_path,
             branch_name,
             base_commit: Default::default(),
+            object_reader: Default::default(),
         };
         *info.base_commit.write() = info.base_commit_from_remote();
         info
@@ -276,48 +277,12 @@ impl GitInfo {
         *self.base_commit.write() = commit_oid.clone();
         Ok(commit_oid)
     }
-}
 
-impl GitTextIO {
-    /// Path for the text object.
-    fn text_path(&self, id: Id) -> String {
-        format!("notes/{:x}/{:x}", id / 256, id % 256)
-    }
-
-    fn read_text_from_git(&self, id: Id) -> io::Result<String> {
-        let path = self.text_path(id);
-        let data = match self.read_path_utf8(&path) {
-            Err(e) if e.kind() == io::ErrorKind::NotFound => String::new(),
-            Ok((_oid, data)) => data,
-            Err(e) => return Err(e),
-        };
-        Ok(data)
-    }
-
-    /// Load the metadata (parents, children, meta).
-    /// Updates `last_manifest` state.
-    fn load_manifest(&mut self) -> io::Result<Manifest> {
-        let (oid, manifest_str) = match self.read_path_utf8(MANIFEST_NAME) {
-            Err(e) if e.kind() == io::ErrorKind::NotFound => (None, "{}".to_string()),
-            Ok((oid, s)) => (Some(oid), s),
-            Err(e) => return Err(e),
-        };
-        let mut manifest: Manifest = serde_json::from_str(&manifest_str)
-            .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
-        manifest.next_id = manifest.next_id.max(min_next_id());
-        manifest.rebuild_parents();
-        self.last_manifest = manifest.clone();
-        Ok(manifest)
-    }
-
-    /// Read a utf-8 file. Return (oid, text).
-    fn read_path_utf8(&self, file_path: &str) -> io::Result<(HexOid, String)> {
-        let spec = format!("{}:{}", self.info.base_commit.read().as_str(), file_path);
-        let (oid, data) = self.read_object(&spec, Some("blob"))?;
-        Ok((oid, String::from_utf8_lossy(&data).into_owned()))
-    }
-
-    /// Read an object (git-cat). Return (oid, data).
+    /// Read an object (git-cat). Return (oid, data). There is no caching.
+    /// `spec` is like `commit:path`, or `oid`. See `git cat-file --batch`
+    /// man page.
+    /// If `expected_type` is set (ex. `blob`), raise an error if type
+    /// mismatches.
     fn read_object(
         &self,
         spec: &str,
@@ -326,7 +291,6 @@ impl GitTextIO {
         let mut object_reader = self.object_reader.lock();
         if object_reader.is_none() {
             let child = self
-                .info
                 .git()
                 .stdin(Stdio::piped())
                 .args(&["cat-file", "--batch"])
@@ -338,7 +302,6 @@ impl GitTextIO {
             if let Ok(Some(_)) = reader.try_wait() {
                 log::info!("git cat-file has exited - restarting");
                 let child = self
-                    .info
                     .git()
                     .stdin(Stdio::piped())
                     .args(&["cat-file", "--batch"])
@@ -422,6 +385,55 @@ impl GitTextIO {
         }
         data.pop(); // Remove the last LF.
         Ok((HexOid(oid.to_string()), data))
+    }
+
+    /// Read a utf-8 file on `base_commit`. Return (oid, text).
+    fn read_path_utf8_on_base(&self, file_path: &str) -> io::Result<(HexOid, String)> {
+        self.read_path_utf8_on_commit(self.base_commit.read().as_str(), file_path)
+    }
+
+    /// Read a utf-8 file on the given commit. Return (oid, text).
+    fn read_path_utf8_on_commit(
+        &self,
+        commit: &str,
+        file_path: &str,
+    ) -> io::Result<(HexOid, String)> {
+        let spec = format!("{}:{}", commit, file_path);
+        let (oid, data) = self.read_object(&spec, Some("blob"))?;
+        Ok((oid, String::from_utf8_lossy(&data).into_owned()))
+    }
+}
+
+impl GitTextIO {
+    /// Path for the text object.
+    fn text_path(&self, id: Id) -> String {
+        format!("notes/{:x}/{:x}", id / 256, id % 256)
+    }
+
+    fn read_text_from_git(&self, id: Id) -> io::Result<String> {
+        let path = self.text_path(id);
+        let data = match self.info.read_path_utf8_on_base(&path) {
+            Err(e) if e.kind() == io::ErrorKind::NotFound => String::new(),
+            Ok((_oid, data)) => data,
+            Err(e) => return Err(e),
+        };
+        Ok(data)
+    }
+
+    /// Load the metadata (parents, children, meta).
+    /// Updates `last_manifest` state.
+    fn load_manifest(&mut self) -> io::Result<Manifest> {
+        let (oid, manifest_str) = match self.info.read_path_utf8_on_base(MANIFEST_NAME) {
+            Err(e) if e.kind() == io::ErrorKind::NotFound => (None, "{}".to_string()),
+            Ok((oid, s)) => (Some(oid), s),
+            Err(e) => return Err(e),
+        };
+        let mut manifest: Manifest = serde_json::from_str(&manifest_str)
+            .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+        manifest.next_id = manifest.next_id.max(min_next_id());
+        manifest.rebuild_parents();
+        self.last_manifest = manifest.clone();
+        Ok(manifest)
     }
 
     /// Mark text that has changed back to original state as "unchanged".
@@ -566,7 +578,7 @@ fn fast_import_payload(
 
 impl Drop for GitTextIO {
     fn drop(&mut self) {
-        let mut object_reader = self.object_reader.lock();
+        let mut object_reader = self.info.object_reader.lock();
         if let Some(ref mut child) = *object_reader {
             // Close stdin pipe.
             child.stdin = None;
