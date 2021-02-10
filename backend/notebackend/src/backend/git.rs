@@ -7,9 +7,11 @@ use notebackend_types::Id;
 use parking_lot::lock_api::RwLockUpgradableReadGuard;
 use parking_lot::Mutex;
 use parking_lot::RwLock;
+use std::borrow::Cow;
 use std::collections::hash_map::DefaultHasher;
 use std::collections::HashMap;
 use std::collections::HashSet;
+use std::fmt;
 use std::fs::File;
 use std::hash::{Hash, Hasher};
 use std::io;
@@ -54,18 +56,33 @@ struct GitInfo {
     repo_path: PathBuf,
     branch_name: String,
 
-    /// Commit of the "unmodified" version.
-    /// - Commit hash form: Locally committed. Not pushed.
-    /// - "remote/branch" form: Pushed. No local changes.
-    base_commit: Arc<RwLock<String>>,
+    /// Local HEAD. None if there is no local change.
+    /// Update on commit.
+    local_head_oid: Arc<RwLock<Option<HexOid>>>,
+
+    /// Remote HEAD. Commit hash of the remote branch.b
+    /// Update on push and fetch.
+    remote_head_oid: Arc<RwLock<Option<HexOid>>>,
 
     object_reader: Arc<Mutex<Option<Child>>>,
 }
 
 const MANIFEST_NAME: &str = "manifest.json";
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
 struct HexOid(String);
+
+impl HexOid {
+    fn as_str(&self) -> &str {
+        self.0.as_str()
+    }
+}
+
+impl fmt::Display for HexOid {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.0.fmt(f)
+    }
+}
 
 impl TextIO for GitTextIO {
     fn get_raw_text<'a>(&'a self, id: Id) -> io::Result<std::borrow::Cow<'a, str>> {
@@ -110,7 +127,7 @@ impl TextIO for GitTextIO {
         manifest: &mut Manifest,
         result: Arc<StdMutex<Option<io::Result<()>>>>,
     ) {
-        let sync_result = (|| -> io::Result<Option<String>> {
+        let sync_result = (|| -> io::Result<Option<HexOid>> {
             let base_commit = self.commit_with_manifest(manifest)?;
             self.texts.write().clear();
             Ok(base_commit)
@@ -175,24 +192,31 @@ impl GitInfo {
             remote_name,
             repo_path,
             branch_name,
-            base_commit: Default::default(),
+            local_head_oid: Arc::new(RwLock::new(None)),
+            remote_head_oid: Arc::new(RwLock::new(None)),
             object_reader: Default::default(),
         };
-        *info.base_commit.write() = info.base_commit_from_remote();
         info
     }
 
-    /// The "base commit" name in "remote/branch" form.
-    fn base_commit_from_remote(&self) -> String {
-        format!("{}/{}", &self.remote_name, &self.branch_name)
+    // Update `remote_head_oid`.
+    fn reload_remote_branch_oid(&self) -> io::Result<()> {
+        *self.remote_head_oid.write() = Some(self.rev_parse(&self.remote_branch_ref_name())?);
+        Ok(())
     }
 
     fn has_local_changes(&self) -> bool {
-        self.base_commit.read().as_str() != self.base_commit_from_remote().as_str()
+        let local_head = self.local_head_oid.read();
+        if local_head.is_none() {
+            // There is no local commit yet.
+            false
+        } else {
+            &*local_head != &*self.remote_head_oid.read()
+        }
     }
 
     /// Fetch the latest commit from the remote.
-    /// NOTE: `self.base_commit` is not reset to the fetched commit!
+    /// NOTE: `self.remote_head` is not reset to the fetched commit!
     fn fetch(&self) -> io::Result<()> {
         self.run_git(&[
             "fetch",
@@ -204,28 +228,178 @@ impl GitInfo {
             self.remote_name.as_str(),
             self.branch_name.as_str()
         );
+        self.reload_remote_branch_oid()?;
         Ok(())
     }
 
     /// Push the local changes to remote.
     fn push(&self) -> io::Result<()> {
-        self.run_git(&[
-            "push",
-            self.remote_name.as_str(),
-            &format!(
-                "{}:{}",
-                self.base_commit.read().as_str(),
-                self.branch_name.as_str()
-            ),
-        ])?;
-        log::info!(
-            "Pushed {} to {}/{}",
-            self.base_commit.read().as_str(),
-            self.remote_name.as_str(),
-            self.branch_name.as_str()
+        if !self.has_local_changes() {
+            log::debug!("no local change to push");
+            return Ok(());
+        }
+
+        let to_push = match self.local_head_oid.read().clone() {
+            Some(h) => h,
+            None => {
+                return Err(io::Error::new(
+                    io::ErrorKind::Other,
+                    "no known local head to push",
+                ))
+            }
+        };
+        let branch = self.branch_name.as_str();
+        let remote = self.remote_name.as_str();
+        let (output, error) = self
+            .git()
+            .args(&[
+                "push",
+                "--porcelain",
+                remote,
+                &format!("{}:{}", &to_push, branch,),
+            ])
+            .output_and_error()?;
+
+        if let Some(error) = error {
+            if output.trim().starts_with("!") {
+                // Try to handle "conflict" (non-fast-forward push) error by merging.
+                log::warn!("Push {} to {}/{} was rejected", to_push, remote, branch,);
+
+                // Fetch.
+                self.fetch()?;
+
+                // Manual merge.
+                let local = to_push;
+                let other = match self.remote_head_oid.read().clone() {
+                    Some(h) => h,
+                    None => {
+                        return Err(io::Error::new(
+                            io::ErrorKind::Other,
+                            "no known remote head to merge",
+                        ))
+                    }
+                };
+                let merge = self.merge_conflict(&local, &other)?;
+
+                // Push again.
+                self.git()
+                    .args(&["push", remote, &format!("{}:{}", &merge.0, &branch)])
+                    .run()?;
+                log::info!("Pushed merge {} to {}/{}", &merge.0, &remote, &branch);
+                self.reload_remote_branch_oid()?;
+                Ok(())
+            } else {
+                // Other errors. Cannot handle.
+                let message = format!("Push {} to {}/{} was unsuccessful", to_push, remote, branch);
+                log::warn!("{}", &message);
+                Err(error)
+            }
+        } else {
+            log::info!("Pushed {} to {}/{}", to_push, remote, branch);
+            self.reload_remote_branch_oid()?;
+            Ok(())
+        }
+    }
+
+    /// Create a merge commit that resolves conflicts.
+    /// local and other are <commit-ish>.
+    fn merge_conflict(&self, local_oid: &HexOid, other_oid: &HexOid) -> io::Result<HexOid> {
+        let base_oid = HexOid(
+            self.git()
+                .args(&["merge-base", local_oid.as_str(), other_oid.as_str()])
+                .output()?
+                .trim()
+                .to_string(),
         );
-        *self.base_commit.write() = self.base_commit_from_remote();
-        Ok(())
+        log::info!(
+            "Merging local: {} other: {} base: {}",
+            local_oid,
+            other_oid,
+            &base_oid,
+        );
+
+        // Find the difference (file paths) between local and other.
+        let diff_name_only = self
+            .git()
+            .args(&[
+                "diff",
+                "--name-only",
+                "-z",
+                local_oid.as_str(),
+                other_oid.as_str(),
+            ])
+            .output()?;
+        let paths: Vec<&str> = diff_name_only.split('\0').collect();
+
+        // Read manifest.
+        let read_manifest = |commit: &HexOid| -> io::Result<Manifest> {
+            let manifest_str = self.read_path_utf8_on_commit(commit, MANIFEST_NAME)?.1;
+            serde_json::from_str(&manifest_str)
+                .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
+        };
+        let mut local_manifest: Manifest = read_manifest(&local_oid)?;
+        let other_manifest: Manifest = read_manifest(&other_oid)?;
+        let mut next_id = local_manifest.next_id.max(other_manifest.next_id);
+        let mut local_manifest_id_remap = HashMap::new();
+
+        // Merge the files.
+        let mut files = Vec::with_capacity(paths.len() + 1);
+
+        for path in paths {
+            if path == MANIFEST_NAME {
+                // Manifest is handled later to maintain valid JSON.
+                continue;
+            }
+            log::debug!("Merging path {}", path);
+            let local_data = self.try_read_path_utf8_on_commit(&local_oid, path)?;
+            let other_data = self.try_read_path_utf8_on_commit(&other_oid, path)?;
+            let base_data = self.try_read_path_utf8_on_commit(&base_oid, path)?;
+            match (base_data, local_data, other_data) {
+                (_, None, None) => {}
+                (_, None, Some(data)) => {
+                    log::debug!(" take other (only in other)");
+                    // No need to set the file content - the "from" commit is "other".
+                    // files.push((path.to_string(), Some(data.into())));
+                }
+                (_, Some(data), None) => {
+                    log::debug!(" take local (only in local)");
+                    files.push((path.to_string(), Some(data.into())))
+                }
+                (Some(_), Some(a), Some(b)) => {
+                    let merged = naive_merge_text_keep_both(&a, &b);
+                    log::debug!(" merge ({}b, {}b) => {}b", a.len(), b.len(), merged.len());
+                    files.push((path.to_string(), Some(merged.into())));
+                }
+                (None, Some(a), Some(b)) => {
+                    if let Some(id) = text_id(path) {
+                        // Same id but should probably use different id!
+                        // Keep path => b unchanged. Use a new path for local (a).
+                        let new_id = next_id;
+                        let new_path = text_path(new_id);
+                        next_id += 1;
+                        log::debug!(" rename local (not in base): {} {}", new_id, &new_path);
+                        local_manifest_id_remap.insert(id, new_id);
+                        files.push((new_path, Some(a.into())));
+                    } else {
+                        // The path is not a note. Just take the latest remote (other).
+                        log::debug!(" take other (not in base, not a note)");
+                    }
+                }
+            }
+        }
+
+        // Merge manifest.
+        local_manifest.remap_ids(&local_manifest_id_remap);
+        local_manifest.merge(&other_manifest);
+        let resolved_manifest_str =
+            serde_json::to_string_pretty(&local_manifest).expect("manifest has valid JSON format");
+        files.push((
+            MANIFEST_NAME.to_string(),
+            Some(resolved_manifest_str.as_str().into()),
+        ));
+        let mut parents = vec![other_oid.clone(), local_oid.clone()];
+        parents.dedup();
+        self.commit(&files, "[FooNote] Merge branches", Some(parents))
     }
 
     fn git(&self) -> GitCommand {
@@ -238,8 +412,21 @@ impl GitInfo {
     }
 
     /// Commit changes on base_commit. Update base_commit. Return the commit hash (hex).
-    fn commit(&self, files: &[(String, Option<&str>)], message: &str) -> io::Result<String> {
-        let payload = fast_import_payload(self, files, message);
+    fn commit<'a>(
+        &self,
+        files: &'a [(String, Option<Cow<'a, str>>)],
+        message: &str,
+        parent_commits: Option<Vec<HexOid>>,
+    ) -> io::Result<HexOid> {
+        let parent_commits =
+            parent_commits.unwrap_or_else(|| match self.local_head_oid.read().clone() {
+                Some(h) => vec![h],
+                None => match self.remote_head_oid.read().clone() {
+                    Some(h) => vec![h],
+                    None => vec![],
+                },
+            });
+        let payload = fast_import_payload(self, files, message, &parent_commits);
         let mut tmp_file = NamedTempFile::new_in(&self.repo_path)?;
         tmp_file.write_all(&payload.as_bytes())?;
         tmp_file.flush()?;
@@ -267,14 +454,14 @@ impl GitInfo {
         }
         drop(tmp_file);
 
-        let commit_oid = commit_oid.trim().to_string();
-        if commit_oid.is_empty() {
+        let commit_oid = HexOid(commit_oid.trim().to_string());
+        if commit_oid.0.is_empty() {
             return notebackend_types::error::invalid_input(
                 "fastimport did not provide new commit hash",
             );
         }
-        log::info!("Committed: {}", &commit_oid);
-        *self.base_commit.write() = commit_oid.clone();
+        log::info!("Committed: {}", &commit_oid.0);
+        *self.local_head_oid.write() = Some(commit_oid.clone());
         Ok(commit_oid)
     }
 
@@ -389,29 +576,85 @@ impl GitInfo {
 
     /// Read a utf-8 file on `base_commit`. Return (oid, text).
     fn read_path_utf8_on_base(&self, file_path: &str) -> io::Result<(HexOid, String)> {
-        self.read_path_utf8_on_commit(self.base_commit.read().as_str(), file_path)
+        self.read_path_utf8_on_commit(&self.head_oid()?, file_path)
     }
 
     /// Read a utf-8 file on the given commit. Return (oid, text).
     fn read_path_utf8_on_commit(
         &self,
-        commit: &str,
+        commit: &HexOid,
         file_path: &str,
     ) -> io::Result<(HexOid, String)> {
         let spec = format!("{}:{}", commit, file_path);
         let (oid, data) = self.read_object(&spec, Some("blob"))?;
         Ok((oid, String::from_utf8_lossy(&data).into_owned()))
     }
+
+    /// Read a utf-8 file on the given commit. Do not fail if the file is missing.
+    /// Return None if the file is missin. Or the file content.
+    fn try_read_path_utf8_on_commit(
+        &self,
+        commit: &HexOid,
+        file_path: &str,
+    ) -> io::Result<Option<String>> {
+        let spec = format!("{}:{}", commit, file_path);
+        match self.read_object(&spec, Some("blob")) {
+            Err(e) if e.kind() == io::ErrorKind::NotFound => Ok(None),
+            Err(e) => Err(e),
+            Ok((_oid, data)) => Ok(Some(String::from_utf8_lossy(&data).to_string())),
+        }
+    }
+
+    /// ex. "remote/branch", ref name of the remote ref.
+    fn remote_branch_ref_name(&self) -> String {
+        format!("{}/{}", &self.remote_name, &self.branch_name)
+    }
+
+    /// Converts a ref name to a commit hash.
+    fn rev_parse(&self, commitish: &str) -> io::Result<HexOid> {
+        let s = self
+            .git()
+            .args(&["rev-parse", commitish])
+            .output()?
+            .trim()
+            .to_string();
+        Ok(HexOid(s))
+    }
+
+    /// Local committed oid, or remote oid.
+    fn head_oid(&self) -> io::Result<HexOid> {
+        match self.local_head_oid.read().clone() {
+            Some(h) => Ok(h),
+            None => match self.remote_head_oid.read().clone() {
+                Some(h) => Ok(h),
+                None => {
+                    notebackend_types::error::invalid_data("neither local or remote head is known")
+                }
+            },
+        }
+    }
+}
+
+/// Path for the text object.
+fn text_path(id: Id) -> String {
+    format!("notes/{:x}/{:x}", id / 256, id % 256)
+}
+
+/// Reverse of `text_path`.
+fn text_id(path: &str) -> Option<Id> {
+    let path = path.replace('\\', "/");
+    let split = path.split('/').collect::<Vec<_>>();
+    if let ["notes", prefix, reminder] = split[..] {
+        let prefix = u32::from_str_radix(prefix, 16).ok()?;
+        let reminder = u32::from_str_radix(reminder, 16).ok()?;
+        return Some((prefix * 256 + reminder) as _);
+    }
+    None
 }
 
 impl GitTextIO {
-    /// Path for the text object.
-    fn text_path(&self, id: Id) -> String {
-        format!("notes/{:x}/{:x}", id / 256, id % 256)
-    }
-
     fn read_text_from_git(&self, id: Id) -> io::Result<String> {
-        let path = self.text_path(id);
+        let path = text_path(id);
         let data = match self.info.read_path_utf8_on_base(&path) {
             Err(e) if e.kind() == io::ErrorKind::NotFound => String::new(),
             Ok((_oid, data)) => data,
@@ -471,7 +714,7 @@ impl GitTextIO {
     /// Commit changes. Return the hex commit hash.
     /// Update self.base_commit to the new commit.
     /// Return None if nothing has changed and there is no need to commit.
-    fn commit_with_manifest(&mut self, manifest: &mut Manifest) -> io::Result<Option<String>> {
+    fn commit_with_manifest(&mut self, manifest: &mut Manifest) -> io::Result<Option<HexOid>> {
         // Nothing changed?
         if self.optimize_then_count_changed_files(manifest)? == 0 {
             if &self.last_manifest == manifest {
@@ -483,7 +726,7 @@ impl GitTextIO {
         }
 
         self.with_changed_files(manifest, |files| {
-            let commit_oid = self.info.commit(&files, "FooNote Checkpoint")?;
+            let commit_oid = self.info.commit(&files, "[FooNote] Checkpoint", None)?;
             Ok(Some(commit_oid))
         })
     }
@@ -493,17 +736,17 @@ impl GitTextIO {
     fn with_changed_files<R>(
         &self,
         manifest: &Manifest,
-        f: impl FnOnce(&[(String, Option<&str>)]) -> R,
+        f: impl FnOnce(&[(String, Option<Cow<str>>)]) -> R,
     ) -> R {
         let manifest_str =
             serde_json::to_string_pretty(&manifest).expect("Manifest can be encoded");
         let texts = self.texts.read();
-        let files: Vec<(String, Option<&str>)> =
-            std::iter::once((MANIFEST_NAME.to_string(), Some(manifest_str.as_str())))
+        let files: Vec<(String, Option<Cow<str>>)> =
+            std::iter::once((MANIFEST_NAME.to_string(), Some(manifest_str.as_str().into())))
                 .chain(texts.iter().filter_map(|(&id, data)| {
                     match data {
-                Some((data, true /* modified */ )) => Some((self.text_path(id), Some(data.as_str()))),
-                None /* deletion */ => Some((self.text_path(id), None)),
+                Some((data, true /* modified */ )) => Some((text_path(id), Some(data.as_str().into()))),
+                None /* deletion */ => Some((text_path(id), None)),
                 Some((data, false /* not modified */ )) => None,
             }
                 }))
@@ -513,20 +756,22 @@ impl GitTextIO {
 }
 
 /// Prepare payload for git fastimport.
-fn fast_import_payload(
+fn fast_import_payload<'a>(
     info: &GitInfo,
     // (path, content)
-    files: &[(String, Option<&str>)],
+    files: &'a [(String, Option<Cow<'a, str>>)],
     // commit message
     message: &str,
+    // parent commits
+    parent_commits: &[HexOid],
 ) -> String {
     // Prepare fast-import payload.
     let mut payload = String::with_capacity(4096);
 
     // Prepare the blobs.
-    for (i, &(ref path, text)) in files.iter().enumerate() {
+    for (i, &(ref path, ref text)) in files.iter().enumerate() {
         if let Some(text) = text {
-            let blob = fast_import_blob(text, i);
+            let blob = fast_import_blob(text.as_ref(), i);
             payload += &blob;
         }
     }
@@ -536,7 +781,7 @@ fn fast_import_payload(
     let when = format!("{} +0000", epoch());
     let file_modifications = {
         let mut modifications = vec![];
-        for (i, &(ref path, text)) in files.iter().enumerate() {
+        for (i, &(ref path, ref text)) in files.iter().enumerate() {
             match text {
                 Some(text) => {
                     modifications.push(fast_import_file_modify(&path, i));
@@ -550,13 +795,22 @@ fn fast_import_payload(
     };
 
     let commit_id = files.len() + FASTIMPORT_ID_MARK_OFFSET;
+    let parents_lines = parent_commits
+        .iter()
+        .enumerate()
+        .map(|(i, s)| {
+            let prefix = if i == 0 { "from" } else { "merge" };
+            format!("{} {}\n", prefix, s)
+        })
+        .collect::<Vec<_>>()
+        .concat();
     let commit = format!(
         concat!(
             "commit refs/tags/{ref_name}\n",
             "mark :{commit_id}\n",
             "committer {name} <{email}> {when}\n",
             "data {message_len}\n{message}\n",
-            "from {from}\n",
+            "{parents_lines}",
             "{files}",
             "\n",
             "get-mark :{commit_id}\n",
@@ -568,7 +822,7 @@ fn fast_import_payload(
         when = when,
         message_len = message.len(),
         message = &message,
-        from = info.base_commit.read().as_str(),
+        parents_lines = parents_lines,
         files = file_modifications.concat(),
     );
     payload += &commit;
@@ -773,15 +1027,15 @@ mod git_cmd {
 
         /// Run the command. Return output. Check exit code.
         pub fn output(&mut self) -> io::Result<String> {
-            Ok(self.output_maybe_checked(true)?.0)
+            let (out, err) = self.output_and_error()?;
+            if let Some(err) = err {
+                return Err(err);
+            }
+            Ok(out)
         }
 
-        /// Run the command. Return output. Do not check exit code.
-        pub fn output_and_exit_code(&mut self) -> io::Result<(String, i32)> {
-            self.output_maybe_checked(false)
-        }
-
-        fn output_maybe_checked(&mut self, check_exit: bool) -> io::Result<(String, i32)> {
+        /// Run the command. Return both the output and the error (if exit code is not 0).
+        pub fn output_and_error(&mut self) -> io::Result<(String, Option<io::Error>)> {
             let out = match self.command(|c| c.output()) {
                 Err(e) => {
                     return Err(self.error(format!("cannot spawn {} {:?} {}", GIT, &self.args, e)));
@@ -791,19 +1045,18 @@ mod git_cmd {
             let stdout = String::from_utf8_lossy(&out.stdout);
             let stderr = String::from_utf8_lossy(&out.stderr);
             let code = out.status.code().unwrap_or_default();
+            let mut error = None;
             if !out.status.success() {
                 log::warn!("{} {:?} exited {}", GIT, &self.args, code);
-                if check_exit {
-                    let at = self
-                        .git_dir
-                        .as_ref()
-                        .map(|s| s.display().to_string())
-                        .unwrap_or_else(|| ".".to_string());
-                    return Err(self.error(format!(
-                        "{} {:?} at {} exited {} with output [\n{}][\n{}]",
-                        GIT, &self.args, at, code, stdout, stderr,
-                    )));
-                }
+                let at = self
+                    .git_dir
+                    .as_ref()
+                    .map(|s| s.display().to_string())
+                    .unwrap_or_else(|| ".".to_string());
+                error = Some(self.error(format!(
+                    "{} {:?} at {} exited {} with output [\n{}][\n{}]",
+                    GIT, &self.args, at, code, stdout, stderr,
+                )));
             } else {
                 log::debug!("{} {:?} completed", GIT, &self.args);
             }
@@ -815,7 +1068,7 @@ mod git_cmd {
                 log::debug!("stderr:\n{}", &stderr);
             }
 
-            Ok((stdout.to_string(), code))
+            Ok((stdout.to_string(), error))
         }
 
         /// Spawn the git process with stdio piped.
@@ -888,6 +1141,18 @@ mod git_cmd {
     fn git_config_email() -> String {
         git_config("user.email").unwrap_or_else(|| "foonote@example.com".to_string())
     }
+}
+
+fn naive_merge_text_keep_both(a: &str, b: &str) -> String {
+    dissimilar::diff(a, b)
+        .into_iter()
+        .map(|c| match c {
+            dissimilar::Chunk::Equal(s)
+            | dissimilar::Chunk::Delete(s)
+            | dissimilar::Chunk::Insert(s) => s,
+        })
+        .collect::<Vec<&str>>()
+        .concat()
 }
 
 #[cfg(test)]
