@@ -4,6 +4,7 @@ use serde::Deserialize;
 use serde::Serialize;
 use std::collections::BTreeMap;
 use std::collections::HashMap;
+use std::collections::HashSet;
 
 /// Metadata about the tree. Does not include the actual "text" of nodes.
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -15,7 +16,7 @@ pub struct Manifest {
     #[serde(default = "min_next_id")]
     pub next_id: Id,
     #[serde(skip)]
-    pub parents: HashMap<Id, Id>, // derived from children
+    pub parents: BTreeMap<Id, Id>, // derived from children
     #[serde(skip)]
     pub mtime: HashMap<Id, Mtime>, // temporary in-process state
     #[serde(default)]
@@ -105,8 +106,53 @@ impl Manifest {
         unreachable
     }
 
+    /// Fix up broken data:
+    /// - Children DAG should be a tree, not a graph.
+    /// - next_id should not overlap with existing ids.
+    pub(crate) fn ensure_tree_and_next_id(&mut self) {
+        struct State<'a> {
+            this: &'a mut Manifest,
+            visited: HashSet<Id>,
+            next_id: Id,
+        }
+        impl<'a> State<'a> {
+            fn visit(&mut self, id: Id) {
+                if id + 1 > self.next_id {
+                    self.next_id = id + 1;
+                }
+                self.visited.insert(id);
+                if let Some(child_ids) = self.this.children.get(&id) {
+                    let mut new_child_ids = Vec::with_capacity(child_ids.len());
+                    for &child_id in child_ids {
+                        if self.visited.insert(child_id) {
+                            new_child_ids.push(child_id);
+                        }
+                    }
+                    for &child_id in &new_child_ids {
+                        self.visit(child_id)
+                    }
+                    if new_child_ids.is_empty() {
+                        self.this.children.remove(&id);
+                    } else {
+                        self.this.children.insert(id, new_child_ids);
+                    }
+                }
+            }
+        }
+        let mut state = State {
+            this: self,
+            visited: HashSet::new(),
+            next_id: min_next_id(),
+        };
+        state.visit(ROOT_ID);
+        state.visit(TRASH_ID);
+        self.next_id = state.next_id;
+    }
+
     /// Rebuild parents from children data.
+    /// Also fix other issues. See fix_invalid_data.
     pub fn rebuild_parents(&mut self) {
+        self.ensure_tree_and_next_id();
         for (&id, child_ids) in &self.children {
             for &child_id in child_ids {
                 self.parents.insert(child_id, id);
@@ -207,4 +253,29 @@ impl Manifest {
 /// Minimal `next_id`.
 pub(crate) fn min_next_id() -> Id {
     10
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_ensure_tree() {
+        let mut manifest = Manifest::default();
+        manifest.children.insert(10, vec![10, 10, 10]);
+        manifest.children.insert(20, vec![30]);
+        manifest.children.insert(30, vec![40]);
+        manifest.children.insert(40, vec![20, 50]);
+        manifest.children.insert(ROOT_ID, vec![10, 30, 40, 20]);
+        manifest.rebuild_parents();
+        assert_eq!(manifest.next_id, 51);
+        assert_eq!(
+            format!("{:?}", &manifest.children),
+            "{0: [10, 30, 40, 20], 40: [50]}"
+        );
+        assert_eq!(
+            format!("{:?}", &manifest.parents),
+            "{10: 0, 20: 0, 30: 0, 40: 0, 50: 40}"
+        );
+    }
 }
