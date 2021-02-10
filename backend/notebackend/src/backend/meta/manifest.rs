@@ -24,7 +24,7 @@ pub trait TextIO: Send + Sync + 'static {
         *result.lock().unwrap() = Some(r);
     }
 }
-/// Manifest-based tree backend.
+/// Manifest-based tree backend. Includes how to deal with texts.
 pub struct ManifestBasedBackend<T> {
     pub manifest: Manifest,
     pub text_io: T,
@@ -188,14 +188,26 @@ impl<T: TextIO> TreeBackend for ManifestBasedBackend<T> {
             return notebackend_types::error::invalid_input("special nodes cannot be removed");
         }
         self.touch(id)?;
-        if !self.manifest.has_trash || self.is_ancestor(TRASH_ID, id)? {
+        let should_use_trash = if !self.manifest.has_trash {
+            // Trash is disabled.
+            false
+        } else if self.is_ancestor(TRASH_ID, id)? {
+            // Already in trash.
+            false
+        } else if self.get_children(id)?.is_empty() && self.get_text(id)?.is_empty() {
+            // No children, no text - skip trash.
+            false
+        } else {
+            true
+        };
+        if should_use_trash {
+            // Move to trash.
+            self.set_parent(id, TRASH_ID, InsertPos::Append)?;
+        } else {
             // Already in trash, or trash disabled. Remove directly.
             self.manifest.remove_parent(id);
             self.manifest.remove(id);
             self.text_io.remove_raw_text(id)?;
-        } else {
-            // Move to trash.
-            self.set_parent(id, TRASH_ID, InsertPos::Append)?;
         }
         Ok(())
     }

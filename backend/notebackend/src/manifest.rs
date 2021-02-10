@@ -5,6 +5,7 @@ use serde::Serialize;
 use std::collections::BTreeMap;
 use std::collections::HashMap;
 
+/// Metadata about the tree. Does not include the actual "text" of nodes.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Manifest {
     #[serde(default)]
