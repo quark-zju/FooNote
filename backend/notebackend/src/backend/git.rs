@@ -232,7 +232,7 @@ impl GitInfo {
     }
 
     fn run_git(&self, args: &[&str]) -> io::Result<()> {
-        let _out = GitCommand::at(&self.repo_path).args(args).output()?;
+        let _out = self.git().args(args).output()?;
         Ok(())
     }
 
@@ -761,6 +761,15 @@ mod git_cmd {
 
         /// Run the command. Return output. Check exit code.
         pub fn output(&mut self) -> io::Result<String> {
+            Ok(self.output_maybe_checked(true)?.0)
+        }
+
+        /// Run the command. Return output. Do not check exit code.
+        pub fn output_and_exit_code(&mut self) -> io::Result<(String, i32)> {
+            self.output_maybe_checked(false)
+        }
+
+        fn output_maybe_checked(&mut self, check_exit: bool) -> io::Result<(String, i32)> {
             let out = match self.command(|c| c.output()) {
                 Err(e) => {
                     return Err(self.error(format!("cannot spawn {} {:?} {}", GIT, &self.args, e)));
@@ -769,18 +778,20 @@ mod git_cmd {
             };
             let stdout = String::from_utf8_lossy(&out.stdout);
             let stderr = String::from_utf8_lossy(&out.stderr);
+            let code = out.status.code().unwrap_or_default();
             if !out.status.success() {
-                let code = out.status.code().unwrap_or_default();
                 log::warn!("{} {:?} exited {}", GIT, &self.args, code);
-                let at = self
-                    .git_dir
-                    .as_ref()
-                    .map(|s| s.display().to_string())
-                    .unwrap_or_else(|| ".".to_string());
-                return Err(self.error(format!(
-                    "{} {:?} at {} exited {} with output [\n{}][\n{}]",
-                    GIT, &self.args, at, code, stdout, stderr,
-                )));
+                if check_exit {
+                    let at = self
+                        .git_dir
+                        .as_ref()
+                        .map(|s| s.display().to_string())
+                        .unwrap_or_else(|| ".".to_string());
+                    return Err(self.error(format!(
+                        "{} {:?} at {} exited {} with output [\n{}][\n{}]",
+                        GIT, &self.args, at, code, stdout, stderr,
+                    )));
+                }
             } else {
                 log::debug!("{} {:?} completed", GIT, &self.args);
             }
@@ -792,7 +803,7 @@ mod git_cmd {
                 log::debug!("stderr:\n{}", &stderr);
             }
 
-            Ok(stdout.to_string())
+            Ok((stdout.to_string(), code))
         }
 
         /// Spawn the git process with stdio piped.
