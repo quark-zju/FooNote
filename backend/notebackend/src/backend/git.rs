@@ -292,11 +292,26 @@ impl GitTextIO {
                 .spawn()?;
             *object_reader = Some(child);
         }
-        let reader = object_reader.as_mut().expect("child created above");
+        let reader = {
+            let reader = object_reader.as_mut().expect("child created above");
+            if let Ok(Some(_)) = reader.try_wait() {
+                log::info!("git cat-file has exited - restarting");
+                let child = self
+                    .info
+                    .git()
+                    .stdin(Stdio::piped())
+                    .args(&["cat-file", "--batch"])
+                    .spawn()?;
+                *object_reader = Some(child);
+                object_reader.as_mut().expect("child created above")
+            } else {
+                reader
+            }
+        };
         let stdin = reader
             .stdin
             .as_mut()
-            .expect("child crated with piped stdin");
+            .expect("child created with piped stdin");
         stdin.write_all(format!("{}\n", spec).as_bytes())?;
         stdin.flush()?;
         let stdout = reader
