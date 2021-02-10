@@ -5,6 +5,7 @@ use serde::Serialize;
 use std::collections::BTreeMap;
 use std::collections::HashMap;
 use std::collections::HashSet;
+use std::hash::Hash;
 
 /// Metadata about the tree. Does not include the actual "text" of nodes.
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -248,6 +249,104 @@ impl Manifest {
             self.is_reachable(parent_id, ancestor_id)
         }
     }
+
+    /// Merge two manifests. Best effort. Do not cause conflicts.
+    pub fn merge(&mut self, other: &Self) {
+        // Merge "children".
+        for (&id, theirs) in other.children.iter() {
+            self.children
+                .entry(id)
+                .and_modify(|ours| {
+                    if ours != theirs {
+                        *ours = naive_merge(ours, theirs);
+                    }
+                })
+                .or_insert_with(|| theirs.clone());
+        }
+        // Merge "metas".
+        for (&id, theirs) in other.metas.iter() {
+            self.metas
+                .entry(id)
+                .and_modify(|ours| {
+                    if ours != theirs {
+                        let theirs_lines: Vec<&str> = theirs.lines().collect();
+                        let ours_lines: Vec<&str> = ours.lines().collect();
+                        let merged_lines = naive_merge(&ours_lines, &theirs_lines);
+                        let merged = merged_lines
+                            .into_iter()
+                            .map(|l| format!("{}\n", l))
+                            .collect::<Vec<_>>()
+                            .concat();
+                        *ours = merged;
+                    }
+                })
+                .or_insert_with(|| theirs.clone());
+        }
+        self.next_id = self.next_id.max(other.next_id);
+        self.rebuild_parents();
+    }
+}
+
+/// Naive merge algorithm that just keep all entries.
+/// Attempt to preserve orders. Assumes that one item only appears once (!).
+fn naive_merge<T>(a1: &[T], a2: &[T]) -> Vec<T>
+where
+    T: Clone + Eq + Hash,
+{
+    // &T -> index.
+    let m2: HashMap<&T, usize> = a2.iter().enumerate().map(|(i, v)| (v, i)).collect();
+
+    let mut result = Vec::with_capacity(a1.len().max(a2.len()));
+    let mut dedup = HashSet::with_capacity(result.len());
+    let mut i1 = 0;
+    let mut i2 = 0;
+
+    while i1 < a1.len() || i2 < a2.len() {
+        if i1 == a1.len() {
+            let v2 = &a2[i2];
+            if dedup.insert(v2) {
+                result.push(v2.clone());
+            }
+            i2 += 1;
+            continue;
+        }
+        if i2 == a2.len() {
+            let v1 = &a1[i1];
+            if dedup.insert(v1) {
+                result.push(v1.clone());
+            }
+            i1 += 1;
+            continue;
+        }
+        let v1 = &a1[i1];
+        let v2 = &a2[i2];
+        if v1 == v2 {
+            result.push(v1.clone());
+            i1 += 1;
+            i2 += 1;
+            continue;
+        }
+        let mut pick = 1;
+        if let Some(&i) = m2.get(v1) {
+            if i > i2 {
+                // v1 appears later in a2.
+                pick = 2;
+            }
+        }
+        if pick == 1 {
+            if dedup.insert(v1) {
+                result.push(v1.clone());
+            }
+            i1 += 1;
+        } else {
+            if dedup.insert(v2) {
+                result.push(v2.clone());
+            }
+            i2 += 1;
+        }
+    }
+
+    result
 }
 
 /// Minimal `next_id`.
@@ -277,5 +376,53 @@ mod tests {
             format!("{:?}", &manifest.parents),
             "{10: 0, 20: 0, 30: 0, 40: 0, 50: 40}"
         );
+    }
+
+    #[test]
+    fn test_naive_merge() {
+        let a = vec![1, 3, 2, 5];
+        let b = vec![1, 3, 4, 2, 6, 5, 7];
+        assert_eq!(naive_merge(&a, &b), [1, 3, 4, 2, 6, 5, 7]);
+        assert_eq!(naive_merge(&b, &a), [1, 3, 4, 2, 6, 5, 7]);
+
+        let a = vec![1, 2, 3, 5];
+        let b = vec![1, 3, 4, 5];
+        assert_eq!(naive_merge(&a, &b), [1, 2, 3, 4, 5]);
+        assert_eq!(naive_merge(&b, &a), [1, 2, 3, 4, 5]);
+    }
+
+    #[test]
+    fn test_manifest_merge() {
+        let mut m1 = Manifest::default();
+        m1.children.insert(10, vec![20, 30, 50, 60]);
+        m1.children.insert(20, vec![21]);
+        m1.children.insert(ROOT_ID, vec![10, 20, 30, 50, 60]);
+        m1.metas.insert(10, "foo=1\nbar=2\n".into());
+        m1.metas.insert(20, "foo=1\nbar=2\n".into());
+        m1.next_id = 50;
+        m1.rebuild_parents();
+
+        let mut m2 = Manifest::default();
+        m2.children.insert(10, vec![30, 40, 50]);
+        m2.children.insert(21, vec![20, 23]);
+        m2.children.insert(ROOT_ID, vec![10, 21, 20, 30, 40, 50]);
+        m2.metas.insert(10, "baz=3\nbar=2\nzoo=4\n".into());
+        m2.metas.insert(30, "foo=1\nbar=2\n".into());
+        m2.next_id = 60;
+        m1.merge(&m2);
+
+        assert_eq!(
+            format!("{:?}", &m1.children),
+            "{0: [10, 21, 20, 30, 40, 50, 60], 21: [23]}"
+        );
+        assert_eq!(
+            format!("{:?}", &m1.parents),
+            "{10: 0, 20: 0, 21: 0, 23: 21, 30: 0, 40: 0, 50: 0, 60: 0}"
+        );
+        assert_eq!(
+            format!("{:?}", &m1.metas),
+            r#"{0: "type=root\n", 10: "foo=1\nbaz=3\nbar=2\nzoo=4\n", 20: "foo=1\nbar=2\n", 30: "foo=1\nbar=2\n"}"#
+        );
+        assert_eq!(m1.next_id, 61);
     }
 }
