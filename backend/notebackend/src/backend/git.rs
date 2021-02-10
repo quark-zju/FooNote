@@ -385,9 +385,18 @@ impl GitTextIO {
 
     /// Mark text that has changed back to original state as "unchanged".
     /// Return the count of changed "text"s.
-    fn optimize_changed_flags(&mut self) -> io::Result<usize> {
+    fn optimize_changed_flags(&mut self, manifest: &mut Manifest) -> io::Result<usize> {
         let mut changed_count = 0;
         let mut texts = self.texts.write();
+
+        // Clean up unreachable.
+        let unreachable = manifest.remove_unreachable();
+        for id in unreachable {
+            // Mark as deletion.
+            texts.insert(id, None);
+        }
+
+        // Go through texts changes.
         for (&id, opt) in texts.iter_mut() {
             if let Some((text, changed)) = opt {
                 if *changed {
@@ -409,9 +418,9 @@ impl GitTextIO {
     /// Commit changes. Return the hex commit hash.
     /// Update self.base_commit to the new commit.
     /// Return None if nothing has changed and there is no need to commit.
-    fn commit(&mut self, manifest: &Manifest) -> io::Result<Option<String>> {
+    fn commit(&mut self, manifest: &mut Manifest) -> io::Result<Option<String>> {
         // Nothing changed?
-        if self.optimize_changed_flags()? == 0 {
+        if self.optimize_changed_flags(manifest)? == 0 {
             if &self.last_manifest == manifest {
                 log::info!("Nothing changed - No need to commit");
                 return Ok(None);
