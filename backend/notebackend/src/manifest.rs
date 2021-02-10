@@ -285,6 +285,49 @@ impl Manifest {
         self.next_id = self.next_id.max(other.next_id);
         self.rebuild_parents();
     }
+
+    /// Replace Ids using the mapping.
+    pub fn remap_ids(&mut self, map: &HashMap<Id, Id>) {
+        let remap = |id: Id| -> Id { map.get(&id).cloned().unwrap_or(id) };
+
+        for &id in map.values() {
+            if id + 1 > self.next_id {
+                self.next_id = id + 1;
+            }
+        }
+
+        for (_, children) in self.children.iter_mut() {
+            for c in children {
+                *c = remap(*c)
+            }
+        }
+
+        self.children = self
+            .children
+            .iter()
+            .map(|(k, v)| (remap(*k), v.clone()))
+            .collect();
+
+        self.metas = self
+            .metas
+            .iter()
+            .map(|(k, v)| (remap(*k), v.clone()))
+            .collect();
+
+        self.mtime = self
+            .mtime
+            .iter()
+            .map(|(k, v)| (remap(*k), v.clone()))
+            .collect();
+
+        self.parents = self
+            .parents
+            .iter()
+            .map(|(k, v)| (remap(*k), remap(*v)))
+            .collect();
+
+        self.rebuild_parents();
+    }
 }
 
 /// Naive merge algorithm that just keep all entries.
@@ -424,5 +467,32 @@ mod tests {
             r#"{0: "type=root\n", 10: "foo=1\nbaz=3\nbar=2\nzoo=4\n", 20: "foo=1\nbar=2\n", 30: "foo=1\nbar=2\n"}"#
         );
         assert_eq!(m1.next_id, 61);
+    }
+
+    #[test]
+    fn test_manifest_remap() {
+        let mut m1 = Manifest::default();
+        m1.children.insert(10, vec![20]);
+        m1.children.insert(20, vec![30]);
+        m1.children.insert(30, vec![40]);
+        m1.children.insert(ROOT_ID, vec![10]);
+        m1.metas.insert(10, "foo=1\n".into());
+        m1.metas.insert(20, "foo=2\n".into());
+        m1.metas.insert(30, "foo=3\n".into());
+        let map: HashMap<Id, Id> = vec![(10, 11), (30, 33)].into_iter().collect();
+        m1.remap_ids(&map);
+        assert_eq!(
+            format!("{:?}", &m1.children),
+            "{0: [11], 11: [20], 20: [33], 33: [40]}"
+        );
+        assert_eq!(
+            format!("{:?}", &m1.parents),
+            "{11: 0, 20: 11, 33: 20, 40: 33}"
+        );
+        assert_eq!(
+            format!("{:?}", &m1.metas),
+            "{0: \"type=root\\n\", 11: \"foo=1\\n\", 20: \"foo=2\\n\", 33: \"foo=3\\n\"}"
+        );
+        assert_eq!(m1.next_id, 41);
     }
 }
