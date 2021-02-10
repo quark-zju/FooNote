@@ -97,7 +97,7 @@ impl TextIO for GitTextIO {
     }
 
     fn persist_with_manifest(&mut self, manifest: &mut Manifest) -> io::Result<()> {
-        if self.commit(manifest)?.is_some() || self.info.has_local_changes() {
+        if self.commit_with_manifest(manifest)?.is_some() || self.info.has_local_changes() {
             self.texts.write().clear();
             self.info.push()?;
         }
@@ -110,7 +110,7 @@ impl TextIO for GitTextIO {
         result: Arc<StdMutex<Option<io::Result<()>>>>,
     ) {
         let sync_result = (|| -> io::Result<Option<String>> {
-            let base_commit = self.commit(manifest)?;
+            let base_commit = self.commit_with_manifest(manifest)?;
             self.texts.write().clear();
             Ok(base_commit)
         })();
@@ -234,6 +234,47 @@ impl GitInfo {
     fn run_git(&self, args: &[&str]) -> io::Result<()> {
         let _out = GitCommand::at(&self.repo_path).args(args).output()?;
         Ok(())
+    }
+
+    /// Commit changes on base_commit. Update base_commit. Return the commit hash (hex).
+    fn commit(&self, files: &[(String, Option<&str>)], message: &str) -> io::Result<String> {
+        let payload = fast_import_payload(self, files, message);
+        let mut tmp_file = NamedTempFile::new_in(&self.repo_path)?;
+        tmp_file.write_all(&payload.as_bytes())?;
+        tmp_file.flush()?;
+        let stdin_file = File::open(tmp_file.path())?;
+
+        let args = &["fast-import", "--quiet", "--force"];
+        let mut process = self
+            .git()
+            .stdin(Stdio::from(stdin_file))
+            .args(args)
+            .spawn()?;
+
+        let stdout = process.stdout.as_mut().expect("piped stdin");
+        let mut commit_oid = String::new();
+        stdout.read_to_string(&mut commit_oid)?;
+
+        let status = process.wait()?;
+        if !status.success() {
+            let code = status.code().unwrap_or_default();
+            log::warn!("fastimport failed (exit code: {})", code);
+            return Err(io::Error::new(
+                io::ErrorKind::Other,
+                format!("fastimport failed (exit code: {})", code),
+            ));
+        }
+        drop(tmp_file);
+
+        let commit_oid = commit_oid.trim().to_string();
+        if commit_oid.is_empty() {
+            return notebackend_types::error::invalid_input(
+                "fastimport did not provide new commit hash",
+            );
+        }
+        log::info!("Committed: {}", &commit_oid);
+        *self.base_commit.write() = commit_oid.clone();
+        Ok(commit_oid)
     }
 }
 
@@ -418,7 +459,7 @@ impl GitTextIO {
     /// Commit changes. Return the hex commit hash.
     /// Update self.base_commit to the new commit.
     /// Return None if nothing has changed and there is no need to commit.
-    fn commit(&mut self, manifest: &mut Manifest) -> io::Result<Option<String>> {
+    fn commit_with_manifest(&mut self, manifest: &mut Manifest) -> io::Result<Option<String>> {
         // Nothing changed?
         if self.optimize_then_count_changed_files(manifest)? == 0 {
             if &self.last_manifest == manifest {
@@ -429,54 +470,23 @@ impl GitTextIO {
             }
         }
 
-        let payload = self.fast_import_payload_for_manifest(manifest);
-        let mut tmp_file = NamedTempFile::new_in(&self.info.repo_path)?;
-        tmp_file.write_all(&payload.as_bytes())?;
-        tmp_file.flush()?;
-        let stdin_file = File::open(tmp_file.path())?;
-
-        let args = &["fast-import", "--quiet", "--force"];
-        let mut process = self
-            .info
-            .git()
-            .stdin(Stdio::from(stdin_file))
-            .args(args)
-            .spawn()?;
-
-        let stdout = process.stdout.as_mut().expect("piped stdin");
-        let mut commit_oid = String::new();
-        stdout.read_to_string(&mut commit_oid)?;
-
-        let status = process.wait()?;
-        if !status.success() {
-            let code = status.code().unwrap_or_default();
-            log::warn!("fastimport failed (exit code: {})", code);
-            return Err(io::Error::new(
-                io::ErrorKind::Other,
-                format!("fastimport failed (exit code: {})", code),
-            ));
-        }
-        drop(tmp_file);
-
-        let commit_oid = commit_oid.trim().to_string();
-        if commit_oid.is_empty() {
-            return notebackend_types::error::invalid_input(
-                "fastimport did not provide new commit hash",
-            );
-        }
-        log::info!("Committed: {}", &commit_oid);
-        *self.info.base_commit.write() = commit_oid.clone();
-        self.last_manifest = manifest.clone();
-        Ok(Some(commit_oid))
+        self.with_changed_files(manifest, |files| {
+            let commit_oid = self.info.commit(&files, "FooNote Checkpoint")?;
+            Ok(Some(commit_oid))
+        })
     }
 
-    /// Fast-import payload for commit().
-    fn fast_import_payload_for_manifest(&self, manifest: &Manifest) -> String {
-        // Prepare fast-import payload.
+    /// Calculate "changed files" (path, Some(data) /* write */ | None /* delete */)
+    /// for committing.
+    fn with_changed_files<R>(
+        &self,
+        manifest: &Manifest,
+        f: impl FnOnce(&[(String, Option<&str>)]) -> R,
+    ) -> R {
         let manifest_str =
             serde_json::to_string_pretty(&manifest).expect("Manifest can be encoded");
         let texts = self.texts.read();
-        let file_changes: Vec<(String, Option<&str>)> =
+        let files: Vec<(String, Option<&str>)> =
             std::iter::once((MANIFEST_NAME.to_string(), Some(manifest_str.as_str())))
                 .chain(texts.iter().filter_map(|(&id, data)| {
                     match data {
@@ -486,8 +496,7 @@ impl GitTextIO {
             }
                 }))
                 .collect();
-
-        fast_import_payload(&self.info, &file_changes, "FooNote Checkpoint")
+        f(&files)
     }
 }
 
