@@ -24,6 +24,7 @@ pub(crate) mod tests {
     use notebackend_types::InsertPos;
     use notebackend_types::Mtime;
     use notebackend_types::TreeBackend;
+    use std::collections::HashSet;
     use std::fmt;
     use std::io;
 
@@ -87,6 +88,19 @@ pub(crate) mod tests {
         /// Find ids by space-separated titles.
         fn find_ids(&self, texts: &str) -> Vec<Self::Id> {
             texts.split_whitespace().map(|t| self.find(t)).collect()
+        }
+
+        fn all_ids(&self) -> Vec<Self::Id> {
+            let mut result = Vec::new();
+            let mut visited = HashSet::new();
+            let mut to_visit = vec![self.get_root_id()];
+            while let Some(id) = to_visit.pop() {
+                if visited.insert(id) {
+                    result.push(id);
+                    to_visit.extend(self.get_children(id).unwrap());
+                }
+            }
+            result
         }
 
         fn find_ids_scoped(&self, texts: &str, scope: &[Self::Id]) -> Vec<Self::Id> {
@@ -467,26 +481,66 @@ pub(crate) mod tests {
             let prefix = " ".repeat(16);
             let mut result = "\n".to_string();
             result.push_str(&prefix);
-            self.draw_ascii_node(ids[0], ids, &prefix, &mut result);
+            self.draw_ascii_node(
+                ids[0],
+                ids,
+                &prefix,
+                &mut result,
+                |this: &Self, id, ids: &[Self::Id]| {
+                    let pos = ids.iter().position(|i| i == &id).unwrap();
+                    if pos == 0 {
+                        "root".to_string()
+                    } else {
+                        let text = this.get_text_first_line(id).unwrap();
+                        let mut label = pos.to_string();
+                        if text.parse::<usize>().ok() != Some(pos) {
+                            label.push_str(&format!(" ({:?})", &text));
+                        }
+                        let type_name = this.extract_meta(id, "type=").unwrap();
+                        if !type_name.is_empty() {
+                            label.push_str(&format!(" (type={})", type_name));
+                        }
+                        label
+                    }
+                },
+            );
             return result.trim_end().to_string();
         }
 
-        fn draw_ascii_node(&self, id: Self::Id, ids: &[Self::Id], prefix: &str, out: &mut String) {
+        fn draw_ascii_all(&self) -> String {
+            let ids = self.all_ids();
+            let prefix = " ".repeat(16);
+            let mut result = "\n".to_string();
+            result.push_str(&prefix);
+            self.draw_ascii_node(
+                ids[0],
+                &ids,
+                &prefix,
+                &mut result,
+                |this: &Self, id, ids: &[Self::Id]| {
+                    let text = this.get_text(id).unwrap();
+                    let meta = this.get_raw_meta(id).unwrap();
+                    let meta = if meta.is_empty() {
+                        "".to_string()
+                    } else {
+                        format!(" meta={:?}", meta)
+                    };
+                    format!("{:?} text={:?}{}", id, text, meta)
+                },
+            );
+            return result.trim_end().to_string();
+        }
+
+        fn draw_ascii_node(
+            &self,
+            id: Self::Id,
+            ids: &[Self::Id],
+            prefix: &str,
+            out: &mut String,
+            label_func: fn(&Self, Self::Id, &[Self::Id]) -> String,
+        ) {
             let pos = ids.iter().position(|i| i == &id).unwrap();
-            let label = if pos == 0 {
-                "root".to_string()
-            } else {
-                let text = self.get_text_first_line(id).unwrap();
-                let mut label = pos.to_string();
-                if text.parse::<usize>().ok() != Some(pos) {
-                    label.push_str(&format!(" ({:?})", &text));
-                }
-                let type_name = self.extract_meta(id, "type=").unwrap();
-                if !type_name.is_empty() {
-                    label.push_str(&format!(" (type={})", type_name));
-                }
-                label
-            };
+            let label = label_func(self, id, ids);
             out.push_str(&label);
             out.push('\n');
             let children: Vec<_> = self
@@ -503,7 +557,7 @@ pub(crate) mod tests {
                 } else {
                     format!("{}|  ", prefix)
                 };
-                self.draw_ascii_node(*child, ids, &new_prefix, out);
+                self.draw_ascii_node(*child, ids, &new_prefix, out, label_func);
             }
         }
     }
