@@ -10,6 +10,7 @@ crate-type = ["cdylib"]
 [dependencies]
 bitflags = "1"
 dirs = "3"
+dissimilar = "1"
 env_logger = "0.8"
 fs2 = "0.4"
 libloading = "0.6"

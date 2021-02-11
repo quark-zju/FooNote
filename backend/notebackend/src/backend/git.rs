@@ -261,7 +261,7 @@ impl GitInfo {
             .output_and_error()?;
 
         if let Some(error) = error {
-            if output.trim().starts_with("!") {
+            if output.lines().any(|l| l.trim().starts_with("!")) {
                 // Try to handle "conflict" (non-fast-forward push) error by merging.
                 log::warn!("Push {} to {}/{} was rejected", to_push, remote, branch,);
 
@@ -346,14 +346,35 @@ impl GitInfo {
         let mut files = Vec::with_capacity(paths.len() + 1);
 
         for path in paths {
-            if path == MANIFEST_NAME {
+            let path = path.trim();
+            if path == MANIFEST_NAME || path.is_empty() {
                 // Manifest is handled later to maintain valid JSON.
                 continue;
             }
-            log::debug!("Merging path {}", path);
             let local_data = self.try_read_path_utf8_on_commit(&local_oid, path)?;
             let other_data = self.try_read_path_utf8_on_commit(&other_oid, path)?;
             let base_data = self.try_read_path_utf8_on_commit(&base_oid, path)?;
+
+            // Print debug message.
+            let describe = if text_id(path).is_some() {
+                |s: &Option<String>| match s.as_ref() {
+                    Some(s) => first_line(&s).to_string(),
+                    None => "(missing)".to_string(),
+                }
+            } else {
+                |s: &Option<String>| match s.as_ref() {
+                    Some(s) => format!("({}b)", s.len()),
+                    None => "(missing)".to_string(),
+                }
+            };
+            log::debug!(
+                "Merging path {}: local {}, other {}, base {}",
+                path,
+                describe(&local_data),
+                describe(&other_data),
+                describe(&base_data),
+            );
+
             match (base_data, local_data, other_data) {
                 (_, None, None) => {}
                 (_, None, Some(data)) => {
@@ -399,7 +420,7 @@ impl GitInfo {
         ));
         let mut parents = vec![other_oid.clone(), local_oid.clone()];
         parents.dedup();
-        self.commit(&files, "[FooNote] Merge branches", Some(parents))
+        self.commit(&files, "[FooNote] Merge conflicts", Some(parents))
     }
 
     fn git(&self) -> GitCommand {
@@ -1155,6 +1176,11 @@ fn naive_merge_text_keep_both(a: &str, b: &str) -> String {
         .concat()
 }
 
+/// Extract the first line of message.
+fn first_line(s: &str) -> &str {
+    s.lines().next().unwrap_or("(untitled)")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1230,5 +1256,80 @@ mod tests {
         let cache_path = dir.path().join("cache2");
         let backend = GitBackend::from_git_url(&url, Some(&cache_path)).unwrap();
         check(backend);
+    }
+
+    #[test]
+    fn test_conflict_handling() {
+        let dir = tempfile::tempdir().unwrap();
+        let cache_path = dir.path().join("cache");
+        let git_repo_path = match populate_git_repo(dir.path()) {
+            Some(path) => path,
+            None => return, /* git does not work */
+        };
+
+        let url = format!("{}#mytrunk", git_repo_path.display());
+        let mut backend1 = GitBackend::from_git_url(&url, Some(&cache_path)).unwrap();
+        let ids = backend1.insert_ascii(
+            r#"
+            A---B---C
+             \   \
+              D   E
+        "#,
+        );
+        let a = backend1.find("A");
+        backend1.update_meta(a, "a=", "b").unwrap();
+        backend1.update_meta(a, "c=", "d").unwrap();
+        let b = backend1.find("B");
+        backend1.persist().unwrap();
+
+        // "Fork" the current state.
+        let mut backend2 = GitBackend::from_git_url(&url, Some(&cache_path)).unwrap();
+        backend2.update_meta(a, "a2=", "b2").unwrap();
+        backend2.remove(backend2.find("D")).unwrap();
+        backend2.quick_insert(b, "F");
+        backend2.set_text(a, "A2".to_string()).unwrap();
+        backend2.set_text(b, "b\nc\nd\n".to_string()).unwrap();
+        backend2.persist().unwrap();
+
+        // Cause conflict.
+        backend1.update_meta(a, "a1=", "b1").unwrap();
+        backend1.remove(backend1.find("C")).unwrap();
+        backend1.set_text(a, "A1".to_string()).unwrap();
+        backend1.set_text(b, "a\nc\nd\ne\n".to_string()).unwrap();
+        backend1
+            .set_text(backend1.find("E"), "E1".to_string())
+            .unwrap();
+        backend1.quick_insert(b, "G");
+
+        // Push. Trigger auto merge.
+        backend1.persist().unwrap();
+
+        // Check the merge resolution.
+        let backend3 = GitBackend::from_git_url(&url, Some(&cache_path)).unwrap();
+        let ids = backend3.all_ids();
+
+        // Text:
+        // A => (A1, A2) => A12.
+        // B => ("a c d e", "b c d") => "ab c d e"
+        // C => (_, C) => C
+        // D => (D, _) => D
+        // E => (E1, E) => E1
+        // _ => (G, F) => (G, F)  # G is re-assigned from 15 to 16.
+        //
+        // Meta:
+        // a=b c=d => (+a2=b2, +a1=b1) => a=b c=d a1=b1 a2=b2
+
+        assert_eq!(
+            backend3.draw_ascii_all(),
+            r#"
+                0 text=""
+                \_ 10 text="A12" meta="a=b\nc=d\na1=b1\na2=b2\n"
+                   \_ 11 text="ab\nc\nd\ne\n"
+                   |  \_ 12 text="C"
+                   |  \_ 14 text="E1"
+                   |  \_ 16 text="G" meta="t=G"
+                   |  \_ 15 text="F" meta="t=F"
+                   \_ 13 text="D""#
+        );
     }
 }
