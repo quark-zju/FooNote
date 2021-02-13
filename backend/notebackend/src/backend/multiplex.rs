@@ -28,10 +28,10 @@ pub struct MultiplexBackend {
     /// Parents of backends.
     parents: Vec<FullId>,
 
-    /// Mount overrides. Original Id -> New mounted Id.
+    /// Mount overrides. Original Id -> New mounted Id (usually root).
     table_srcdst: HashMap<FullId, FullId>,
 
-    /// Reverse of table. Useful to lookup parents.
+    /// Reverse of `table_srcdst`. Useful to lookup parents.
     table_dstsrc: HashMap<FullId, FullId>,
 }
 
@@ -203,7 +203,6 @@ impl MultiplexBackend {
         let mid = (backend_id, root_id);
         self.table_srcdst.insert(id, mid);
         self.table_dstsrc.insert(mid, id);
-        eprintln!("mounted!");
         self.touch(id)?;
         Ok((backend_id, root_id))
     }
