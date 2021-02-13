@@ -83,7 +83,11 @@ impl<T: TextIO> TreeBackend for ManifestBasedBackend<T> {
         let children = self.manifest.children.entry(parent_id).or_default();
         let index = match pos {
             InsertPos::Append => -1isize,
-            InsertPos::Before => children.iter().position(|&c| c == dest_id).unwrap_or(0) as isize,
+            InsertPos::Before => children
+                .iter()
+                .position(|&c| c == dest_id)
+                .map(|i| i as isize)
+                .unwrap_or(-1),
             InsertPos::After => {
                 children
                     .iter()
