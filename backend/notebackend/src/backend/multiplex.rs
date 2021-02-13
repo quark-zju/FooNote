@@ -9,9 +9,11 @@ use notebackend_types::InsertPos;
 use notebackend_types::Mtime;
 use notebackend_types::PersistCallbackFunc;
 use notebackend_types::TreeBackend;
+use parking_lot::Mutex;
 use std::collections::HashMap;
 use std::io;
 use std::io::Result;
+use std::sync::Arc;
 
 pub type FullId = (BackendId, Id);
 type BoxBackend = Box<dyn TreeBackend<Id = Id>>;
@@ -171,11 +173,29 @@ impl TreeBackend for MultiplexBackend {
     }
 
     fn persist_async(&mut self, callback: PersistCallbackFunc) {
-        // XXX: Fast path only works for the 1 backend case.
-        if self.backends.len() == 1 {
-            return self.backends[0].persist_async(callback);
+        let count = self.backends.len();
+        let results: Arc<Mutex<Vec<io::Result<()>>>> = Default::default();
+        let callback = Arc::new(Mutex::new(Some(callback)));
+        for backend in self.backends.iter_mut() {
+            let results = results.clone();
+            let callback = callback.clone();
+            backend.persist_async(Box::new(move |r| {
+                let mut results = results.lock();
+                results.push(r);
+                if results.len() == count {
+                    let single_result =
+                        results
+                            .drain(..)
+                            .fold(Ok(()), |acc, item| match (&acc, &item) {
+                                (Ok(_), _) => item,
+                                (Err(_), _) => acc,
+                            });
+                    if let Some(callback) = callback.lock().take() {
+                        callback(single_result);
+                    }
+                }
+            }));
         }
-        callback(self.persist());
     }
 }
 
