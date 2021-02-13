@@ -13,7 +13,7 @@ uses
   LazUtf8, FGL, LogFFI, Math, NoteBackend, NoteTypes, MemoUtil,
   LCLTranslator, Buttons, JSONPropStorage, TreeNodeData, StackFFI,
   TreeViewSync, Settings, PreviewForm, AboutForm, FileUtil, md5,
-  savemsgform;
+  savemsgform, selecturlform;
 
 type
 
@@ -79,7 +79,7 @@ type
     MenuItem5: TMenuItem;
     MenuItem7: TMenuItem;
     MenuItem9: TMenuItem;
-    ActionMountUrl: TAction;
+    ActionNewMountUrl: TAction;
     ActionNewSeparator: TAction;
     ActionNewFolder: TAction;
     ActionNewNote: TAction;
@@ -108,7 +108,7 @@ type
     procedure ActionEditPasteExecute(Sender: TObject);
     procedure FormShow(Sender: TObject);
     procedure IdleTimerWndProcTimer(Sender: TObject);
-    procedure ActionMountUrlExecute(Sender: TObject);
+    procedure ActionNewMountUrlExecute(Sender: TObject);
     procedure EditNoteSearchChange(Sender: TObject);
     procedure EditNoteSearchKeyPress(Sender: TObject; var Key: char);
     procedure TimerAutoSaveTimer(Sender: TObject);
@@ -165,6 +165,7 @@ type
     CandidateDropNode: TTreeNode;
     CandidateInsertPosition: integer; // 0: inside; -1: before; 1: after.
     DragOverHappened: boolean;
+    DragOverHappenedAndPreviewDrawn: boolean;
     StartDragCursorPos: TPoint;
     StartDragLocalPos: TPoint;
 
@@ -236,7 +237,8 @@ var
   BinaryClipboardFormat: TClipboardFormat;
 
 const
-  DefaultUrl: string = 'Default.FooNote';
+  DefaultUrl: string = 'Default.foonote';
+  StartDragThreshold: ValReal = 10;
 
 {$R *.lfm}
 
@@ -341,11 +343,6 @@ begin
       This.SplitterTreeNote.Top := I;
     end;
   end;
-  if (Name = AnyConfigName) or (Name = 'FeatureLevel') then begin
-    B := (Config.FeatureLevel >= flAdvanced);
-    This.MenuSepMount.Visible := B;
-    This.MenuItemMount.Visible := B;
-  end;
   if (Name = AnyConfigName) or (Name = 'ZenMode') then begin
     B := Config.ZenMode;
     This.PanelTop.Visible := not B;
@@ -403,7 +400,9 @@ begin
     try
       AppConfig.LoadFromJSONString(S);
     except
-      on e: EParserError do ;
+      on e: EParserError do if LogFFI.LogHasWarn then begin
+          LogWarn(Format('Cannot parse config %s: %s', [AppConfig.ConfigFileName, e.ToString]));
+        end;
     end;
   end;
 end;
@@ -435,7 +434,6 @@ end;
 
 procedure TFormFooNoteMain.ApplyAppConfigToThisForm;
 var
-  S: string;
   I: integer;
   Id: FullId;
 begin
@@ -1040,22 +1038,26 @@ begin
   {$endif}
 end;
 
-procedure TFormFooNoteMain.ActionMountUrlExecute(Sender: TObject);
+procedure TFormFooNoteMain.ActionNewMountUrlExecute(Sender: TObject);
 var
   url: string;
   Id: FullId;
 begin
-  Id := SelectedId;
-  if Id = RootNodeData.Id then begin
-    exit;
+  if not Assigned(FormOpenUrl) then begin
+    Application.CreateForm(TFormOpenUrl, FormOpenUrl);
   end;
-  url := InputBox('Mount', 'URL', '1.foonote');
-  if url.IsEmpty then begin
-    exit;
-  end;
-  if NoteBackend.TryMount(Id, url) then begin
-    NoteBackend.TryUpdateMeta(Id, 'type=', 'mount');
-    RefreshFullTree;
+
+  if FormOpenUrl.ShowModal = mrOk then begin
+    url := FormOpenUrl.EditUrl.Text;
+    if not url.IsEmpty then begin
+      Id := NewNode(url, 'type=folder' + #10, 0);
+      if NoteBackend.TryMount(Id, url) then begin
+        NoteBackend.TryUpdateMeta(Id, 'type=', 'mount');
+      end else begin
+        NoteBackend.TryRemove(Id);
+      end;
+      RefreshFullTree;
+    end;
   end;
 end;
 
@@ -1284,7 +1286,7 @@ var
   R: TRect;
   D: TTreeNodeData;
 begin
-  if Source = TreeViewNoteTree then begin
+  if (Source = TreeViewNoteTree) and DragOverHappenedAndPreviewDrawn then begin
     Accept := True;
     N := TreeViewNoteTree.GetNodeAt(X, Y);
     if Assigned(N) and (N.Selected or N.MultiSelected) then begin
@@ -1323,7 +1325,9 @@ end;
 procedure TFormFooNoteMain.TreeViewNoteTreeEndDrag(Sender, Target: TObject; X, Y: integer);
 begin
   // This can be called if drag was aborted by the ESC key.
-  if CandidateDropNode <> nil then begin
+  // In that case, the DnD shouldn't be handled.
+  // The real DnD handling is OnDragDrop.
+  if Assigned(CandidateDropNode) then begin
     CandidateDropNode := nil;
     TreeViewNoteTree.Repaint;
   end;
@@ -1374,19 +1378,28 @@ var
 begin
   if TreeViewNoteTree.Dragging then begin
     if not DragOverHappened then begin
-      // Take a "screenshot" of the tree view.
-      // Do not do it in OnStartDrag to reduce cost.
-      if LogHasDebug then begin
-        LogDebug('Render Selection Preview');
-      end;
-      DrawTreeSelectionPreview;
+      // Record the start position.
       StartDragCursorPos := Mouse.CursorPos;
       StartDragLocalPos := TPoint.Create(X, Y);
       DragOverHappened := True;
+      DragOverHappenedAndPreviewDrawn := False;
     end else begin
-      // Show preview.
       Point := (Mouse.CursorPos - StartDragLocalPos);
-      PreviewForm.ShowCanvasAt(Point.X, Point.Y);
+      if not DragOverHappenedAndPreviewDrawn then begin
+        // Should we draw preview?
+        if Point.Distance(Point.Zero) > StartDragThreshold then begin
+          // Take a "screenshot" of the tree view.
+          // Do not do it in OnStartDrag to reduce cost.
+          if LogHasDebug then begin
+            LogDebug('Render Selection Preview');
+          end;
+          DrawTreeSelectionPreview;
+          DragOverHappenedAndPreviewDrawn := True;
+        end;
+      end else begin
+        // Show preview at the right position.
+        PreviewForm.ShowCanvasAt(Point.X, Point.Y);
+      end;
     end;
   end;
 end;
@@ -1402,6 +1415,7 @@ end;
 procedure TFormFooNoteMain.TreeViewNoteTreeStartDrag(Sender: TObject; var DragObject: TDragObject);
 begin
   DragOverHappened := False;
+  DragOverHappenedAndPreviewDrawn := False;
 end;
 
 procedure TFormFooNoteMain.TreeViewSearchTreeDblClick(Sender: TObject);
@@ -1541,7 +1555,7 @@ begin
     ActionEditSave.Enabled := False;
 
     // Change cursor to "busy".
-    TreeViewNoteTree.Cursor := crHourGlass;
+    TreeViewNoteTree.Cursor := crAppStart;
 
     // TimerCheckSaveResult will re-enable ActionEditSave.
     TimerCheckSaveResult.Enabled := True;

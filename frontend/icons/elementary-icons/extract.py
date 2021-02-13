@@ -4,24 +4,29 @@
 import os
 
 names = '''
-actions/list-add
-actions/open-menu
-actions/window-close
-actions/mail-send
 actions/edit-copy
 actions/edit-paste
+actions/list-add
+actions/mail-send
+actions/open-menu
+actions/window-close
 apps/accessories-text-editor
 devices/drive-harddisk-solidstate
+mimes/application-x-firmware
 mimes/office-database
 mimes/package
 mimes/text
 mimes/text-x-preview
 places/folder
 places/folder-documents
+places/folder-open
+places/folder-recent
+places/folder-remote
 places/folder-remote
 places/network-workgroup
-places/user-trash
 places/user-bookmarks
+places/user-home
+places/user-trash
 status/locked
 '''
 

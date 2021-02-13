@@ -98,15 +98,26 @@ begin
   if S = 'folder' then begin
     Result := ImageIndex.IMG_FOLDER;
   end else if S = 'root' then begin
-    if NoteBackend.IsMount(Id) then begin
-      Result := ImageIndex.IMG_FOLDER_LOCAL;
-    end else begin
-      Result := ImageIndex.IMG_FOLDER;
-    end;
+    Result := ImageIndex.IMG_ROOT_HOME;
   end else if S = 'trash' then begin
     Result := ImageIndex.IMG_TRASH;
   end else if S = 'mount' then begin
-    Result := ImageIndex.IMG_FOLDER_LOCAL;
+    if NoteBackend.IsMount(Id) then begin
+      S := ExtractMeta('mount=');
+      S := NoteBackend.UrlType(S);
+      if S = 'git' then begin
+        Result := ImageIndex.IMG_ROOT_REMOTE;
+      end else if S = 'local' then begin
+        Result := ImageIndex.IMG_ROOT_LOCAL;
+      end else if S = 'memory' then begin
+        Result := ImageIndex.IMG_ROOT_MEMORY;
+      end else begin
+        Result := ImageIndex.IMG_ROOT_LOCAL;
+      end;
+    end else begin
+      // Warn: Cannot mount.
+      Result := ImageIndex.IMG_WARN;
+    end;
   end else begin
     Result := ImageIndex.IMG_TEXT;
   end;

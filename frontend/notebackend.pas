@@ -11,6 +11,7 @@ uses
 
 procedure CloseAll;
 function Open(Url: string): FullId;
+function UrlType(Url: string): string;
 function GetRootId(): FullId;
 function GetChildren(Id: FullId): VecFullId;
 function GetParent(Id: FullId): FullId;
@@ -56,7 +57,8 @@ implementation
 // Main FFI APIs. Their input and output are based on the thread-local stack.
 // The return value is for error codes.
 
-function notebackend_open(): Int32; cdecl; external 'notebackend';
+function notebackend_open_root_url(): Int32; cdecl; external 'notebackend';
+function notebackend_type_of_url(): Int32; cdecl; external 'notebackend';
 function notebackend_get_root_id(): Int32; cdecl; external 'notebackend';
 function notebackend_get_children(): Int32; cdecl; external 'notebackend';
 function notebackend_get_parent(): Int32; cdecl; external 'notebackend';
@@ -80,7 +82,7 @@ function notebackend_persist_async(): Int32; cdecl; external 'notebackend';
 function notebackend_persist_try_wait(): Int32; cdecl; external 'notebackend';
 function notebackend_copy(): Int32; cdecl; external 'notebackend';
 function notebackend_paste(): Int32; cdecl; external 'notebackend';
-function notebackend_mount(): Int32; cdecl; external 'notebackend';
+function notebackend_mount_url(): Int32; cdecl; external 'notebackend';
 function notebackend_is_mount(): Int32; cdecl; external 'notebackend';
 function notebackend_umount(): Int32; cdecl; external 'notebackend';
 function notebackend_search_start(): Int32; cdecl; external 'notebackend';
@@ -135,10 +137,21 @@ var
 begin
   StackClear();
   StackPushString(Url);
-  if LogResultErrorMessage(notebackend_open(), S) <> OK then begin
+  if LogResultErrorMessage(notebackend_open_root_url(), S) <> OK then begin
     raise EExternal.Create(Format('Open(%s) failed: %s', [Url, S]));
   end;
   Result := StackPopFullId();
+end;
+
+function UrlType(Url: string): string;
+var
+  S: string;
+begin
+  StackClear();
+  StackPushString(Url);
+  if LogResultErrorMessage(notebackend_type_of_url(), S) = OK then begin
+    Result := StackPopString();
+  end;
 end;
 
 function GetRootId(): FullId;
@@ -397,7 +410,7 @@ begin
   StackClear();
   StackPushFullId(Id);
   StackPushString(Url);
-  Result := (LogResultError(notebackend_mount()) = OK);
+  Result := (LogResultError(notebackend_mount_url()) = OK);
 end;
 
 function TryUmount(Id: FullId): boolean;

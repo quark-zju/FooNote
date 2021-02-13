@@ -1,0 +1,149 @@
+object FormOpenUrl: TFormOpenUrl
+  Left = 554
+  Height = 266
+  Top = 258
+  Width = 484
+  BorderIcons = [biSystemMenu]
+  BorderStyle = bsDialog
+  Caption = 'Open FooNote'
+  ClientHeight = 266
+  ClientWidth = 484
+  Position = poWorkAreaCenter
+  LCLVersion = '2.0.10.0'
+  object Label1: TLabel
+    AnchorSideLeft.Control = Owner
+    AnchorSideTop.Control = Owner
+    Left = 10
+    Height = 17
+    Top = 10
+    Width = 173
+    BorderSpacing.Around = 10
+    Caption = 'Location of FooNote to open:'
+    ParentColor = False
+  end
+  object RadioLocalFile: TRadioButton
+    AnchorSideLeft.Control = Label1
+    AnchorSideTop.Control = Label1
+    AnchorSideTop.Side = asrBottom
+    Left = 20
+    Height = 21
+    Top = 37
+    Width = 130
+    BorderSpacing.Left = 10
+    BorderSpacing.Top = 10
+    BorderSpacing.Bottom = 10
+    Caption = 'Local FooNote File'
+    OnChange = RadioLocalFileChange
+    TabOrder = 2
+  end
+  object EditUrl: TEdit
+    AnchorSideLeft.Control = Owner
+    AnchorSideTop.Control = Label2
+    AnchorSideTop.Side = asrBottom
+    AnchorSideRight.Control = Owner
+    AnchorSideRight.Side = asrBottom
+    Left = 10
+    Height = 25
+    Top = 184
+    Width = 464
+    Anchors = [akTop, akLeft, akRight]
+    BorderSpacing.Left = 10
+    BorderSpacing.Top = 20
+    BorderSpacing.Right = 10
+    OnChange = EditUrlChange
+    TabOrder = 0
+  end
+  object RadioCustom: TRadioButton
+    AnchorSideLeft.Control = RadioMemory
+    AnchorSideTop.Control = Label3
+    AnchorSideTop.Side = asrBottom
+    Left = 20
+    Height = 21
+    Top = 121
+    Width = 66
+    BorderSpacing.Top = 10
+    BorderSpacing.Bottom = 5
+    Caption = 'Custom'
+    Checked = True
+    OnChange = RadioCustomChange
+    TabOrder = 1
+    TabStop = True
+  end
+  object RadioMemory: TRadioButton
+    AnchorSideLeft.Control = RadioLocalFile
+    AnchorSideTop.Control = RadioLocalFile
+    AnchorSideTop.Side = asrBottom
+    Left = 20
+    Height = 21
+    Top = 68
+    Width = 71
+    BorderSpacing.Bottom = 5
+    Caption = 'Memory'
+    OnChange = RadioMemoryChange
+    TabOrder = 3
+  end
+  object ButtonOpen: TButton
+    AnchorSideTop.Control = ButtonCancel
+    AnchorSideRight.Control = ButtonCancel
+    Left = 284
+    Height = 25
+    Top = 219
+    Width = 90
+    Anchors = [akTop, akRight]
+    BorderSpacing.Right = 10
+    Caption = '&Open'
+    Enabled = False
+    ModalResult = 1
+    TabOrder = 4
+  end
+  object ButtonCancel: TButton
+    AnchorSideTop.Control = EditUrl
+    AnchorSideTop.Side = asrBottom
+    AnchorSideRight.Control = Owner
+    AnchorSideRight.Side = asrBottom
+    Left = 384
+    Height = 27
+    Top = 219
+    Width = 90
+    Anchors = [akTop, akLeft, akRight]
+    AutoSize = True
+    BorderSpacing.Top = 10
+    BorderSpacing.Right = 10
+    Cancel = True
+    Caption = '&Cancel'
+    ModalResult = 2
+    TabOrder = 5
+  end
+  object Label2: TLabel
+    AnchorSideLeft.Control = RadioCustom
+    AnchorSideTop.Control = RadioCustom
+    AnchorSideTop.Side = asrBottom
+    Left = 45
+    Height = 17
+    Top = 147
+    Width = 292
+    BorderSpacing.Left = 25
+    Caption = 'For example, git@host.com:repo/my-foo-notes.git'
+    ParentColor = False
+  end
+  object Label3: TLabel
+    AnchorSideLeft.Control = RadioCustom
+    AnchorSideTop.Control = RadioMemory
+    AnchorSideTop.Side = asrBottom
+    Left = 45
+    Height = 17
+    Top = 94
+    Width = 90
+    BorderSpacing.Left = 25
+    Caption = 'Discard on exit.'
+    ParentColor = False
+  end
+  object SaveDialogFooNote: TSaveDialog
+    Title = 'Select FooNote File'
+    DefaultExt = '.foonote'
+    Filter = 'FooNote|*.foonote'
+    Options = [ofEnableSizing, ofDontAddToRecent, ofViewDetail]
+    Left = 240
+    Top = 16
+  end
+end
