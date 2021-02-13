@@ -16,5 +16,8 @@ mod search;
 /// URL -> Backend.
 mod url;
 
+/// Merge algorithms.
+mod merge;
+
 /// Exported FFI.
 mod export;
