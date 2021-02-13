@@ -336,7 +336,10 @@ pub extern "C" fn notebackend_persist_async() -> i32 {
     let mut list = RwLockUpgradableReadGuard::upgrade(list);
     let result = Arc::new(StdMutex::new(None));
     list.push(result.clone());
-    ROOT_BACKEND.write().persist_async(result);
+    ROOT_BACKEND.write().persist_async({
+        let result = result.clone();
+        Box::new(move |r| *result.lock().unwrap() = Some(r))
+    });
     errno::OK
 }
 

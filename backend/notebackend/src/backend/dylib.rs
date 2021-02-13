@@ -3,11 +3,11 @@
 
 use libloading::Library;
 use libloading::Symbol;
+use notebackend_types::CreateBackendFunc;
+use notebackend_types::Id;
+use notebackend_types::PersistCallbackFunc;
 use notebackend_types::TreeBackend;
-use notebackend_types::{CreateBackendFunc, Id};
 use std::io;
-use std::sync::Arc;
-use std::sync::Mutex;
 pub struct DylibBackend {
     // The order here is important. `tree` needs to be dropped before `lib`.
     tree: Box<dyn TreeBackend<Id = Id>>,
@@ -92,8 +92,8 @@ impl TreeBackend for DylibBackend {
         self.tree.persist()
     }
 
-    fn persist_async(&mut self, result: Arc<Mutex<Option<io::Result<()>>>>) {
-        self.tree.persist_async(result)
+    fn persist_async(&mut self, callback: PersistCallbackFunc) {
+        self.tree.persist_async(callback)
     }
 
     fn get_root_id(&self) -> Self::Id {

@@ -5,6 +5,7 @@ use crate::manifest::Manifest;
 use crate::merge;
 use git_cmd::GitCommand;
 use notebackend_types::Id;
+use notebackend_types::PersistCallbackFunc;
 use parking_lot::lock_api::RwLockUpgradableReadGuard;
 use parking_lot::Mutex;
 use parking_lot::RwLock;
@@ -23,7 +24,6 @@ use std::path::PathBuf;
 use std::process::Child;
 use std::process::Stdio;
 use std::sync::Arc;
-use std::sync::Mutex as StdMutex;
 use std::thread;
 use std::time::SystemTime;
 use std::time::UNIX_EPOCH;
@@ -126,7 +126,7 @@ impl TextIO for GitTextIO {
     fn persist_async_with_manifest(
         &mut self,
         manifest: &mut Manifest,
-        result: Arc<StdMutex<Option<io::Result<()>>>>,
+        callback: PersistCallbackFunc,
     ) {
         let sync_result = (|| -> io::Result<Option<HexOid>> {
             let base_commit = self.commit_with_manifest(manifest)?;
@@ -136,11 +136,11 @@ impl TextIO for GitTextIO {
         match (sync_result, self.info.has_local_changes()) {
             (Err(e), _) => {
                 // Error happened committing.
-                *result.lock().unwrap() = Some(Err(e));
+                callback(Err(e));
             }
             (Ok(None), false) => {
                 // Nothing changed.
-                *result.lock().unwrap() = Some(Ok(()));
+                callback(Ok(()));
             }
             _ => {
                 // Need push.
@@ -148,7 +148,7 @@ impl TextIO for GitTextIO {
                 let previous_threads: Vec<_> = self.persist_threads.drain(..).collect();
                 let handler = thread::spawn(move || {
                     let async_result = info.push();
-                    *result.lock().unwrap() = Some(async_result);
+                    callback(async_result);
                     // Clean up previous threads.
                     for t in previous_threads {
                         let _ = t.join();

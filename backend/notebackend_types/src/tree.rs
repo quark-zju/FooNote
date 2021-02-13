@@ -5,12 +5,11 @@ use std::hash::Hash;
 use std::io::Result;
 use std::ops::Deref;
 use std::ops::DerefMut;
-use std::sync::Arc;
-use std::sync::Mutex;
 
 pub type Id = i32;
 pub type BackendId = usize;
 pub type Mtime = i32;
+pub type PersistCallbackFunc = Box<dyn FnOnce(Result<()>) + Send + Sync + 'static>;
 
 #[repr(u8)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -264,8 +263,8 @@ pub trait TreeBackend: Send + Sync + 'static {
 
     /// Async persistent. Prepare fast changes then kicks off a thread to
     /// do the rest of the job. The thread is independent from `self`,
-    /// and will write result to `result`.
-    fn persist_async(&mut self, result: Arc<Mutex<Option<Result<()>>>>);
+    /// and will call the callback function with the `result`.
+    fn persist_async(&mut self, callback: PersistCallbackFunc);
 }
 
 impl TreeBackend for Box<dyn TreeBackend<Id = Id>> {
@@ -334,8 +333,8 @@ impl TreeBackend for Box<dyn TreeBackend<Id = Id>> {
         self.deref_mut().persist()
     }
 
-    fn persist_async(&mut self, result: Arc<Mutex<Option<Result<()>>>>) {
-        self.deref_mut().persist_async(result)
+    fn persist_async(&mut self, callback: PersistCallbackFunc) {
+        self.deref_mut().persist_async(callback)
     }
 }
 

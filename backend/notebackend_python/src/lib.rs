@@ -1,11 +1,10 @@
 use notebackend_types::CreateBackendFunc;
 use notebackend_types::Id;
+use notebackend_types::PersistCallbackFunc;
 use notebackend_types::TreeBackend;
 use pyo3::{prelude::*, types::PyDict};
 use std::fs;
 use std::io;
-use std::sync::Arc;
-use std::sync::Mutex;
 
 #[no_mangle]
 pub fn notebackend_create(url: &str) -> io::Result<Box<dyn TreeBackend<Id = Id>>> {
@@ -171,8 +170,8 @@ impl TreeBackend for PythonBackend {
         })
     }
 
-    fn persist_async(&mut self, result: Arc<Mutex<Option<io::Result<()>>>>) {
+    fn persist_async(&mut self, callback: PersistCallbackFunc) {
         let r = self.persist();
-        *result.lock().unwrap() = Some(r);
+        callback(r);
     }
 }
