@@ -2,6 +2,7 @@ use crate::backend::meta::manifest::ManifestBasedBackend;
 use crate::backend::meta::manifest::TextIO;
 use crate::manifest::min_next_id;
 use crate::manifest::Manifest;
+use crate::merge;
 use git_cmd::GitCommand;
 use notebackend_types::Id;
 use parking_lot::lock_api::RwLockUpgradableReadGuard;
@@ -386,8 +387,8 @@ impl GitInfo {
                     log::debug!(" take local (only in local)");
                     files.push((path.to_string(), Some(data.into())))
                 }
-                (Some(_), Some(a), Some(b)) => {
-                    let merged = naive_merge_text_keep_both(&a, &b);
+                (Some(base), Some(a), Some(b)) => {
+                    let merged = merge::merge_two_strings_with_base(&base, &a, &b);
                     log::debug!(" merge ({}b, {}b) => {}b", a.len(), b.len(), merged.len());
                     files.push((path.to_string(), Some(merged.into())));
                 }
@@ -1164,18 +1165,6 @@ mod git_cmd {
     }
 }
 
-fn naive_merge_text_keep_both(a: &str, b: &str) -> String {
-    dissimilar::diff(a, b)
-        .into_iter()
-        .map(|c| match c {
-            dissimilar::Chunk::Equal(s)
-            | dissimilar::Chunk::Delete(s)
-            | dissimilar::Chunk::Insert(s) => s,
-        })
-        .collect::<Vec<&str>>()
-        .concat()
-}
-
 /// Extract the first line of message.
 fn first_line(s: &str) -> &str {
     s.lines().next().unwrap_or("(untitled)")
@@ -1260,6 +1249,7 @@ mod tests {
 
     #[test]
     fn test_conflict_handling() {
+        env_logger::init();
         let dir = tempfile::tempdir().unwrap();
         let cache_path = dir.path().join("cache");
         let git_repo_path = match populate_git_repo(dir.path()) {
@@ -1271,7 +1261,9 @@ mod tests {
         let mut backend1 = GitBackend::from_git_url(&url, Some(&cache_path)).unwrap();
         let ids = backend1.insert_ascii(
             r#"
-            A---B---C
+                  C
+                 /
+            A---B--II--JJ
              \   \
               D   E
         "#,
@@ -1280,6 +1272,8 @@ mod tests {
         backend1.update_meta(a, "a=", "b").unwrap();
         backend1.update_meta(a, "c=", "d").unwrap();
         let b = backend1.find("B");
+        let i = backend1.find("II");
+        let j = backend1.find("JJ");
         backend1.persist().unwrap();
 
         // "Fork" the current state.
@@ -1289,6 +1283,7 @@ mod tests {
         backend2.quick_insert(b, "F");
         backend2.set_text(a, "A2".to_string()).unwrap();
         backend2.set_text(b, "b\nc\nd\n".to_string()).unwrap();
+        backend2.set_text(i, "I".to_string()).unwrap();
         backend2.persist().unwrap();
 
         // Cause conflict.
@@ -1296,6 +1291,7 @@ mod tests {
         backend1.remove(backend1.find("C")).unwrap();
         backend1.set_text(a, "A1".to_string()).unwrap();
         backend1.set_text(b, "a\nc\nd\ne\n".to_string()).unwrap();
+        backend1.set_text(j, "J".to_string()).unwrap();
         backend1
             .set_text(backend1.find("E"), "E1".to_string())
             .unwrap();
@@ -1327,8 +1323,10 @@ mod tests {
                    \_ 11 text="ab\nc\nd\ne\n"
                    |  \_ 12 text="C"
                    |  \_ 14 text="E1"
-                   |  \_ 16 text="G" meta="t=G"
-                   |  \_ 15 text="F" meta="t=F"
+                   |  \_ 15 text="I"
+                   |  |  \_ 16 text="J"
+                   |  \_ 18 text="G" meta="t=G"
+                   |  \_ 17 text="F" meta="t=F"
                    \_ 13 text="D""#
         );
     }
