@@ -113,7 +113,7 @@ fn push_fid_list(ids: &[FullId]) {
 
 /// (url: String) -> (backend_id: i32, id: i32)
 #[no_mangle]
-pub extern "C" fn notebackend_open() -> i32 {
+pub extern "C" fn notebackend_open_root_url() -> i32 {
     let url: String = pop!();
     let b = attempt!(crate::url::open(&url));
     let m = MultiplexBackend::from_root_backend(b);
@@ -122,9 +122,18 @@ pub extern "C" fn notebackend_open() -> i32 {
     errno::OK
 }
 
+/// (url: String) -> (backend_type: str)
+#[no_mangle]
+pub extern "C" fn notebackend_type_of_url() -> i32 {
+    let url: String = pop!();
+    let backend_type = attempt!(crate::url::backend_type_from_url(&url));
+    stack::push(backend_type.to_string());
+    errno::OK
+}
+
 /// (id: i32, url: String) -> ()
 #[no_mangle]
-pub extern "C" fn notebackend_mount() -> i32 {
+pub extern "C" fn notebackend_mount_url() -> i32 {
     let url: String = pop!();
     let id = pop_fid!();
     let b = attempt!(crate::url::open(&url));
