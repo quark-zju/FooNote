@@ -150,7 +150,18 @@ impl TreeBackend for MultiplexBackend {
     }
 
     fn remove(&mut self, id: Self::Id) -> Result<()> {
-        // XXX: This can cause dangling mounts.
+        let mut to_umount = Vec::new();
+        for &mount_id in self.table_srcdst.keys() {
+            if self.is_ancestor(id, mount_id)? {
+                to_umount.push(mount_id);
+                log::info!("umount {:?} on deletion", mount_id);
+            }
+        }
+        to_umount.sort_unstable();
+        for id in to_umount.into_iter().rev() {
+            self.umount(id)?;
+        }
+
         let backend = self.get_backend_mut(id.0)?;
         backend.remove(id.1)?;
         self.bump_parent_mtime(id)?;
@@ -241,15 +252,32 @@ impl MultiplexBackend {
         self.table_srcdst.insert(id, mid);
         self.table_dstsrc.insert(mid, id);
         self.touch(id)?;
+        let url = self.extract_meta(id, "mount=").unwrap_or_default();
+        log::info!("mount {:?} => {:?} ({})", id, mid, url);
         Ok((backend_id, root_id))
     }
 
     pub fn umount(&mut self, id: FullId) -> Result<()> {
-        if let Some(fid) = self.table_srcdst.remove(&id) {
+        if let Some(fid) = self.table_srcdst.get(&id).cloned() {
+            self.backends[fid.0].persist()?;
+            let url = self.extract_meta(id, "mount=").unwrap_or_default();
+            log::info!("umount {:?} => {:?} ({})", id, fid, url);
             self.table_dstsrc.remove(&fid);
+            self.table_srcdst.remove(&id);
             self.backends[fid.0] = Box::new(NullBackend);
             self.touch(id)?;
         }
+
+        // Remove stale backends.
+        if let Some(max_backend_id) = self.table_dstsrc.keys().map(|b| b.0).max() {
+            let needed_len = max_backend_id + 1;
+            let len = self.backends.len();
+            if needed_len < len {
+                log::info!("resizing backends {} -> {:?}", len, needed_len);
+                self.backends.truncate(needed_len);
+            }
+        }
+
         Ok(())
     }
 
@@ -276,6 +304,7 @@ impl MultiplexBackend {
 
     /// Bump mtime across mount boundary.
     fn bump_parent_mtime(&mut self, mut id: FullId) -> Result<()> {
+        log::trace!("bumping mtime for {:?}", id);
         let mut last_backend_id = id.0;
         while let Some(parent) = self.get_parent(id)? {
             id = parent;
