@@ -44,7 +44,7 @@ pub struct GitTextIO {
     // value of texts: Some((content, modified)) | None (deleted)
     texts: RwLock<HashMap<Id, Option<(String, bool)>>>,
     // for "changed" detection.
-    last_manifest: Manifest,
+    last_manifest: Arc<Mutex<Manifest>>,
     // Threads for persist_async() to join.
     persist_threads: Vec<thread::JoinHandle<()>>,
 }
@@ -172,7 +172,7 @@ impl GitBackend {
         let mut text_io = GitTextIO {
             info: GitInfo::new(repo_path, remote_name, branch_name),
             texts: Default::default(),
-            last_manifest: Manifest::default(),
+            last_manifest: Default::default(),
             persist_threads: Default::default(),
         };
         text_io.info.fetch()?;
@@ -697,7 +697,7 @@ impl GitTextIO {
             .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
         manifest.next_id = manifest.next_id.max(min_next_id());
         manifest.rebuild_parents();
-        self.last_manifest = manifest.clone();
+        *self.last_manifest.lock() = manifest.clone();
         Ok(manifest)
     }
 
@@ -739,7 +739,7 @@ impl GitTextIO {
     fn commit_with_manifest(&mut self, manifest: &mut Manifest) -> io::Result<Option<HexOid>> {
         // Nothing changed?
         if self.optimize_then_count_changed_files(manifest)? == 0 {
-            if &self.last_manifest == manifest {
+            if &*self.last_manifest.lock() == manifest {
                 log::info!("Nothing changed - No need to commit");
                 return Ok(None);
             } else {
@@ -747,8 +747,10 @@ impl GitTextIO {
             }
         }
 
+        let last_manifest = self.last_manifest.clone();
         self.with_changed_files(manifest, |files| {
             let commit_oid = self.info.commit(&files, "[FooNote] Checkpoint", None)?;
+            *last_manifest.lock() = manifest.clone();
             Ok(Some(commit_oid))
         })
     }
