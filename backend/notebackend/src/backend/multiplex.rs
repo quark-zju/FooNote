@@ -176,10 +176,28 @@ impl TreeBackend for MultiplexBackend {
         let count = self.backends.len();
         let results: Arc<Mutex<Vec<io::Result<()>>>> = Default::default();
         let callback = Arc::new(Mutex::new(Some(callback)));
-        for backend in self.backends.iter_mut() {
+        let urls: Vec<String> = self
+            .backends
+            .iter()
+            .enumerate()
+            .map(|(i, b)| {
+                match self
+                    .table_dstsrc
+                    .get(&(i, b.get_root_id()))
+                    .and_then(|id| self.extract_meta(*id, "mount=").ok())
+                {
+                    Some(url) => url.to_string(),
+                    None => String::new(),
+                }
+            })
+            .collect();
+        for (backend, url) in self.backends.iter_mut().zip(urls) {
             let results = results.clone();
             let callback = callback.clone();
-            backend.persist_async(Box::new(move |r| {
+            backend.persist_async(Box::new(move |mut r| {
+                if url.is_empty() {
+                    r = r.map_err(|e| io::Error::new(e.kind(), format!("{} ({})", e, url)));
+                }
                 let mut results = results.lock();
                 results.push(r);
                 if results.len() == count {
