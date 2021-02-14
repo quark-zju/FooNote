@@ -10,6 +10,7 @@ use notebackend_types::Mtime;
 use notebackend_types::PersistCallbackFunc;
 use notebackend_types::TreeBackend;
 use parking_lot::Mutex;
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::io;
 use std::io::Result;
@@ -140,6 +141,7 @@ impl TreeBackend for MultiplexBackend {
     }
 
     fn touch(&mut self, id: Self::Id) -> Result<()> {
+        log::debug!("touch {:?}", id);
         let backend = self.get_backend_mut(id.0)?;
         backend.touch(id.1)?;
         self.bump_parent_mtime(id)?;
@@ -227,11 +229,16 @@ impl TreeBackend for MultiplexBackend {
 
 impl MultiplexBackend {
     pub fn from_root_backend(backend: BoxBackend) -> Self {
-        Self {
+        let backend = Self {
             backends: vec![backend],
             table_srcdst: Default::default(),
             table_dstsrc: Default::default(),
-        }
+        };
+        backend
+    }
+
+    fn extract_url(&self, id: FullId) -> io::Result<Cow<str>> {
+        self.extract_meta(id, "mount=")
     }
 
     pub fn mount(&mut self, id: FullId, backend: BoxBackend) -> Result<FullId> {
@@ -248,29 +255,31 @@ impl MultiplexBackend {
         self.table_srcdst.insert(id, mid);
         self.table_dstsrc.insert(mid, id);
         self.touch(id)?;
-        let url = self.extract_meta(id, "mount=").unwrap_or_default();
+        self.touch(mid)?;
+        let url = self.extract_url(id)?;
         log::info!("mount {:?} => {:?} ({})", id, mid, url);
         Ok((backend_id, root_id))
     }
 
     pub fn umount(&mut self, id: FullId) -> Result<()> {
-        if let Some(fid) = self.table_srcdst.get(&id).cloned() {
-            self.backends[fid.0].persist()?;
-            let url = self.extract_meta(id, "mount=").unwrap_or_default();
-            log::info!("umount {:?} => {:?} ({})", id, fid, url);
-            self.table_dstsrc.remove(&fid);
-            self.table_srcdst.remove(&id);
-            self.backends[fid.0] = Box::new(NullBackend);
+        if let Some(mid) = self.table_srcdst.get(&id).cloned() {
+            self.backends[mid.0].persist()?;
+            let url = self.extract_url(id)?;
+            log::info!("umount {:?} => {:?} ({})", id, mid, url);
             self.touch(id)?;
-        }
+            self.touch(mid)?;
+            self.table_dstsrc.remove(&mid);
+            self.table_srcdst.remove(&id);
+            self.backends[mid.0] = Box::new(NullBackend);
 
-        // Remove stale backends.
-        if let Some(max_backend_id) = self.table_dstsrc.keys().map(|b| b.0).max() {
-            let needed_len = max_backend_id + 1;
-            let len = self.backends.len();
-            if needed_len < len {
-                log::info!("resizing backends {} -> {:?}", len, needed_len);
-                self.backends.truncate(needed_len);
+            // Remove stale backends.
+            if let Some(max_backend_id) = self.table_dstsrc.keys().map(|b| b.0).max() {
+                let needed_len = max_backend_id + 1;
+                let len = self.backends.len();
+                if needed_len < len {
+                    log::info!("resizing backends {} -> {:?}", len, needed_len);
+                    self.backends.truncate(needed_len);
+                }
             }
         }
 
