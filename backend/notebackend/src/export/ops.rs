@@ -4,7 +4,7 @@ use super::errno;
 use super::stack;
 use crate::backend;
 use crate::backend::FullId;
-use crate::backend::MultiplexBackend;
+use crate::backend::MountableBackend;
 use crate::clipboard;
 use crate::search::Search;
 use backend::MemBackend;
@@ -19,8 +19,8 @@ use std::sync::Arc;
 use std::sync::Mutex as StdMutex;
 
 /// Global state for easier ffi APIs.
-static ROOT_BACKEND: Lazy<Arc<RwLock<MultiplexBackend>>> = Lazy::new(|| Default::default());
-static SEARCH: Lazy<RwLock<Search<MultiplexBackend>>> =
+static ROOT_BACKEND: Lazy<Arc<RwLock<MountableBackend>>> = Lazy::new(|| Default::default());
+static SEARCH: Lazy<RwLock<Search<MountableBackend>>> =
     Lazy::new(|| RwLock::new(Search::new(ROOT_BACKEND.clone())));
 
 static PERSIST_RESULT_LIST: Lazy<RwLock<Vec<Arc<StdMutex<Option<io::Result<()>>>>>>> =
@@ -115,8 +115,7 @@ fn push_fid_list(ids: &[FullId]) {
 #[no_mangle]
 pub extern "C" fn notebackend_open_root_url() -> i32 {
     let url: String = pop!();
-    let b = attempt!(crate::url::open(&url));
-    let m = MultiplexBackend::from_root_backend(b);
+    let m = attempt!(MountableBackend::open_url(&url));
     push_fid(m.get_root_id());
     *ROOT_BACKEND.write() = m;
     errno::OK
@@ -139,7 +138,6 @@ pub extern "C" fn notebackend_mount_url() -> i32 {
     let b = attempt!(crate::url::open(&url));
     let mut root = ROOT_BACKEND.write();
     attempt!(root.update_meta(id, "mount=", &url));
-    attempt!(root.mount(id, Box::new(b)));
     errno::OK
 }
 
@@ -148,7 +146,6 @@ pub extern "C" fn notebackend_mount_url() -> i32 {
 pub extern "C" fn notebackend_umount() -> i32 {
     let id = pop_fid!();
     let mut root = ROOT_BACKEND.write();
-    attempt!(root.umount(id));
     attempt!(root.update_meta(id, "mount=", ""));
     errno::OK
 }
@@ -157,16 +154,14 @@ pub extern "C" fn notebackend_umount() -> i32 {
 #[no_mangle]
 pub extern "C" fn notebackend_is_mount() -> i32 {
     let id = pop_fid!();
-    let root = ROOT_BACKEND.read();
-    let result = attempt!(root.is_mount(id));
-    stack::push(result as i32);
+    stack::push(0);
     errno::OK
 }
 
 /// () -> ()
 #[no_mangle]
 pub extern "C" fn notebackend_close_all() {
-    let m = MultiplexBackend::default();
+    let m = MountableBackend::default();
     *ROOT_BACKEND.write() = m;
 }
 
