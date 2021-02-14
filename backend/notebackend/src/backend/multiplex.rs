@@ -10,6 +10,7 @@ use notebackend_types::Mtime;
 use notebackend_types::PersistCallbackFunc;
 use notebackend_types::TreeBackend;
 use parking_lot::Mutex;
+use parking_lot::RwLock;
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::io;
@@ -231,6 +232,454 @@ impl TreeBackend for MultiplexBackend {
     }
 }
 
+/// Based on another backend. Treat "mount=" nodes specially by "mounting"
+/// other backends into those nodes.
+pub struct MountableBackend {
+    root: Mount,
+    table: RwLock<MountTable>,
+}
+
+#[derive(Default)]
+struct MountTable {
+    /// Backends, referred by BackendId. The first one is the root backend.
+    mounts: Vec<Mount>,
+
+    /// Url to backend Id.
+    url_to_id: HashMap<String, BackendId>,
+}
+
+struct Mount {
+    backend: BoxBackend,
+    error_message: Option<String>,
+
+    /// The node that has the "mount=url" meta.
+    source_id: FullId,
+    url: Option<String>,
+}
+
+impl Default for MountableBackend {
+    fn default() -> Self {
+        Self::from_root_backend(Box::new(NullBackend))
+    }
+}
+
+impl MountableBackend {
+    pub fn from_root_backend(backend: BoxBackend) -> Self {
+        Self {
+            root: Mount {
+                backend,
+                error_message: None,
+                source_id: (0, 0),
+                url: None,
+            },
+            table: Default::default(),
+        }
+    }
+
+    // Mount `id` on demand. Return the mounted id.
+    fn maybe_mount(&self, id: FullId) -> io::Result<FullId> {
+        // Root id cannot be mounted.
+        if id == self.get_root_id() {
+            return Ok(id);
+        }
+        let url = self.extract_url(id)?;
+        if url.is_empty() {
+            // No URL to mount.
+            return Ok(id);
+        }
+
+        let mut table = self.table.write();
+        if let Some(&backend_index) = table.url_to_id.get(url.as_ref()) {
+            // Already mounted.
+            log::trace!("Reuse backend {} for URL {}", backend_index, &url,);
+            let mount = &table.mounts[backend_index];
+            let root_id = mount.backend.get_root_id();
+            if mount.source_id != id {
+                return Err(io::Error::new(
+                    io::ErrorKind::InvalidData,
+                    format!("Cannot mount {} in multiple places", url),
+                ));
+            }
+            let backend_id = backend_index + 1;
+            return Ok((backend_id, root_id));
+        }
+
+        log::debug!("Attempt to mount {} at {:?}", &url, id);
+        let mut error_message = None;
+        let backend = match crate::url::open(url.as_ref()) {
+            Ok(backend) => backend,
+            Err(e) => {
+                log::warn!("Failed to mount {}: {:?}", &url, e);
+                error_message = Some(e.to_string());
+                Box::new(NullBackend)
+            }
+        };
+        let root_id = backend.get_root_id();
+
+        // Find an umount entry.
+        let backend_index = table
+            .mounts
+            .iter()
+            .enumerate()
+            .filter_map(|(i, m)| if m.url.is_none() { Some(i) } else { None })
+            .next();
+        let mount = Mount {
+            backend,
+            error_message,
+            source_id: id,
+            url: Some(url.to_string()),
+        };
+        let backend_index = match backend_index {
+            None => {
+                let backend_index = table.mounts.len();
+                table.mounts.push(mount);
+                backend_index
+            }
+            Some(i) => {
+                table.mounts[i] = mount;
+                i
+            }
+        };
+        table.url_to_id.insert(url.to_string(), backend_index);
+
+        let backend_id = backend_index + 1;
+        log::info!("Mounted {} for {:?} as backend {}", &url, id, backend_id);
+
+        Ok((backend_id, root_id))
+    }
+
+    /// Unmount descendants of `id`.
+    fn umount_recursive(&mut self, id: FullId) -> io::Result<()> {
+        let mut table = self.table.write();
+        let mut to_umount_index = Vec::new();
+        for (i, mount) in table.mounts.iter().enumerate() {
+            if self.is_ancestor(id, mount.source_id)? {
+                to_umount_index.push(i);
+            }
+        }
+
+        for i in to_umount_index.into_iter().rev() {
+            let mount = &mut table.mounts[i];
+            let url = match mount.url.as_ref() {
+                Some(url) => url.clone(),
+                None => continue,
+            };
+            let source_id = mount.source_id;
+            // Attempt to avoid losing unsaved content.
+            mount.backend.persist()?;
+            mount.backend = Box::new(NullBackend);
+            mount.url = None;
+            mount.error_message = Some("umounted".to_string());
+            table.url_to_id.remove(&url);
+            log::info!("Umounted backend {} ({}) from {:?}", i + 1, &url, source_id);
+        }
+
+        Ok(())
+    }
+
+    fn with_mount<R>(
+        &self,
+        id: FullId,
+        func: impl FnOnce(&Mount, Id) -> io::Result<R>,
+    ) -> io::Result<R> {
+        let (backend_id, id) = id;
+        if backend_id == 0 {
+            // Root backend - no need to lock.
+            func(&self.root, id)
+        } else {
+            let table = self.table.read();
+            if let Some(mount) = table.mounts.get(backend_id - 1) {
+                func(mount, id)
+            } else {
+                return Err(io::Error::new(
+                    io::ErrorKind::InvalidData,
+                    "backend out of bound",
+                ));
+            }
+        }
+    }
+
+    fn with_mount_mut<R>(
+        &mut self,
+        id: FullId,
+        func: impl FnOnce(&mut Mount, Id) -> io::Result<R>,
+    ) -> io::Result<R> {
+        let (backend_id, id) = id;
+        if backend_id == 0 {
+            // Root backend - no need to lock.
+            func(&mut self.root, id)
+        } else {
+            let mut table = self.table.write();
+            if let Some(mount) = table.mounts.get_mut(backend_id - 1) {
+                func(mount, id)
+            } else {
+                return Err(io::Error::new(
+                    io::ErrorKind::InvalidData,
+                    "backend out of bound",
+                ));
+            }
+        }
+    }
+
+    /// Swap out the backend with the given backend_id. This is to make
+    /// borrowck happy in `set_parent`.
+    /// Be sure to call this function again to swap back the backend!
+    fn swap_backend(&mut self, backend_id: BackendId, mut backend: BoxBackend) -> BoxBackend {
+        use std::mem::swap;
+        if backend_id == 0 {
+            swap(&mut backend, &mut self.root.backend);
+        } else {
+            let mut table = self.table.write();
+            if let Some(m) = table.mounts.get_mut(backend_id) {
+                std::mem::swap(&mut backend, &mut m.backend);
+            }
+        }
+        backend
+    }
+
+    fn extract_url(&self, id: FullId) -> io::Result<Cow<str>> {
+        self.extract_meta(id, "mount=")
+    }
+}
+
+impl TreeBackend for MountableBackend {
+    type Id = FullId;
+
+    fn get_root_id(&self) -> Self::Id {
+        (0, self.root.backend.get_root_id())
+    }
+
+    fn get_children(&self, id: Self::Id) -> Result<Vec<Self::Id>> {
+        // Auto-mount `id`.
+        let fid = self.maybe_mount(id)?;
+        let children = self
+            .with_mount(fid, |m, id| m.backend.get_children(id))?
+            .into_iter()
+            .map(|i| (fid.0, i))
+            .collect();
+        Ok(children)
+    }
+
+    fn get_parent(&self, id: Self::Id) -> Result<Option<Self::Id>> {
+        let backend_id = id.0;
+        self.with_mount(id, |m, id| match m.backend.get_parent(id)? {
+            Some(id) => {
+                let fid = if id == m.backend.get_root_id() {
+                    // Rewrite root id into the non-root id in source.
+                    m.source_id
+                } else {
+                    (backend_id, id)
+                };
+                Ok(Some(fid))
+            }
+            None => {
+                if backend_id != m.source_id.0 && id == m.backend.get_root_id() {
+                    // Across mount boundary.
+                    self.get_parent(m.source_id)
+                } else {
+                    Ok(None)
+                }
+            }
+        })
+    }
+
+    fn get_mtime(&self, id: Self::Id) -> Result<Mtime> {
+        let backend_id = id.0;
+        self.with_mount(id, |m, id| m.backend.get_mtime(id))
+    }
+
+    fn get_text<'a>(&'a self, id: Self::Id) -> Result<Cow<'a, str>> {
+        let backend_id = id.0;
+        self.with_mount(id, |m, id| Ok(m.backend.get_text(id)?.to_string().into()))
+    }
+
+    fn get_raw_meta<'a>(&'a self, id: Self::Id) -> Result<Cow<'a, str>> {
+        let backend_id = id.0;
+        self.with_mount(id, |m, id| {
+            Ok(m.backend.get_raw_meta(id)?.to_string().into())
+        })
+    }
+
+    fn insert(
+        &mut self,
+        dest_id: Self::Id,
+        pos: InsertPos,
+        text: String,
+        meta: String,
+    ) -> Result<Self::Id> {
+        let dest_id = self.maybe_mount(dest_id)?;
+        let backend_id = dest_id.0;
+        let new_id = self.with_mount_mut(dest_id, |m, dest_id| {
+            Ok((backend_id, m.backend.insert(dest_id, pos, text, meta)?))
+        })?;
+        self.touch(new_id)?;
+        Ok(new_id)
+    }
+
+    fn set_parent(
+        &mut self,
+        src_id: Self::Id,
+        dest_id: Self::Id,
+        pos: InsertPos,
+    ) -> Result<Self::Id> {
+        let dest_id = self.maybe_mount(dest_id)?;
+        if src_id.0 == dest_id.0 {
+            // Move within a single backend.
+            self.touch(src_id)?;
+            let moved_id = self.with_mount_mut(dest_id, |m, dest_id| {
+                m.backend.set_parent(src_id.1, dest_id, pos)
+            })?;
+            self.touch(src_id)?;
+            Ok((src_id.0, moved_id))
+        } else {
+            self.touch(src_id)?;
+            let src = Box::new(NullBackend);
+            let mut src = self.swap_backend(src_id.0, src);
+            // Do not move special nodes.
+            if !src.is_copyable(src_id.1)? {
+                return notebackend_types::error::invalid_input("cannot copy non-copyable nodes");
+            }
+
+            let moved_id_result = self.with_mount_mut(dest_id, |m, local_dest_id| {
+                let dst = &mut m.backend;
+
+                // Do the move.
+                let dst_id = dst.insert(local_dest_id, pos, String::new(), String::new())?;
+                clipboard::copy_replace(&src, src_id.1, dst, dst_id, None)?;
+                src.remove(src_id.1)?;
+                Ok((dest_id.0, local_dest_id))
+            });
+
+            // Swap back.
+            self.swap_backend(src_id.0, src);
+            self.touch(src_id)?;
+
+            moved_id_result
+        }
+    }
+
+    fn set_text(&mut self, id: Self::Id, text: String) -> Result<bool> {
+        let changed = self.with_mount_mut(id, |m, local_id| m.backend.set_text(local_id, text))?;
+        if changed {
+            self.touch(id)?;
+        }
+        Ok(changed)
+    }
+
+    fn set_raw_meta(&mut self, id: Self::Id, content: String) -> Result<bool> {
+        let changed =
+            self.with_mount_mut(id, |m, local_id| m.backend.set_raw_meta(local_id, content))?;
+        if changed {
+            self.touch(id)?;
+        }
+        // NOTE: Should check umount here.
+        Ok(changed)
+    }
+
+    fn remove(&mut self, id: Self::Id) -> Result<()> {
+        self.with_mount_mut(id, |m, local_id| m.backend.remove(local_id))?;
+        self.touch(id)?;
+        if !self.is_ancestor(self.get_root_id(), id)? {
+            log::trace!("{:?} is no longer reachable from root", id);
+            self.umount_recursive(id)?;
+        }
+        Ok(())
+    }
+
+    /// Bump mtime across mount boundary.
+    fn touch(&mut self, mut id: FullId) -> Result<()> {
+        if id.0 != 0 {
+            let mut table = self.table.write();
+            while id.0 != 0 {
+                log::debug!("touch {:?}", id);
+                log::trace!("bumping mtime for {:?}", id);
+                if let Some(mount) = table.mounts.get_mut(id.0 - 1) {
+                    mount.backend.touch(id.1)?;
+                    id = mount.source_id;
+                } else {
+                    break;
+                }
+            }
+        }
+
+        log::debug!("touch {:?}", id);
+        self.root.backend.touch(id.1)?;
+        Ok(())
+    }
+
+    fn persist(&mut self) -> Result<()> {
+        let mut table = self.table.write();
+        for mount in table.mounts.iter_mut().rev() {
+            mount.backend.persist()?;
+        }
+        self.root.backend.persist()?;
+        Ok(())
+    }
+
+    fn persist_async(&mut self, callback: PersistCallbackFunc) {
+        struct State {
+            callback: Option<PersistCallbackFunc>,
+            result: Vec<(String, io::Result<()>)>,
+            waiting_count: usize,
+        }
+
+        let mut table = self.table.write();
+        let state = Arc::new(Mutex::new(State {
+            callback: Some(callback),
+            result: Default::default(),
+            waiting_count: table.mounts.len() + 1,
+        }));
+
+        let process = |mount: &mut Mount| {
+            let state = state.clone();
+            let url = mount.url.clone().unwrap_or_else(|| "".to_string());
+            mount.backend.persist_async(Box::new(move |r| {
+                let mut state = state.lock();
+                state.result.push((url, r));
+                state.waiting_count -= 1;
+                if state.waiting_count == 0 {
+                    if let Some(cb) = state.callback.take() {
+                        let mut url_errors = state
+                            .result
+                            .drain(..)
+                            .filter_map(|(u, r)| match r {
+                                Ok(_) => None,
+                                Err(e) => Some((u, e)),
+                            })
+                            .collect::<Vec<_>>();
+                        url_errors.sort_unstable_by_key(|(u, e)| u.to_owned());
+                        let result = match url_errors.len() {
+                            0 => Ok(()),
+                            _ => {
+                                let message = url_errors
+                                    .iter()
+                                    .map(|(u, e)| {
+                                        if u.is_empty() {
+                                            e.to_string()
+                                        } else {
+                                            format!("{}: {}", u, e)
+                                        }
+                                    })
+                                    .collect::<Vec<_>>()
+                                    .join("\n");
+                                Err(io::Error::new(url_errors[0].1.kind(), message))
+                            }
+                        };
+                        cb(result);
+                    }
+                }
+            }))
+        };
+
+        for mount in table.mounts.iter_mut().rev() {
+            if mount.url.is_some() {
+                process(mount)
+            }
+        }
+        process(&mut self.root);
+    }
+}
+
 impl MultiplexBackend {
     pub fn from_root_backend(backend: BoxBackend) -> Self {
         let backend = Self {
@@ -335,18 +784,16 @@ mod tests {
     #[test]
     fn test_basic() {
         let root_backend = MemBackend::empty();
-        let mut backend = MultiplexBackend::from_root_backend(Box::new(root_backend));
+        let mut backend = MountableBackend::from_root_backend(Box::new(root_backend));
         backend.check_generic().unwrap();
     }
 
     #[test]
     fn test_mount() {
         let mut m1 = MemBackend::empty();
-        let mut m2 = MemBackend::empty();
         m1.insert_ascii("A--B--C");
-        m2.insert_ascii("X--Y");
 
-        let mut root = MultiplexBackend::from_root_backend(Box::new(m1));
+        let mut root = MountableBackend::from_root_backend(Box::new(m1));
         assert_eq!(
             root.draw_ascii(&root.find_ids("root A B C")),
             r#"
@@ -356,7 +803,8 @@ mod tests {
                       \_ 3 ("C")"#
         );
 
-        root.mount(root.find("B"), Box::new(m2)).unwrap();
+        root.update_meta(root.find("B"), "mount=", "memory:ascii=X--Y")
+            .unwrap();
         assert_eq!(
             root.draw_ascii(&root.find_ids("root A B X Y")),
             r#"
@@ -372,7 +820,7 @@ mod tests {
         });
 
         root.check_parent(root.find("X"), root.find("B"));
-        root.umount(root.find("B")).unwrap();
+        root.update_meta(root.find("B"), "mount=", "").unwrap();
         assert_eq!(
             root.draw_ascii(&root.find_ids("root A B C")),
             r#"

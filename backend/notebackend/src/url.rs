@@ -16,7 +16,18 @@ pub fn open(url: &str) -> Result<Box<dyn TreeBackend<Id = Id>>> {
         BackendType::Local => {
             Box::new(backend::SingleFileBackend::from_path(&Path::new(url))?.with_trash(true))
         }
-        BackendType::Memory => Box::new(backend::MemBackend::empty()),
+        BackendType::Memory => {
+            #[allow(unused_mut)]
+            let mut backend = backend::MemBackend::empty();
+            #[cfg(test)]
+            {
+                use crate::backend::tests::TestTreeBackend;
+                if let Some(ascii) = url.strip_prefix("memory:ascii=") {
+                    backend.insert_ascii(ascii);
+                }
+            }
+            Box::new(backend)
+        }
         BackendType::Python => Box::new(backend::DylibBackend::open("notebackend_python", url)?),
     };
 
