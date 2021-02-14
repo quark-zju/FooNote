@@ -13,6 +13,7 @@ use parking_lot::Mutex;
 use parking_lot::RwLock;
 use std::borrow::Cow;
 use std::collections::HashMap;
+use std::collections::HashSet;
 use std::io;
 use std::io::Result;
 use std::sync::Arc;
@@ -264,6 +265,20 @@ impl Default for MountableBackend {
 }
 
 impl MountableBackend {
+    pub fn open_url(url: &str) -> io::Result<Self> {
+        let backend = crate::url::open(url)?;
+        let result = Self {
+            root: Mount {
+                backend,
+                error_message: None,
+                source_id: (0, 0),
+                url: Some(url.to_string()),
+            },
+            table: Default::default(),
+        };
+        Ok(result)
+    }
+
     pub fn from_root_backend(backend: BoxBackend) -> Self {
         Self {
             root: Mount {
@@ -276,8 +291,9 @@ impl MountableBackend {
         }
     }
 
-    // Mount `id` on demand. Return the mounted id.
-    fn maybe_mount(&self, id: FullId) -> io::Result<FullId> {
+    /// Mount `id` on demand. Return the mounted id.
+    /// If `auto_mount` is false, then avoid mounting new backends.
+    fn follow_mount(&self, id: FullId, auto_mount: bool) -> io::Result<FullId> {
         // Root id cannot be mounted.
         if id == self.get_root_id() {
             return Ok(id);
@@ -294,7 +310,7 @@ impl MountableBackend {
             log::trace!("Reuse backend {} for URL {}", backend_index, &url,);
             let mount = &table.mounts[backend_index];
             let root_id = mount.backend.get_root_id();
-            if mount.source_id != id {
+            if mount.source_id != id && auto_mount {
                 return Err(io::Error::new(
                     io::ErrorKind::InvalidData,
                     format!("Cannot mount {} in multiple places", url),
@@ -302,6 +318,11 @@ impl MountableBackend {
             }
             let backend_id = backend_index + 1;
             return Ok((backend_id, root_id));
+        }
+
+        if !auto_mount {
+            log::trace!("Skipping auto-mount {} at {:?}", &url, id);
+            return Ok(id);
         }
 
         log::debug!("Attempt to mount {} at {:?}", &url, id);
@@ -430,7 +451,8 @@ impl MountableBackend {
             swap(&mut backend, &mut self.root.backend);
         } else {
             let mut table = self.table.write();
-            if let Some(m) = table.mounts.get_mut(backend_id) {
+            let backend_index = backend_id - 1;
+            if let Some(m) = table.mounts.get_mut(backend_index) {
                 std::mem::swap(&mut backend, &mut m.backend);
             }
         }
@@ -442,11 +464,7 @@ impl MountableBackend {
     }
 
     fn get_children_ex(&self, id: FullId, auto_mount: bool) -> Result<Vec<FullId>> {
-        let fid = if auto_mount {
-            self.maybe_mount(id)?
-        } else {
-            id
-        };
+        let fid = self.follow_mount(id, auto_mount)?;
         let children = self
             .with_mount(fid, |m, id| m.backend.get_children(id))?
             .into_iter()
@@ -514,7 +532,7 @@ impl TreeBackend for MountableBackend {
         text: String,
         meta: String,
     ) -> Result<Self::Id> {
-        let dest_id = self.maybe_mount(dest_id)?;
+        let dest_id = self.follow_mount(dest_id, true)?;
         let backend_id = dest_id.0;
         let new_id = self.with_mount_mut(dest_id, |m, dest_id| {
             Ok((backend_id, m.backend.insert(dest_id, pos, text, meta)?))
@@ -529,9 +547,10 @@ impl TreeBackend for MountableBackend {
         dest_id: Self::Id,
         pos: InsertPos,
     ) -> Result<Self::Id> {
-        let dest_id = self.maybe_mount(dest_id)?;
+        let dest_id = self.follow_mount(dest_id, pos == InsertPos::Append)?;
         if src_id.0 == dest_id.0 {
             // Move within a single backend.
+            log::debug!("move {:?} to {:?} {:?}", src_id, pos, dest_id);
             self.touch(src_id)?;
             let moved_id = self.with_mount_mut(dest_id, |m, dest_id| {
                 m.backend.set_parent(src_id.1, dest_id, pos)
@@ -539,6 +558,7 @@ impl TreeBackend for MountableBackend {
             self.touch(src_id)?;
             Ok((src_id.0, moved_id))
         } else {
+            log::debug!("cross-move {:?} to {:?} {:?}", src_id, pos, dest_id);
             self.touch(src_id)?;
             let src = Box::new(NullBackend);
             let mut src = self.swap_backend(src_id.0, src);
@@ -548,6 +568,7 @@ impl TreeBackend for MountableBackend {
             }
 
             let moved_id_result = self.with_mount_mut(dest_id, |m, local_dest_id| {
+                dbg!(m.url.as_ref());
                 let dst = &mut m.backend;
 
                 // Do the move.
@@ -642,8 +663,9 @@ impl TreeBackend for MountableBackend {
             let url = mount.url.clone().unwrap_or_else(|| "".to_string());
             mount.backend.persist_async(Box::new(move |r| {
                 let mut state = state.lock();
-                state.result.push((url, r));
                 state.waiting_count -= 1;
+                log::debug!("persist: {}: {:?}, {} left", &url, &r, state.waiting_count);
+                state.result.push((url, r));
                 if state.waiting_count == 0 {
                     if let Some(cb) = state.callback.take() {
                         let mut url_errors = state
@@ -687,13 +709,16 @@ impl TreeBackend for MountableBackend {
     }
 
     fn get_heads(&self, ids: &[Self::Id]) -> Result<Vec<Self::Id>> {
-        let id_set: std::collections::HashSet<Self::Id> = ids.iter().cloned().collect();
+        let id_set: HashSet<Self::Id> = ids.iter().cloned().collect();
+        let mut pushed = HashSet::new();
         let mut result = Vec::new();
         // Visit from the root (to preserve order).
         let mut to_visit = vec![self.get_root_id()];
         while let Some(id) = to_visit.pop() {
             if id_set.contains(&id) {
-                result.push(id);
+                if pushed.insert(id) {
+                    result.push(id);
+                }
             } else {
                 // Visit children in order.
                 // Avoid auto-mount in get_heads.
@@ -702,7 +727,26 @@ impl TreeBackend for MountableBackend {
                 to_visit.extend(children);
             }
         }
+        log::debug!("get_heads({:?}) = {:?}", ids, &result);
         Ok(result)
+    }
+
+    fn set_parent_batch(
+        &mut self,
+        ids: &[Self::Id],
+        mut dest_id: Self::Id,
+        mut pos: InsertPos,
+    ) -> Result<Vec<Self::Id>> {
+        log::info!("set_parent_batch {:?} => {:?} {:?}", ids, pos, dest_id);
+        let heads = self.get_heads(ids)?;
+        let mut new_ids = Vec::with_capacity(heads.len());
+        for id in heads {
+            let new_id = self.set_parent(id, dest_id, pos)?;
+            new_ids.push(new_id);
+            dest_id = new_id;
+            pos = InsertPos::After;
+        }
+        Ok(new_ids)
     }
 }
 
@@ -854,6 +898,55 @@ mod tests {
                 \_ 1 ("A")
                    \_ 2 ("B")
                       \_ 3 ("C")"#
+        );
+    }
+
+    #[test]
+    fn test_cross_mount_move() {
+        let mut root = MountableBackend::open_url("memory").unwrap();
+        root.insert_ascii(
+            r#"
+                A--B
+                 \
+                  C"#,
+        );
+        root.update_meta(root.find("B"), "mount=", "memory:1")
+            .unwrap();
+        root.update_meta(root.find("C"), "mount=", "memory:2")
+            .unwrap();
+
+        let b1 = root.quick_insert(root.find("B"), "B1");
+        root.quick_insert(root.find("B1"), "B2");
+        root.quick_insert(b1, "B3");
+        root.quick_insert(root.find("C"), "C1");
+
+        assert_eq!(
+            root.draw_ascii(&root.all_ids()),
+            r#"
+                root
+                \_ 1 ("A")
+                   \_ 4 ("B")
+                   |  \_ 5 ("B1")
+                   |     \_ 7 ("B2")
+                   |     \_ 6 ("B3")
+                   \_ 2 ("C")
+                      \_ 3 ("C1")"#
+        );
+
+        // Move B1 (and B2) to C1
+        root.set_parent(root.find("B1"), root.find("C1"), InsertPos::Append)
+            .unwrap();
+        assert_eq!(
+            root.draw_ascii(&root.all_ids()),
+            r#"
+                root
+                \_ 1 ("A")
+                   \_ 7 ("B")
+                   \_ 2 ("C")
+                      \_ 3 ("C1")
+                         \_ 4 ("B1")
+                            \_ 6 ("B2")
+                            \_ 5 ("B3")"#
         );
     }
 }
