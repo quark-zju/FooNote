@@ -440,6 +440,20 @@ impl MountableBackend {
     fn extract_url(&self, id: FullId) -> io::Result<Cow<str>> {
         self.extract_meta(id, "mount=")
     }
+
+    fn get_children_ex(&self, id: FullId, auto_mount: bool) -> Result<Vec<FullId>> {
+        let fid = if auto_mount {
+            self.maybe_mount(id)?
+        } else {
+            id
+        };
+        let children = self
+            .with_mount(fid, |m, id| m.backend.get_children(id))?
+            .into_iter()
+            .map(|i| (fid.0, i))
+            .collect();
+        Ok(children)
+    }
 }
 
 impl TreeBackend for MountableBackend {
@@ -450,14 +464,7 @@ impl TreeBackend for MountableBackend {
     }
 
     fn get_children(&self, id: Self::Id) -> Result<Vec<Self::Id>> {
-        // Auto-mount `id`.
-        let fid = self.maybe_mount(id)?;
-        let children = self
-            .with_mount(fid, |m, id| m.backend.get_children(id))?
-            .into_iter()
-            .map(|i| (fid.0, i))
-            .collect();
-        Ok(children)
+        self.get_children_ex(id, true)
     }
 
     fn get_parent(&self, id: Self::Id) -> Result<Option<Self::Id>> {
@@ -677,6 +684,25 @@ impl TreeBackend for MountableBackend {
             }
         }
         process(&mut self.root);
+    }
+
+    fn get_heads(&self, ids: &[Self::Id]) -> Result<Vec<Self::Id>> {
+        let id_set: std::collections::HashSet<Self::Id> = ids.iter().cloned().collect();
+        let mut result = Vec::new();
+        // Visit from the root (to preserve order).
+        let mut to_visit = vec![self.get_root_id()];
+        while let Some(id) = to_visit.pop() {
+            if id_set.contains(&id) {
+                result.push(id);
+            } else {
+                // Visit children in order.
+                // Avoid auto-mount in get_heads.
+                let mut children = self.get_children_ex(id, false)?;
+                children.reverse();
+                to_visit.extend(children);
+            }
+        }
+        Ok(result)
     }
 }
 

@@ -7,6 +7,10 @@ pub trait TreeMeta: TreeBackend {
         Ok(self.extract_meta(id, "copyable=")? != "false")
     }
 
+    fn is_children_copyable(&self, id: Self::Id) -> Result<bool> {
+        Ok(self.extract_meta(id, "mount=")?.is_empty())
+    }
+
     fn is_pinned(&self, id: Self::Id) -> Result<bool> {
         Ok(self.extract_meta(id, "pin=")? != "false")
     }

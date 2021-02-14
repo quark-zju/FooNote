@@ -92,7 +92,9 @@ pub(crate) fn copy_replace<S: TreeBackend, D: TreeBackend>(
 
     // Copy recursively.
     for (src_id, dst_id) in src_children.into_iter().zip(dst_children.into_iter()) {
-        copy_replace(src, src_id, dst, dst_id, dst_new_ids.as_deref_mut())?;
+        if src.is_children_copyable(src_id)? {
+            copy_replace(src, src_id, dst, dst_id, dst_new_ids.as_deref_mut())?;
+        }
     }
 
     Ok(())
