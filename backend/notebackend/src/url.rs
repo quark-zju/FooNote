@@ -18,7 +18,16 @@ pub fn open(url: &str) -> Result<Box<dyn TreeBackend<Id = Id>>> {
         }
         BackendType::Memory => {
             #[allow(unused_mut)]
-            let mut backend = backend::MemBackend::empty();
+            let mut backend: Box<dyn TreeBackend<Id = Id>> = {
+                let name = url
+                    .strip_prefix("memory:")
+                    .and_then(|name| name.split(";").filter(|s| !s.contains('=')).next());
+                if let Some(name) = name {
+                    Box::new(backend::NamedMemBackend::from_named_memory(name)?)
+                } else {
+                    Box::new(backend::MemBackend::empty())
+                }
+            };
             #[cfg(test)]
             {
                 use crate::backend::tests::TestTreeBackend;
@@ -26,7 +35,7 @@ pub fn open(url: &str) -> Result<Box<dyn TreeBackend<Id = Id>>> {
                     backend.insert_ascii(ascii);
                 }
             }
-            Box::new(backend)
+            backend
         }
         BackendType::Python => Box::new(backend::DylibBackend::open("notebackend_python", url)?),
     };

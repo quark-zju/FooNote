@@ -1,11 +1,19 @@
 use crate::backend::meta::blob::BlobBackend;
 use crate::backend::meta::blob::BlobIo;
+use once_cell::sync::Lazy;
+use parking_lot::Mutex;
+use std::collections::HashMap;
 use std::io;
 use std::sync::Arc;
 
 #[derive(Clone)]
 pub struct MemBlobIo {
     pub(crate) data: Arc<Vec<u8>>,
+}
+
+#[derive(Clone)]
+pub struct NamedMemBlobIo {
+    name: String,
 }
 
 impl AsRef<[u8]> for MemBlobIo {
@@ -25,6 +33,24 @@ impl BlobIo for MemBlobIo {
     }
 }
 
+static NAMED_MEMORY_BUFFERS: Lazy<Mutex<HashMap<String, Vec<u8>>>> = Lazy::new(Default::default);
+
+impl BlobIo for NamedMemBlobIo {
+    fn load(&mut self) -> std::io::Result<Box<dyn AsRef<[u8]>>> {
+        let bytes = NAMED_MEMORY_BUFFERS
+            .lock()
+            .get(&self.name)
+            .cloned()
+            .unwrap_or_default();
+        Ok(Box::new(bytes))
+    }
+
+    fn save(&mut self, data: Vec<u8>) -> std::io::Result<()> {
+        NAMED_MEMORY_BUFFERS.lock().insert(self.name.clone(), data);
+        Ok(())
+    }
+}
+
 impl BlobBackend<MemBlobIo> {
     /// Load from a given path.
     pub fn from_bytes(data: Vec<u8>) -> io::Result<Self> {
@@ -36,6 +62,15 @@ impl BlobBackend<MemBlobIo> {
     /// Create an empty in-memory backend.
     pub fn empty() -> Self {
         Self::from_bytes(Vec::new()).unwrap()
+    }
+}
+
+impl BlobBackend<NamedMemBlobIo> {
+    pub fn from_named_memory(name: &str) -> io::Result<Self> {
+        let blob_io = NamedMemBlobIo {
+            name: name.to_string(),
+        };
+        Self::from_blob_io(blob_io)
     }
 }
 
@@ -57,6 +92,12 @@ mod tests {
             let backend2 = BlobBackend::from_bytes(bytes).unwrap().with_trash(trash);
             assert_eq!(backend.to_bytes(), backend2.to_bytes());
         }
+    }
+
+    #[test]
+    fn test_named() {
+        let mut backend = BlobBackend::from_named_memory("test_named_1").unwrap();
+        backend.check_generic().unwrap();
     }
 
     #[test]
