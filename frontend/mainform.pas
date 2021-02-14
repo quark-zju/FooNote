@@ -1050,12 +1050,7 @@ begin
   if FormOpenUrl.ShowModal = mrOk then begin
     url := FormOpenUrl.EditUrl.Text;
     if not url.IsEmpty then begin
-      Id := NewNode(url, 'type=folder' + #10, 0);
-      if NoteBackend.TryMount(Id, url) then begin
-        NoteBackend.TryUpdateMeta(Id, 'type=', 'mount');
-      end else begin
-        NoteBackend.TryRemove(Id);
-      end;
+      Id := NewNode(url, 'type=mount' + #10 + 'mount=' + url + #10, 0);
       RefreshFullTree;
     end;
   end;
@@ -1149,8 +1144,7 @@ begin
   end;
 
   // Separator
-  if (Stage = cdPrePaint) and (Node.Text.IsEmpty() or Node.Text.StartsWith('-')) and
-    (TTreeNodeData(Node.Data).ExtractMeta('type=') = 'separator') then begin
+  if (Stage = cdPrePaint) and (TTreeNodeData(Node.Data).ExtractMeta('type=') = 'separator') then begin
     C := Sender.Canvas;
     H := (Sender.DefaultItemHeight div 2);
     Node.Height := H;

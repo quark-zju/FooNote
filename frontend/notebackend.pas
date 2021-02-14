@@ -28,7 +28,6 @@ function CopyToBytes(Ids: VecFullId): TBytes;
 function PasteFromBytes(DestId: FullId; Pos: Int32; Bytes: TBytes): VecFullId;
 
 function IsFolder(Id: FullId): boolean;
-function IsMount(Id: FullId): boolean;
 
 procedure StartSearch(Ids: VecFullId; Text: string);
 procedure StopSearch();
@@ -48,8 +47,6 @@ function TryUpdateMeta(Id: FullId; Prefix, Value: string): boolean;
 function TrySetParent(Id: FullId; Parent: FullId; Pos: Int32): boolean;
 function TrySetParent(var Ids: VecFullId; Parent: FullId; Pos: Int32): boolean;
 function TrySetText(Id: FullId; Text: string): boolean;
-function TryMount(Id: FullId; Url: string): boolean;
-function TryUmount(Id: FullId): boolean;
 
 
 implementation
@@ -82,9 +79,6 @@ function notebackend_persist_async(): Int32; cdecl; external 'notebackend';
 function notebackend_persist_try_wait(): Int32; cdecl; external 'notebackend';
 function notebackend_copy(): Int32; cdecl; external 'notebackend';
 function notebackend_paste(): Int32; cdecl; external 'notebackend';
-function notebackend_mount_url(): Int32; cdecl; external 'notebackend';
-function notebackend_is_mount(): Int32; cdecl; external 'notebackend';
-function notebackend_umount(): Int32; cdecl; external 'notebackend';
 function notebackend_search_start(): Int32; cdecl; external 'notebackend';
 function notebackend_search_stop(): Int32; cdecl; external 'notebackend';
 function notebackend_search_result(): Int32; cdecl; external 'notebackend';
@@ -403,31 +397,6 @@ var
 begin
   S := ExtractMeta(Id, 'type=');
   Result := (S = 'folder') or (S = 'trash') or (S = 'mount');
-end;
-
-function TryMount(Id: FullId; Url: string): boolean;
-begin
-  StackClear();
-  StackPushFullId(Id);
-  StackPushString(Url);
-  Result := (LogResultError(notebackend_mount_url()) = OK);
-end;
-
-function TryUmount(Id: FullId): boolean;
-begin
-  StackClear();
-  StackPushFullId(Id);
-  Result := (LogResultError(notebackend_umount()) = OK);
-end;
-
-function IsMount(Id: FullId): boolean;
-begin
-  StackClear();
-  StackPushFullId(Id);
-  if LogResultError(notebackend_is_mount()) <> OK then begin
-    raise EExternal.Create('IsMount() failed');
-  end;
-  Result := StackPopInt() <> 0;
 end;
 
 procedure StartSearch(Ids: VecFullId; Text: string);
