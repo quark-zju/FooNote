@@ -26,9 +26,6 @@ pub struct MultiplexBackend {
     /// Backends, referred by BackendId. The first one is the root backend.
     backends: Vec<BoxBackend>,
 
-    /// Parents of backends.
-    parents: Vec<FullId>,
-
     /// Mount overrides. Original Id -> New mounted Id (usually root).
     table_srcdst: HashMap<FullId, FullId>,
 
@@ -232,7 +229,6 @@ impl MultiplexBackend {
     pub fn from_root_backend(backend: BoxBackend) -> Self {
         Self {
             backends: vec![backend],
-            parents: vec![(0, 0)],
             table_srcdst: Default::default(),
             table_dstsrc: Default::default(),
         }
