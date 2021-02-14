@@ -360,7 +360,6 @@ impl TreeBackend for MountableBackend {
             }
 
             let moved_id_result = self.with_mount_mut(dest_id, |m, local_dest_id| {
-                dbg!(m.url.as_ref());
                 let dst = &mut m.backend;
 
                 // Do the move.
@@ -372,7 +371,9 @@ impl TreeBackend for MountableBackend {
 
             // Swap back.
             self.swap_backend(src_id.0, src);
-            self.touch(src_id)?;
+            if let Ok(new_id) = moved_id_result {
+                self.touch(new_id)?;
+            }
 
             moved_id_result
         }
@@ -631,8 +632,10 @@ mod tests {
         );
 
         // Move B1 (and B2) to C1
-        root.set_parent(root.find("B1"), root.find("C1"), InsertPos::Append)
-            .unwrap();
+        root.check_mtime_changed(root.find("C"), |root| {
+            root.set_parent(root.find("B1"), root.find("C1"), InsertPos::After)
+                .unwrap();
+        });
         assert_eq!(
             root.draw_ascii(&root.all_ids()),
             r#"
@@ -640,10 +643,10 @@ mod tests {
                 \_ 1 ("A")
                    \_ 7 ("B")
                    \_ 2 ("C")
-                      \_ 3 ("C1")
-                         \_ 4 ("B1")
-                            \_ 6 ("B2")
-                            \_ 5 ("B3")"#
+                      \_ 6 ("C1")
+                      \_ 3 ("B1")
+                         \_ 5 ("B2")
+                         \_ 4 ("B3")"#
         );
     }
 }
