@@ -168,22 +168,26 @@ impl<T: TextIO> TreeBackend for ManifestBasedBackend<T> {
         Ok(id)
     }
 
-    fn set_text(&mut self, id: Self::Id, text: String) -> io::Result<()> {
+    fn set_text(&mut self, id: Self::Id, text: String) -> io::Result<bool> {
         let orig_text = self.get_text(id)?;
+        let mut changed = false;
         if orig_text.as_ref() != text.as_str() {
             self.text_io.set_raw_text(id, text)?;
             self.touch(id)?;
+            changed = true;
         }
-        Ok(())
+        Ok(changed)
     }
 
-    fn set_raw_meta(&mut self, id: Self::Id, meta: String) -> io::Result<()> {
+    fn set_raw_meta(&mut self, id: Self::Id, meta: String) -> io::Result<bool> {
         let orig_meta = self.get_raw_meta(id)?;
+        let mut changed = false;
         if orig_meta != meta {
             self.manifest.metas.insert(id, meta);
             self.touch(id)?;
+            changed = true;
         }
-        Ok(())
+        Ok(changed)
     }
 
     fn remove(&mut self, id: Self::Id) -> io::Result<()> {

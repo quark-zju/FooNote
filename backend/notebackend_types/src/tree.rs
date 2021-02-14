@@ -107,7 +107,7 @@ pub trait TreeBackend: Send + Sync + 'static {
     }
 
     /// Update a meta value with the given key.
-    fn update_meta(&mut self, id: Self::Id, prefix: &str, value: &str) -> Result<()> {
+    fn update_meta(&mut self, id: Self::Id, prefix: &str, value: &str) -> Result<bool> {
         if value.contains('\n') {
             return super::error::invalid_input("meta value cannot have multiple lines");
         }
@@ -119,7 +119,7 @@ pub trait TreeBackend: Send + Sync + 'static {
                 updated = true;
                 if &line[prefix.len()..] == value {
                     // No need to update.
-                    return Ok(());
+                    return Ok(false);
                 }
                 if !value.is_empty() {
                     new_meta.push_str(prefix);
@@ -181,10 +181,12 @@ pub trait TreeBackend: Send + Sync + 'static {
     }
 
     /// Update full text associated with `id`.
-    fn set_text(&mut self, id: Self::Id, text: String) -> Result<()>;
+    /// Return `true` if the text has changed. `false` otherwise.
+    fn set_text(&mut self, id: Self::Id, text: String) -> Result<bool>;
 
     /// Set raw metadata.
-    fn set_raw_meta(&mut self, id: Self::Id, content: String) -> Result<()>;
+    /// Return `true` if the meta has changed. `false` otherwise.
+    fn set_raw_meta(&mut self, id: Self::Id, content: String) -> Result<bool>;
 
     /// Update mtime of a node.
     fn touch(&mut self, id: Self::Id) -> Result<()> {
@@ -317,11 +319,11 @@ impl TreeBackend for Box<dyn TreeBackend<Id = Id>> {
         self.deref_mut().set_parent_batch(ids, dest_id, pos)
     }
 
-    fn set_text(&mut self, id: Self::Id, text: String) -> Result<()> {
+    fn set_text(&mut self, id: Self::Id, text: String) -> Result<bool> {
         self.deref_mut().set_text(id, text)
     }
 
-    fn set_raw_meta(&mut self, id: Self::Id, content: String) -> Result<()> {
+    fn set_raw_meta(&mut self, id: Self::Id, content: String) -> Result<bool> {
         self.deref_mut().set_raw_meta(id, content)
     }
 

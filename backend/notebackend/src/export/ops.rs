@@ -279,7 +279,7 @@ pub extern "C" fn notebackend_set_parent_batch() -> i32 {
 pub extern "C" fn notebackend_set_text() -> i32 {
     let text: String = pop!();
     let id = pop_fid!();
-    nop_return!(ROOT_BACKEND.write().set_text(id, text))
+    nop_return!(ROOT_BACKEND.write().set_text(id, text).map(|_| ()))
 }
 
 /// (backend_id: i32, id: i32, meta: String) -> ()
@@ -287,7 +287,7 @@ pub extern "C" fn notebackend_set_text() -> i32 {
 pub extern "C" fn notebackend_set_raw_meta() -> i32 {
     let meta: String = pop!();
     let id = pop_fid!();
-    nop_return!(ROOT_BACKEND.write().set_raw_meta(id, meta))
+    nop_return!(ROOT_BACKEND.write().set_raw_meta(id, meta).map(|_| ()))
 }
 
 /// (backend_id: i32, id: i32, prefix: String, value: String) -> ()
@@ -296,7 +296,10 @@ pub extern "C" fn notebackend_update_meta() -> i32 {
     let value: String = pop!();
     let prefix: String = pop!();
     let id = pop_fid!();
-    nop_return!(ROOT_BACKEND.write().update_meta(id, &prefix, &value))
+    nop_return!(ROOT_BACKEND
+        .write()
+        .update_meta(id, &prefix, &value)
+        .map(|_| ()))
 }
 
 /// (backend_id: i32, id: i32) -> ()

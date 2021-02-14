@@ -225,15 +225,19 @@ pub(crate) mod tests {
             let backup_existing_meta = self.get_raw_meta(id).unwrap().to_string();
             self.set_raw_meta(id, Default::default()).unwrap();
             assert_eq!(self.extract_meta(id, "foo=").unwrap(), "");
-            self.check_mtime_changed(id, |s| s.update_meta(id, "foo=", "bar").unwrap());
-            self.check_mtime_changed(id, |s| s.update_meta(id, "foo2=", "bar2").unwrap());
-            self.check_no_mtime_changed(&[id], |s| s.update_meta(id, "foo3=", "").unwrap());
-            self.check_no_mtime_changed(&[id], |s| s.update_meta(id, "foo2=", "bar2").unwrap());
+            self.check_mtime_changed(id, |s| assert!(s.update_meta(id, "foo=", "bar").unwrap()));
+            self.check_mtime_changed(id, |s| assert!(s.update_meta(id, "foo2=", "bar2").unwrap()));
+            self.check_no_mtime_changed(&[id], |s| {
+                assert!(!s.update_meta(id, "foo3=", "").unwrap())
+            });
+            self.check_no_mtime_changed(&[id], |s| {
+                assert!(!s.update_meta(id, "foo2=", "bar2").unwrap())
+            });
             assert_eq!(self.extract_meta(id, "foo=").unwrap(), "bar");
             assert_eq!(self.extract_meta(id, "foo2=").unwrap(), "bar2");
             assert_eq!(self.extract_meta(id, "foo3=").unwrap(), "");
             assert_eq!(self.extract_meta(id, "foo4=").unwrap(), "");
-            self.check_mtime_changed(id, |s| s.update_meta(id, "foo=", "baz").unwrap());
+            self.check_mtime_changed(id, |s| assert!(s.update_meta(id, "foo=", "baz").unwrap()));
             assert_eq!(self.extract_meta(id, "foo=").unwrap(), "baz");
             self.set_raw_meta(id, backup_existing_meta.to_string())
                 .unwrap();

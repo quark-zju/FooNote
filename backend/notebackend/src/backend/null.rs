@@ -22,23 +22,23 @@ impl TreeBackend for NullBackend {
     type Id = Id;
 
     fn get_children(&self, id: Id) -> Result<Vec<Id>> {
-        error()
+        Ok(Vec::new())
     }
 
     fn get_parent(&self, id: Id) -> Result<Option<Id>> {
-        error()
+        Ok(None)
     }
 
     fn get_mtime(&self, id: Id) -> Result<Mtime> {
-        error()
+        Ok(0)
     }
 
     fn get_text<'a>(&'a self, id: Id) -> Result<Cow<'a, str>> {
-        error()
+        Ok("".into())
     }
 
     fn get_raw_meta<'a>(&'a self, id: Id) -> Result<Cow<'a, str>> {
-        error()
+        Ok("".into())
     }
 
     fn insert(
@@ -55,11 +55,11 @@ impl TreeBackend for NullBackend {
         error()
     }
 
-    fn set_text(&mut self, id: Id, text: String) -> Result<()> {
+    fn set_text(&mut self, id: Id, text: String) -> Result<bool> {
         error()
     }
 
-    fn set_raw_meta(&mut self, id: Id, content: String) -> Result<()> {
+    fn set_raw_meta(&mut self, id: Id, content: String) -> Result<bool> {
         error()
     }
 

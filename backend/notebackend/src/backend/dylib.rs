@@ -76,11 +76,11 @@ impl TreeBackend for DylibBackend {
         self.tree.set_parent(id, dest_id, pos)
     }
 
-    fn set_text(&mut self, id: Self::Id, text: String) -> io::Result<()> {
+    fn set_text(&mut self, id: Self::Id, text: String) -> io::Result<bool> {
         self.tree.set_text(id, text)
     }
 
-    fn set_raw_meta(&mut self, id: Self::Id, content: String) -> io::Result<()> {
+    fn set_raw_meta(&mut self, id: Self::Id, content: String) -> io::Result<bool> {
         self.tree.set_raw_meta(id, content)
     }
 
@@ -112,7 +112,7 @@ impl TreeBackend for DylibBackend {
         self.tree.extract_meta(id, prefix)
     }
 
-    fn update_meta(&mut self, id: Self::Id, prefix: &str, value: &str) -> io::Result<()> {
+    fn update_meta(&mut self, id: Self::Id, prefix: &str, value: &str) -> io::Result<bool> {
         self.tree.update_meta(id, prefix, value)
     }
 

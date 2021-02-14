@@ -141,18 +141,19 @@ impl TreeBackend for PythonBackend {
         })
     }
 
-    fn set_text(&mut self, id: Self::Id, text: String) -> io::Result<()> {
+    fn set_text(&mut self, id: Self::Id, text: String) -> io::Result<bool> {
         with_gil(move |py| {
-            self.instance.call_method1(py, "set_text", (id, text))?;
-            Ok(())
+            let result = self.instance.call_method1(py, "set_text", (id, text))?;
+            Ok(result.extract::<bool>(py)?)
         })
     }
 
-    fn set_raw_meta(&mut self, id: Self::Id, content: String) -> io::Result<()> {
+    fn set_raw_meta(&mut self, id: Self::Id, content: String) -> io::Result<bool> {
         with_gil(move |py| {
-            self.instance
+            let result = self
+                .instance
                 .call_method1(py, "set_raw_meta", (id, content))?;
-            Ok(())
+            Ok(result.extract::<bool>(py)?)
         })
     }
 

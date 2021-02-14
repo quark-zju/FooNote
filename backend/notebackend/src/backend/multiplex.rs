@@ -126,18 +126,22 @@ impl TreeBackend for MultiplexBackend {
         }
     }
 
-    fn set_text(&mut self, id: Self::Id, text: String) -> Result<()> {
+    fn set_text(&mut self, id: Self::Id, text: String) -> Result<bool> {
         let backend = self.get_backend_mut(id.0)?;
-        backend.set_text(id.1, text)?;
-        self.bump_parent_mtime(id)?;
-        Ok(())
+        let changed = backend.set_text(id.1, text)?;
+        if changed {
+            self.bump_parent_mtime(id)?;
+        }
+        Ok(changed)
     }
 
-    fn set_raw_meta(&mut self, id: Self::Id, content: String) -> Result<()> {
+    fn set_raw_meta(&mut self, id: Self::Id, content: String) -> Result<bool> {
         let backend = self.get_backend_mut(id.0)?;
-        backend.set_raw_meta(id.1, content)?;
-        self.bump_parent_mtime(id)?;
-        Ok(())
+        let changed = backend.set_raw_meta(id.1, content)?;
+        if changed {
+            self.bump_parent_mtime(id)?;
+        }
+        Ok(changed)
     }
 
     fn touch(&mut self, id: Self::Id) -> Result<()> {
