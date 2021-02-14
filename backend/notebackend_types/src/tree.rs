@@ -327,6 +327,14 @@ impl TreeBackend for Box<dyn TreeBackend<Id = Id>> {
         self.deref_mut().set_raw_meta(id, content)
     }
 
+    fn update_meta(&mut self, id: Self::Id, prefix: &str, value: &str) -> Result<bool> {
+        self.deref_mut().update_meta(id, prefix, value)
+    }
+
+    fn touch(&mut self, id: Self::Id) -> Result<()> {
+        self.deref_mut().touch(id)
+    }
+
     fn remove(&mut self, id: Self::Id) -> Result<()> {
         self.deref_mut().remove(id)
     }
@@ -337,6 +345,30 @@ impl TreeBackend for Box<dyn TreeBackend<Id = Id>> {
 
     fn persist_async(&mut self, callback: PersistCallbackFunc) {
         self.deref_mut().persist_async(callback)
+    }
+
+    fn get_root_id(&self) -> Self::Id {
+        self.deref().get_root_id()
+    }
+
+    fn is_ancestor(&self, ancestor: Self::Id, descendant: Self::Id) -> Result<bool> {
+        self.deref().is_ancestor(ancestor, descendant)
+    }
+
+    fn extract_meta<'a>(&'a self, id: Self::Id, prefix: &str) -> Result<Cow<'a, str>> {
+        self.deref().extract_meta(id, prefix)
+    }
+
+    fn get_text_first_line(&self, id: Self::Id) -> Result<String> {
+        self.deref().get_text_first_line(id)
+    }
+
+    fn remove_batch(&mut self, ids: &[Self::Id]) -> Result<()> {
+        self.deref_mut().remove_batch(ids)
+    }
+
+    fn autofill(&mut self, id: Self::Id) -> Result<()> {
+        self.deref_mut().autofill(id)
     }
 }
 
