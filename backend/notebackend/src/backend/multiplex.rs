@@ -44,7 +44,7 @@ struct Mount {
     error_message: Option<String>,
 
     /// The node that has the "mount=url" meta.
-    source_id: FullId,
+    source_id: Vec<FullId>,
     url: Option<String>,
 }
 
@@ -57,12 +57,11 @@ impl Default for MultiplexBackend {
 impl MultiplexBackend {
     pub fn open_url(url: &str) -> io::Result<Self> {
         let backend = crate::url::open(url)?;
-        let local_root_id = backend.get_root_id();
         let result = Self {
             root: Mount {
                 backend,
                 error_message: None,
-                source_id: (ROOT_BACKEND_ID, local_root_id),
+                source_id: Vec::new(),
                 url: Some(url.to_string()),
             },
             table: Default::default(),
@@ -71,12 +70,11 @@ impl MultiplexBackend {
     }
 
     pub fn from_root_backend(backend: BoxBackend) -> Self {
-        let local_root_id = backend.get_root_id();
         Self {
             root: Mount {
                 backend,
                 error_message: None,
-                source_id: (ROOT_BACKEND_ID, local_root_id),
+                source_id: Vec::new(),
                 url: None,
             },
             table: Default::default(),
@@ -100,13 +98,10 @@ impl MultiplexBackend {
         if let Some(&backend_index) = table.url_to_id.get(url.as_ref()) {
             // Already mounted.
             log::trace!("Reuse backend {} for URL {}", backend_index, &url,);
-            let mount = &table.mounts[backend_index];
+            let mount = &mut table.mounts[backend_index];
             let root_id = mount.backend.get_root_id();
-            if mount.source_id != id && auto_mount {
-                return Err(io::Error::new(
-                    io::ErrorKind::InvalidData,
-                    format!("Cannot mount {} in multiple places", url),
-                ));
+            if !mount.source_id.contains(&id) {
+                mount.source_id.push(id)
             }
             let backend_id = backend_index + 1;
             return Ok((backend_id, root_id));
@@ -124,7 +119,7 @@ impl MultiplexBackend {
             Err(e) => {
                 log::warn!("Failed to mount {}: {:?}", &url, e);
                 error_message = Some(e.to_string());
-                Box::new(NullBackend)
+                warning_backend(e.to_string())
             }
         };
         let root_id = backend.get_root_id();
@@ -139,7 +134,7 @@ impl MultiplexBackend {
         let mount = Mount {
             backend,
             error_message,
-            source_id: id,
+            source_id: vec![id],
             url: Some(url.to_string()),
         };
         let backend_index = match backend_index {
@@ -165,8 +160,13 @@ impl MultiplexBackend {
     fn umount_recursive(&mut self, id: FullId) -> io::Result<()> {
         let mut table = self.table.write();
         let mut to_umount_index = Vec::new();
-        for (i, mount) in table.mounts.iter().enumerate() {
-            if self.is_ancestor(id, mount.source_id)? {
+        for (i, mount) in table.mounts.iter_mut().enumerate() {
+            mount.source_id = mount
+                .source_id
+                .drain(..)
+                .filter(|&src_id| self.is_ancestor(id, src_id).ok() == Some(true))
+                .collect();
+            if mount.source_id.is_empty() {
                 to_umount_index.push(i);
             }
         }
@@ -177,14 +177,13 @@ impl MultiplexBackend {
                 Some(url) => url.clone(),
                 None => continue,
             };
-            let source_id = mount.source_id;
             // Attempt to avoid losing unsaved content.
             mount.backend.persist()?;
             mount.backend = Box::new(NullBackend);
             mount.url = None;
             mount.error_message = Some("umounted".to_string());
             table.url_to_id.remove(&url);
-            log::info!("Umounted backend {} ({}) from {:?}", i + 1, &url, source_id);
+            log::info!("Umounted backend {} ({})", i + 1, &url);
         }
 
         Ok(())
@@ -281,21 +280,24 @@ impl TreeBackend for MultiplexBackend {
         let backend_id = id.0;
         self.with_mount(id, |m, id| match m.backend.get_parent(id)? {
             Some(id) => {
-                let fid = if id == m.backend.get_root_id() {
+                if id == m.backend.get_root_id() {
                     // Rewrite root id into the non-root id in source.
-                    m.source_id
-                } else {
-                    (backend_id, id)
-                };
-                Ok(Some(fid))
+                    if let Some(id) = m.source_id.get(0).cloned() {
+                        return Ok(Some(id));
+                    }
+                }
+                Ok(Some((backend_id, id)))
             }
             None => {
-                if backend_id != m.source_id.0 && id == m.backend.get_root_id() {
+                if id == m.backend.get_root_id() {
                     // Across mount boundary.
-                    self.get_parent(m.source_id)
-                } else {
-                    Ok(None)
+                    if let Some(&fid) = m.source_id.get(0) {
+                        if backend_id != fid.0 {
+                            return self.get_parent(fid);
+                        }
+                    }
                 }
+                Ok(None)
             }
         })
     }
@@ -408,23 +410,33 @@ impl TreeBackend for MultiplexBackend {
     }
 
     /// Bump mtime across mount boundary.
-    fn touch(&mut self, mut id: FullId) -> Result<()> {
-        if id.0 != 0 {
-            let mut table = self.table.write();
-            while id.0 != 0 {
-                log::debug!("touch {:?}", id);
-                log::trace!("bumping mtime for {:?}", id);
-                if let Some(mount) = table.mounts.get_mut(id.0 - 1) {
-                    mount.backend.touch(id.1)?;
-                    id = mount.source_id;
-                } else {
-                    break;
-                }
+    fn touch(&mut self, id: FullId) -> Result<()> {
+        log::debug!("touch {:?}", id);
+        if id.0 == ROOT_BACKEND_ID {
+            // Fast path.
+            self.root.backend.touch(id.1)?;
+            return Ok(());
+        }
+
+        // Handle multi-parents.
+        let mut touched = HashSet::new();
+        let mut to_touch = vec![id];
+
+        let mut table = self.table.write();
+        while let Some(id) = to_touch.pop() {
+            if !touched.insert(id) {
+                continue;
+            }
+            if id.0 == ROOT_BACKEND_ID {
+                self.root.backend.touch(id.1)?;
+                continue;
+            }
+            if let Some(mount) = table.mounts.get_mut(id.0 - 1) {
+                mount.backend.touch(id.1)?;
+                to_touch.extend_from_slice(&mount.source_id);
             }
         }
 
-        log::debug!("touch {:?}", id);
-        self.root.backend.touch(id.1)?;
         Ok(())
     }
 
@@ -543,6 +555,20 @@ impl TreeBackend for MultiplexBackend {
     }
 }
 
+/// Dummy backend for warning purpose
+fn warning_backend(message: String) -> BoxBackend {
+    let mut backend = crate::backend::MemBackend::empty();
+    backend
+        .insert(
+            backend.get_root_id(),
+            InsertPos::Append,
+            message,
+            "type=warn\nreadonly=true\ncopyable=false\nmovable=false\n".into(),
+        )
+        .expect("insert to MemBackend should succeed");
+    Box::new(backend.freeze())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -648,5 +674,33 @@ mod tests {
                          \_ 5 ("B2")
                          \_ 4 ("B3")"#
         );
+    }
+
+    #[test]
+    fn test_duplicated_mount() {
+        let mut root = MultiplexBackend::open_url("memory").unwrap();
+        let mut insert = |t: &str| {
+            root.insert(
+                root.get_root_id(),
+                InsertPos::Append,
+                t.into(),
+                "mount=memory:a\n".into(),
+            )
+            .unwrap();
+        };
+        insert("A");
+        insert("B");
+        root.quick_insert(root.find("A"), "C");
+        assert_eq!(
+            root.draw_ascii(&root.all_ids()),
+            r#"
+                root
+                \_ 3 ("A")
+                |  \_ 2 ("C")
+                \_ 1 ("B")
+                   \_ 2 ("C")"#
+        );
+        let p = root.get_parent(root.find("C")).unwrap();
+        assert_eq!(root.find("A"), p.unwrap());
     }
 }

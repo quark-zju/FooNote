@@ -97,7 +97,19 @@ where
                     }
                 }
             }
-            if let Ok(children) = self.backend.read().get_children(id) {
+
+            let backend = self.backend.read();
+            if let Some(Some(parent)) = backend.get_parent(id).ok() {
+                if let Ok(children) = backend.get_children(parent) {
+                    if !children.contains(&id) {
+                        // Multiple mounts - skip non-first mounts.
+                        // (get_parent returns the first mount point)
+                        continue;
+                    }
+                }
+            }
+
+            if let Ok(children) = backend.get_children(id) {
                 to_visit.extend(children.into_iter().rev());
             }
         }

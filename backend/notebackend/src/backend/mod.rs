@@ -48,9 +48,9 @@ pub(crate) mod tests {
         /// Ensure children of `id` have `subset` but not other ids in `ids`.
         fn check_children(&self, id: Self::Id, subset: &[Self::Id], ids: &[Self::Id]) {
             let children = self.get_children(id).unwrap_or_default();
-            assert!(children
-                .iter()
-                .all(|c| self.get_parent(*c).unwrap().unwrap() == id));
+            for &cid in &children {
+                assert_eq!(self.get_parent(cid).unwrap(), Some(id), "parent({:?})", cid);
+            }
             let mut last_index = 0;
             for id in subset {
                 let index = children.iter().position(|i| i == id).unwrap();
