@@ -27,11 +27,33 @@ pub trait TextIO: Send + Sync + 'static {
 pub struct ManifestBasedBackend<T> {
     pub manifest: Manifest,
     pub text_io: T,
+    read_only: bool,
 }
 
 impl<T> ManifestBasedBackend<T> {
     pub fn from_manifest_text_io(manifest: Manifest, text_io: T) -> Self {
-        Self { manifest, text_io }
+        Self {
+            manifest,
+            text_io,
+            read_only: false,
+        }
+    }
+
+    /// Mark as read-only.
+    pub fn freeze(mut self) -> Self {
+        self.read_only = true;
+        self
+    }
+
+    fn ensure_not_read_only(&self) -> io::Result<()> {
+        if self.read_only {
+            Err(io::Error::new(
+                io::ErrorKind::PermissionDenied,
+                "tree is read only",
+            ))
+        } else {
+            Ok(())
+        }
     }
 }
 
@@ -71,6 +93,7 @@ impl<T: TextIO> TreeBackend for ManifestBasedBackend<T> {
         text: String,
         meta: String,
     ) -> io::Result<Self::Id> {
+        self.ensure_not_read_only()?;
         let id = self.manifest.next_id;
         self.manifest.next_id += 1;
         let parent_id = match pos {
@@ -118,6 +141,7 @@ impl<T: TextIO> TreeBackend for ManifestBasedBackend<T> {
         dest_id: Self::Id,
         pos: InsertPos,
     ) -> io::Result<Self::Id> {
+        self.ensure_not_read_only()?;
         if id == ROOT_ID || id == TRASH_ID {
             return notebackend_types::error::invalid_input("special nodes cannot be moved");
         }
@@ -169,6 +193,7 @@ impl<T: TextIO> TreeBackend for ManifestBasedBackend<T> {
     }
 
     fn set_text(&mut self, id: Self::Id, text: String) -> io::Result<bool> {
+        self.ensure_not_read_only()?;
         let orig_text = self.get_text(id)?;
         let mut changed = false;
         if orig_text.as_ref() != text.as_str() {
@@ -180,6 +205,7 @@ impl<T: TextIO> TreeBackend for ManifestBasedBackend<T> {
     }
 
     fn set_raw_meta(&mut self, id: Self::Id, meta: String) -> io::Result<bool> {
+        self.ensure_not_read_only()?;
         let orig_meta = self.get_raw_meta(id)?;
         let mut changed = false;
         if orig_meta != meta {
@@ -191,6 +217,7 @@ impl<T: TextIO> TreeBackend for ManifestBasedBackend<T> {
     }
 
     fn remove(&mut self, id: Self::Id) -> io::Result<()> {
+        self.ensure_not_read_only()?;
         if id == ROOT_ID || id == TRASH_ID {
             return notebackend_types::error::invalid_input("special nodes cannot be removed");
         }
@@ -240,6 +267,7 @@ impl<T: TextIO> TreeBackend for ManifestBasedBackend<T> {
     }
 
     fn touch(&mut self, id: Self::Id) -> io::Result<()> {
+        self.ensure_not_read_only()?;
         self.manifest.touch(id);
         Ok(())
     }

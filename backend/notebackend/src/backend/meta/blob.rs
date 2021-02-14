@@ -107,14 +107,14 @@ impl<I: BlobIo> BlobBackend<I> {
             serde_json::from_slice(buf)?
         };
         data.manifest.rebuild_parents();
-        let result = Self {
-            text_io: BlobTextIo {
+        let result = Self::from_manifest_text_io(
+            data.manifest,
+            BlobTextIo {
                 blob_io,
                 texts: data.texts,
                 has_trash: false,
             },
-            manifest: data.manifest,
-        };
+        );
         Ok(result)
     }
 
