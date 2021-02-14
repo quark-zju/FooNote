@@ -131,9 +131,9 @@ mod tests {
     use super::*;
     use crate::backend::tests::TestTreeBackend;
     use crate::backend::MemBackend;
-    use crate::backend::MultiplexBackend;
+    use crate::backend::MountableBackend;
 
-    fn check_search(backend: &Arc<RwLock<MultiplexBackend>>, input: &str, expected: &str) {
+    fn check_search(backend: &Arc<RwLock<MountableBackend>>, input: &str, expected: &str) {
         let mut s = Search::new(backend.clone());
         s.start(input.to_string(), vec![backend.read().get_root_id()]);
         while !s.is_completed() {
@@ -153,7 +153,7 @@ mod tests {
 
     #[test]
     fn test_search_basic() {
-        let mut b = MultiplexBackend::from_root_backend(Box::new(MemBackend::empty()));
+        let mut b = MountableBackend::from_root_backend(Box::new(MemBackend::empty()));
         b.insert_ascii(
             r"
             Ax---By---Cx

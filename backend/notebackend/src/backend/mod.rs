@@ -12,7 +12,6 @@ pub use dylib::DylibBackend;
 pub use git::GitBackend;
 pub use multiplex::FullId;
 pub use multiplex::MountableBackend;
-pub use multiplex::MultiplexBackend;
 
 pub type SingleFileBackend = BlobBackend<file::FileBlobIo>;
 pub type MemBackend = BlobBackend<mem::MemBlobIo>;
