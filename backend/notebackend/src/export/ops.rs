@@ -4,7 +4,7 @@ use super::errno;
 use super::stack;
 use crate::backend;
 use crate::backend::FullId;
-use crate::backend::MountableBackend;
+use crate::backend::MultiplexBackend;
 use crate::clipboard;
 use crate::search::Search;
 use backend::MemBackend;
@@ -19,8 +19,8 @@ use std::sync::Arc;
 use std::sync::Mutex as StdMutex;
 
 /// Global state for easier ffi APIs.
-static ROOT_BACKEND: Lazy<Arc<RwLock<MountableBackend>>> = Lazy::new(|| Default::default());
-static SEARCH: Lazy<RwLock<Search<MountableBackend>>> =
+static ROOT_BACKEND: Lazy<Arc<RwLock<MultiplexBackend>>> = Lazy::new(|| Default::default());
+static SEARCH: Lazy<RwLock<Search<MultiplexBackend>>> =
     Lazy::new(|| RwLock::new(Search::new(ROOT_BACKEND.clone())));
 
 static PERSIST_RESULT_LIST: Lazy<RwLock<Vec<Arc<StdMutex<Option<io::Result<()>>>>>>> =
@@ -115,7 +115,7 @@ fn push_fid_list(ids: &[FullId]) {
 #[no_mangle]
 pub extern "C" fn notebackend_open_root_url() -> i32 {
     let url: String = pop!();
-    let m = attempt!(MountableBackend::open_url(&url));
+    let m = attempt!(MultiplexBackend::open_url(&url));
     push_fid(m.get_root_id());
     *ROOT_BACKEND.write() = m;
     errno::OK
@@ -161,7 +161,7 @@ pub extern "C" fn notebackend_is_mount() -> i32 {
 /// () -> ()
 #[no_mangle]
 pub extern "C" fn notebackend_close_all() {
-    let m = MountableBackend::default();
+    let m = MultiplexBackend::default();
     *ROOT_BACKEND.write() = m;
 }
 

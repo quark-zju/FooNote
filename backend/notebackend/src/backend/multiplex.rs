@@ -25,7 +25,7 @@ const ROOT_BACKEND_ID: BackendId = 0;
 
 /// Based on another backend. Treat "mount=" nodes specially by "mounting"
 /// other backends into those nodes.
-pub struct MountableBackend {
+pub struct MultiplexBackend {
     root: Mount,
     table: RwLock<MountTable>,
 }
@@ -48,13 +48,13 @@ struct Mount {
     url: Option<String>,
 }
 
-impl Default for MountableBackend {
+impl Default for MultiplexBackend {
     fn default() -> Self {
         Self::from_root_backend(Box::new(NullBackend))
     }
 }
 
-impl MountableBackend {
+impl MultiplexBackend {
     pub fn open_url(url: &str) -> io::Result<Self> {
         let backend = crate::url::open(url)?;
         let local_root_id = backend.get_root_id();
@@ -266,7 +266,7 @@ impl MountableBackend {
     }
 }
 
-impl TreeBackend for MountableBackend {
+impl TreeBackend for MultiplexBackend {
     type Id = FullId;
 
     fn get_root_id(&self) -> Self::Id {
@@ -552,7 +552,7 @@ mod tests {
     #[test]
     fn test_basic() {
         let root_backend = MemBackend::empty();
-        let mut backend = MountableBackend::from_root_backend(Box::new(root_backend));
+        let mut backend = MultiplexBackend::from_root_backend(Box::new(root_backend));
         backend.check_generic().unwrap();
     }
 
@@ -561,7 +561,7 @@ mod tests {
         let mut m1 = MemBackend::empty();
         m1.insert_ascii("A--B--C");
 
-        let mut root = MountableBackend::from_root_backend(Box::new(m1));
+        let mut root = MultiplexBackend::from_root_backend(Box::new(m1));
         assert_eq!(
             root.draw_ascii(&root.find_ids("root A B C")),
             r#"
@@ -601,7 +601,7 @@ mod tests {
 
     #[test]
     fn test_cross_mount_move() {
-        let mut root = MountableBackend::open_url("memory").unwrap();
+        let mut root = MultiplexBackend::open_url("memory").unwrap();
         root.insert_ascii(
             r#"
                 A--B
