@@ -164,7 +164,7 @@ impl MultiplexBackend {
             mount.source_id = mount
                 .source_id
                 .drain(..)
-                .filter(|&src_id| self.is_ancestor(id, src_id).ok() == Some(true))
+                .filter(|&src_id| self.is_ancestor(id, src_id).ok() != Some(true))
                 .collect();
             if mount.source_id.is_empty() {
                 to_umount_index.push(i);
@@ -460,12 +460,13 @@ impl TreeBackend for MultiplexBackend {
         let state = Arc::new(Mutex::new(State {
             callback: Some(callback),
             result: Default::default(),
-            waiting_count: table.mounts.len() + 1,
+            waiting_count: 0,
         }));
 
         let process = |mount: &mut Mount| {
             let state = state.clone();
             let url = mount.url.clone().unwrap_or_else(|| "".to_string());
+            state.lock().waiting_count += 1;
             mount.backend.persist_async(Box::new(move |r| {
                 let mut state = state.lock();
                 state.waiting_count -= 1;
