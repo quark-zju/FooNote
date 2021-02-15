@@ -343,3 +343,4 @@ msgstr "回收站"
 #: tsolidcolorpreviewform.caption
 msgid "FooNoteOverlay"
 msgstr "FooNote 叠加层"
+
