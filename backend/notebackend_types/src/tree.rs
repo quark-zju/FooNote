@@ -244,20 +244,29 @@ pub trait TreeBackend: Send + Sync + 'static {
     /// Return the sorted result.
     fn get_heads(&self, ids: &[Self::Id]) -> Result<Vec<Self::Id>> {
         let id_set: HashSet<Self::Id> = ids.iter().cloned().collect();
-        let mut result = Vec::new();
-        // Visit from the root (to preserve order).
-        let mut to_visit = vec![self.get_root_id()];
-        while let Some(id) = to_visit.pop() {
-            if id_set.contains(&id) {
-                result.push(id);
-            } else {
-                // Visit children in order.
-                let mut children = self.get_children(id)?;
-                children.reverse();
-                to_visit.extend(children);
+
+        let mut heads = Vec::with_capacity(ids.len());
+        for &id in ids {
+            let mut should_take = true;
+            let mut current = self.get_parent(id)?;
+            while let Some(parent) = current {
+                if id_set.contains(&parent) {
+                    should_take = false;
+                    break;
+                }
+                current = self.get_parent(parent)?;
+            }
+            if should_take {
+                heads.push(id);
             }
         }
-        Ok(result)
+
+        Ok(heads)
+    }
+
+    /// Return `false` if `id` is a mirror to another `id`.
+    fn is_canonical(&self, _id: Self::Id) -> Result<bool> {
+        Ok(true)
     }
 
     /// Write changes to the underlying backend.
@@ -369,6 +378,10 @@ impl TreeBackend for Box<dyn TreeBackend<Id = Id>> {
 
     fn autofill(&mut self, id: Self::Id) -> Result<()> {
         self.deref_mut().autofill(id)
+    }
+
+    fn is_canonical(&self, id: Self::Id) -> Result<bool> {
+        self.deref().is_canonical(id)
     }
 }
 

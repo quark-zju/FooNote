@@ -351,8 +351,8 @@ pub(crate) mod tests {
             assert!(b.is_ancestor(id4, id4).unwrap());
 
             // Get and sort heads.
-            assert_eq!(b.get_heads(&[id3, id2, id1]).unwrap(), vec![id1, id2]);
-            assert_eq!(b.get_heads(&[id5, id6, id3]).unwrap(), vec![id3, id6]);
+            assert_eq!(b.get_heads(&[id3, id2, id1]).unwrap(), vec![id2, id1]);
+            assert_eq!(b.get_heads(&[id5, id6, id3]).unwrap(), vec![id6, id3]);
 
             // Deleting ids.
             let changed = b.mtime_changed(&ids, |b| {
@@ -452,11 +452,11 @@ pub(crate) mod tests {
                 root
                 \_ 8 ("H")
                 |  \_ 9 ("I")
-                |  \_ 1 ("A")
-                |  |  \_ 2 ("B")
                 |  \_ 3 ("C")
                 |  |  \_ 4 ("D")
                 |  |     \_ 5 ("E")
+                |  \_ 1 ("A")
+                |  |  \_ 2 ("B")
                 |  \_ 6 ("F")
                 |  |  \_ 7 ("G")
                 |  \_ 10 ("J")

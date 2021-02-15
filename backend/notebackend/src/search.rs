@@ -99,14 +99,10 @@ where
             }
 
             let backend = self.backend.read();
-            if let Some(Some(parent)) = backend.get_parent(id).ok() {
-                if let Ok(children) = backend.get_children(parent) {
-                    if !children.contains(&id) {
-                        // Multiple mounts - skip non-first mounts.
-                        // (get_parent returns the first mount point)
-                        continue;
-                    }
-                }
+            if backend.is_canonical(id).ok() == Some(false) {
+                // Multiple mounts - skip non-first mounts.
+                // This also avoids visiting cycles.
+                continue;
             }
 
             if let Ok(children) = backend.get_children(id) {

@@ -13,6 +13,7 @@ pub fn copy<T>(src: &T, ids: &[T::Id]) -> Result<MemBackend>
 where
     T: TreeBackend,
 {
+    log::debug!("copy {:?}", &ids);
     let head_ids = src.get_heads(ids)?;
     let mut dst = MemBackend::empty();
     for id in head_ids {
@@ -60,10 +61,17 @@ pub(crate) fn copy_replace<S: TreeBackend, D: TreeBackend>(
     dst_id: D::Id,
     mut dst_new_ids: Option<&mut Vec<D::Id>>,
 ) -> Result<()> {
+    log::trace!("copy_replace {:?} => {:?}", &src_id, &dst_id);
     let text = src.get_text(src_id)?;
     let meta = src.get_raw_meta(src_id)?;
     dst.set_text(dst_id, text.to_string())?;
     dst.set_raw_meta(dst_id, meta.to_string())?;
+
+    // Skip copying children if it's marked as not copyable, or is a
+    // non-first mount point.
+    if !src.is_children_copyable(src_id)? || !src.is_canonical(src_id)? {
+        return Ok(());
+    }
 
     // Ensure that they have the same number of children.
     let src_children: Vec<_> = src
@@ -92,9 +100,7 @@ pub(crate) fn copy_replace<S: TreeBackend, D: TreeBackend>(
 
     // Copy recursively.
     for (src_id, dst_id) in src_children.into_iter().zip(dst_children.into_iter()) {
-        if src.is_children_copyable(src_id)? {
-            copy_replace(src, src_id, dst, dst_id, dst_new_ids.as_deref_mut())?;
-        }
+        copy_replace(src, src_id, dst, dst_id, dst_new_ids.as_deref_mut())?;
     }
 
     Ok(())
@@ -143,11 +149,11 @@ mod tests {
             m.draw_ascii(&ids),
             r#"
                 root
-                \_ 1 ("c")
-                |  \_ 2 ("e")
-                |     \_ 3 ("f")
-                \_ 4 ("g")
-                \_ 5 ("b")"#
+                \_ 1 ("b")
+                \_ 2 ("c")
+                |  \_ 3 ("e")
+                |     \_ 4 ("f")
+                \_ 5 ("g")"#
         );
 
         // Insert before "5" ("e")
@@ -159,11 +165,11 @@ mod tests {
                 root
                 \_ 1 ("a")
                 |  \_ 3 ("c")
-                |  |  \_ 8 ("c")
-                |  |  |  \_ 9 ("e")
-                |  |  |     \_ 10 ("f")
-                |  |  \_ 11 ("g")
-                |  |  \_ 12 ("b")
+                |  |  \_ 8 ("b")
+                |  |  \_ 9 ("c")
+                |  |  |  \_ 10 ("e")
+                |  |  |     \_ 11 ("f")
+                |  |  \_ 12 ("g")
                 |  |  \_ 5 ("e")
                 |  |     \_ 6 ("f")
                 |  \_ 4 ("d")

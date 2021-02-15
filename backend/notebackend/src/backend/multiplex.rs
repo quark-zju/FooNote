@@ -368,7 +368,7 @@ impl TreeBackend for MultiplexBackend {
                 let dst_id = dst.insert(local_dest_id, pos, String::new(), String::new())?;
                 clipboard::copy_replace(&src, src_id.1, dst, dst_id, None)?;
                 src.remove(src_id.1)?;
-                Ok((dest_id.0, local_dest_id))
+                Ok((dest_id.0, dst_id))
             });
 
             // Swap back.
@@ -513,29 +513,6 @@ impl TreeBackend for MultiplexBackend {
         process(&mut self.root);
     }
 
-    fn get_heads(&self, ids: &[Self::Id]) -> Result<Vec<Self::Id>> {
-        let id_set: HashSet<Self::Id> = ids.iter().cloned().collect();
-        let mut pushed = HashSet::new();
-        let mut result = Vec::new();
-        // Visit from the root (to preserve order).
-        let mut to_visit = vec![self.get_root_id()];
-        while let Some(id) = to_visit.pop() {
-            if id_set.contains(&id) {
-                if pushed.insert(id) {
-                    result.push(id);
-                }
-            } else {
-                // Visit children in order.
-                // Avoid auto-mount in get_heads.
-                let mut children = self.get_children_ex(id, false)?;
-                children.reverse();
-                to_visit.extend(children);
-            }
-        }
-        log::debug!("get_heads({:?}) = {:?}", ids, &result);
-        Ok(result)
-    }
-
     fn set_parent_batch(
         &mut self,
         ids: &[Self::Id],
@@ -552,6 +529,23 @@ impl TreeBackend for MultiplexBackend {
             pos = InsertPos::After;
         }
         Ok(new_ids)
+    }
+
+    /// Test if a node is within the first mount table.
+    /// Return false for mount nodes that aren't the first mount for a
+    /// single URL.
+    fn is_canonical(&self, id: FullId) -> Result<bool> {
+        let backend_id = id.0;
+        if backend_id == ROOT_BACKEND_ID {
+            return Ok(true);
+        }
+        self.with_mount(id, |m, _local_id| {
+            if m.source_id.contains(&id) && m.source_id[0] != id {
+                Ok(false)
+            } else {
+                Ok(true)
+            }
+        })
     }
 }
 
