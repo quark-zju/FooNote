@@ -1,6 +1,7 @@
 use crate::manifest::Manifest;
 use crate::manifest::ROOT_ID;
 use crate::manifest::TRASH_ID;
+use crate::t;
 use notebackend_types::Id;
 use notebackend_types::InsertPos;
 use notebackend_types::Mtime;
@@ -49,7 +50,7 @@ impl<T> ManifestBasedBackend<T> {
         if self.read_only {
             Err(io::Error::new(
                 io::ErrorKind::PermissionDenied,
-                "tree is read only",
+                t!(cn = "无法修改只读节点", en = "tree is read only"),
             ))
         } else {
             Ok(())
@@ -73,6 +74,9 @@ impl<T: TextIO> TreeBackend for ManifestBasedBackend<T> {
     }
 
     fn get_text<'a>(&'a self, id: Self::Id) -> io::Result<std::borrow::Cow<'a, str>> {
+        if id == TRASH_ID {
+            return Ok(t!(cn = "回收站", en = "Trash",).into());
+        }
         self.text_io.get_raw_text(id)
     }
 
@@ -143,7 +147,10 @@ impl<T: TextIO> TreeBackend for ManifestBasedBackend<T> {
     ) -> io::Result<Self::Id> {
         self.ensure_not_read_only()?;
         if id == ROOT_ID || id == TRASH_ID {
-            return notebackend_types::error::invalid_input("special nodes cannot be moved");
+            return notebackend_types::error::invalid_input(t!(
+                cn = "无法移动特殊节点",
+                en = "special nodes cannot be moved"
+            ));
         }
         let parent_id = match pos {
             InsertPos::Before | InsertPos::After => self
@@ -154,8 +161,9 @@ impl<T: TextIO> TreeBackend for ManifestBasedBackend<T> {
         if self.is_ancestor(id, parent_id)? {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidInput,
-                format!(
-                    "{:?} ({}) cannot be moved to be under its descendant {:?} ({})",
+                t!(
+                    cn = "无法将 {:?} ({}) 移动到其子节点 {:?} ({})",
+                    en = "{:?} ({}) cannot be moved to be under its descendant {:?} ({})",
                     self.get_text_first_line(id).unwrap_or_default(),
                     id,
                     self.get_text_first_line(parent_id).unwrap_or_default(),
@@ -219,7 +227,10 @@ impl<T: TextIO> TreeBackend for ManifestBasedBackend<T> {
     fn remove(&mut self, id: Self::Id) -> io::Result<()> {
         self.ensure_not_read_only()?;
         if id == ROOT_ID || id == TRASH_ID {
-            return notebackend_types::error::invalid_input("special nodes cannot be removed");
+            return notebackend_types::error::invalid_input(t!(
+                cn = "无法删除特殊节点",
+                en = "special nodes cannot be removed"
+            ));
         }
         self.touch(id)?;
         let should_use_trash = if !self.manifest.has_trash {

@@ -14,10 +14,7 @@ pub struct NullBackend;
 fn error<T>() -> Result<T> {
     Err(io::Error::new(
         io::ErrorKind::NotConnected,
-        t!(
-            cn: "无法修改已关闭节点",
-            en: "backend was umounted",
-        ),
+        t!(cn = "无法修改已关闭节点", en = "backend was umounted",),
     ))
 }
 

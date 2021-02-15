@@ -206,7 +206,7 @@ impl MultiplexBackend {
             } else {
                 return Err(io::Error::new(
                     io::ErrorKind::InvalidData,
-                    "backend out of bound",
+                    t!(cn = "后端未挂载", en = "backend out of bound"),
                 ));
             }
         }
@@ -228,7 +228,7 @@ impl MultiplexBackend {
             } else {
                 return Err(io::Error::new(
                     io::ErrorKind::InvalidData,
-                    "backend out of bound",
+                    t!(cn = "后端未挂载", en = "backend out of bound"),
                 ));
             }
         }
@@ -537,10 +537,7 @@ impl TreeBackend for MultiplexBackend {
 /// Dummy backend for warning purpose
 fn warning_backend(message: String) -> BoxBackend {
     let mut backend = crate::backend::MemBackend::empty();
-    let title = t!(
-        cn: "加载失败",
-        en: "Failed to load",
-    );
+    let title = t!(cn = "加载失败", en = "Failed to load",);
     let text = format!("{}\n\n{}", title, message);
     backend
         .insert(

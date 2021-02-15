@@ -3,6 +3,7 @@ use crate::backend::meta::manifest::TextIO;
 use crate::manifest::min_next_id;
 use crate::manifest::Manifest;
 use crate::merge;
+use crate::t;
 use git_cmd::GitCommand;
 use notebackend_types::Id;
 use notebackend_types::PersistCallbackFunc;
@@ -245,7 +246,10 @@ impl GitInfo {
             None => {
                 return Err(io::Error::new(
                     io::ErrorKind::Other,
-                    "no known local head to push",
+                    t!(
+                        cn = "无法确定用于推送的本地分支",
+                        en = "no known local head to push"
+                    ),
                 ))
             }
         };
@@ -276,7 +280,10 @@ impl GitInfo {
                     None => {
                         return Err(io::Error::new(
                             io::ErrorKind::Other,
-                            "no known remote head to merge",
+                            t!(
+                                cn = "无法确定用于合并的远端分支",
+                                en = "no known remote head to merge"
+                            ),
                         ))
                     }
                 };
@@ -471,16 +478,21 @@ impl GitInfo {
             log::warn!("fastimport failed (exit code: {})", code);
             return Err(io::Error::new(
                 io::ErrorKind::Other,
-                format!("fastimport failed (exit code: {})", code),
+                t!(
+                    cn = "git fastimport 失败 (返回值: {})",
+                    en = "git fastimport failed (exit code: {})",
+                    code
+                ),
             ));
         }
         drop(tmp_file);
 
         let commit_oid = HexOid(commit_oid.trim().to_string());
         if commit_oid.0.is_empty() {
-            return notebackend_types::error::invalid_input(
-                "fastimport did not provide new commit hash",
-            );
+            return notebackend_types::error::invalid_input(t!(
+                cn = "git fastimport 未提供新的提交的 SHA 值",
+                en = "git fastimport did not provide new commit hash"
+            ));
         }
         log::info!("Committed: {}", &commit_oid.0);
         *self.local_head_oid.write() = Some(commit_oid.clone());
@@ -547,13 +559,21 @@ impl GitInfo {
         if first_line.contains("missing") {
             return Err(io::Error::new(
                 io::ErrorKind::NotFound,
-                format!("git object {} is not found", spec),
+                t!(
+                    cn = "Git 对象 {} 未找到",
+                    en = "git object {} is not found",
+                    spec
+                ),
             ));
         }
         if first_line.contains("ambiguous") {
             return Err(io::Error::new(
                 io::ErrorKind::NotFound,
-                format!("git object {} is ambiguous", spec),
+                t!(
+                    cn = "Git 对象 {} 有歧义",
+                    en = "git object {} is ambiguous",
+                    spec
+                ),
             ));
         }
         let (oid, obj_type, len) = {
@@ -561,9 +581,11 @@ impl GitInfo {
             if split.len() != 3 || split[0].len() != 40 || split[2].parse::<usize>().is_err() {
                 return Err(io::Error::new(
                     io::ErrorKind::InvalidData,
-                    format!(
-                        "cat-file {} returned malformed header: {:?}",
-                        spec, first_line
+                    t!(
+                        cn = "git cat-file {} 返回无效信息: {:?}",
+                        en = "git cat-file {} returned malformed header: {:?}",
+                        spec,
+                        first_line
                     ),
                 ));
             }
@@ -577,9 +599,12 @@ impl GitInfo {
             if expected_type != obj_type {
                 return Err(io::Error::new(
                     io::ErrorKind::InvalidData,
-                    format!(
-                        "git object {} has type {}, but expect {}",
-                        spec, obj_type, expected_type
+                    t!(
+                        cn = "Git 对象 {} 类型不匹配：{} != {}",
+                        en = "git object {} has type {}, but expect {}",
+                        spec,
+                        obj_type,
+                        expected_type
                     ),
                 ));
             }
@@ -589,7 +614,11 @@ impl GitInfo {
         if data.last() != Some(&b'\n') {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidData,
-                format!("cat-file {} returned malformed end", spec),
+                t!(
+                    cn = "git cat-file {} 返回无效末尾",
+                    en = "git cat-file {} returned malformed end",
+                    spec
+                ),
             ));
         }
         data.pop(); // Remove the last LF.
@@ -649,9 +678,10 @@ impl GitInfo {
             Some(h) => Ok(h),
             None => match self.remote_head_oid.read().clone() {
                 Some(h) => Ok(h),
-                None => {
-                    notebackend_types::error::invalid_data("neither local or remote head is known")
-                }
+                None => notebackend_types::error::invalid_data(t!(
+                    cn = "未知本地或远程分支",
+                    en = "neither local or remote head is known"
+                )),
             },
         }
     }
@@ -889,7 +919,7 @@ fn prepare_remote_name(repo_path: &Path, url: &str) -> io::Result<String> {
         if let Some(&[remote_name, remote_url]) = split.get(..2) {
             let remote_url = remote_url.strip_suffix(" (push)").unwrap_or(remote_url);
             let remote_url = remote_url.strip_suffix(" (fetch)").unwrap_or(remote_url);
-            if remote_url == url {
+            if remote_url == url || remote_url.starts_with(&format!("{} ", url)) {
                 return Ok(remote_name.to_string());
             }
             taken_names.insert(remote_name.to_string());
@@ -911,8 +941,9 @@ fn prepare_remote_name(repo_path: &Path, url: &str) -> io::Result<String> {
     // Create the new remote name.
     let _out = GitCommand::at(repo_path)
         .args(&["remote", "add", remote_name.as_str(), url])
-        .context(format!(
-            "create remote {} for url {} repo at {}",
+        .context(t!(
+            cn = "创建远端分支 {} ({}, {})",
+            en = "create remote {} for url {} repo at {}",
             remote_name,
             url,
             repo_path.display()
@@ -931,7 +962,7 @@ fn split_url(url: &str) -> io::Result<(&str, Option<&str>)> {
         _ => {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidInput,
-                format!("invalid url: {}", url),
+                t!(cn = "无效地址: {}", en = "invalid url: {}", url),
             ))
         }
     }
