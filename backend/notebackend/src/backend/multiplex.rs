@@ -353,6 +353,28 @@ impl TreeBackend for MultiplexBackend {
             self.touch(src_id)?;
             Ok((src_id.0, moved_id))
         } else {
+            // Sanity check.
+            let parent_id = match pos {
+                InsertPos::Before | InsertPos::After => self
+                    .get_parent(dest_id)?
+                    .unwrap_or_else(|| self.get_root_id()),
+                InsertPos::Append => dest_id,
+            };
+            if self.is_ancestor(src_id, parent_id)? {
+                return Err(io::Error::new(
+                    io::ErrorKind::InvalidInput,
+                    t!(
+                        cn = "无法将 {:?} ({:?}) 移动到其子节点 {:?} ({:?})",
+                        en = "{:?} ({:?}) cannot be moved to be under its descendant {:?} ({:?})",
+                        self.get_text_first_line(src_id).unwrap_or_default(),
+                        src_id,
+                        self.get_text_first_line(parent_id).unwrap_or_default(),
+                        dest_id,
+                    ),
+                ));
+            }
+
+            // Do the move.
             log::debug!("cross-move {:?} to {:?} {:?}", src_id, pos, dest_id);
             self.touch(src_id)?;
             let src = Box::new(NullBackend);
