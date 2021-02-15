@@ -110,7 +110,7 @@ object FormFooNoteMain: TFormFooNoteMain
       BorderSpacing.Around = 5
       BorderStyle = bsNone
       OnChange = EditNoteSearchChange
-      OnKeyPress = EditNoteSearchKeyPress
+      OnKeyUp = EditNoteSearchKeyUp
       ParentFont = False
       TabOrder = 2
       TextHint = 'Search'

@@ -102,6 +102,7 @@ type
     procedure ActionAppAboutExecute(Sender: TObject);
     procedure ActionEditReloadExecute(Sender: TObject);
     procedure ActionViewWarnUnsavedExecute(Sender: TObject);
+    procedure EditNoteSearchKeyUp(Sender: TObject; var Key: word; Shift: TShiftState);
     procedure PanelDockSplitterLeftMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: integer);
     procedure PanelDockSplitterLeftMouseMove(Sender: TObject; Shift: TShiftState; X, Y: integer);
     procedure PanelDockSplitterLeftMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: integer);
@@ -111,7 +112,6 @@ type
     procedure IdleTimerWndProcTimer(Sender: TObject);
     procedure ActionNewMountUrlExecute(Sender: TObject);
     procedure EditNoteSearchChange(Sender: TObject);
-    procedure EditNoteSearchKeyPress(Sender: TObject; var Key: char);
     procedure TimerAutoSaveTimer(Sender: TObject);
     procedure TimerCheckSaveResultTimer(Sender: TObject);
     procedure TreeViewNoteTreeAdvancedCustomDrawItem(Sender: TCustomTreeView; Node: TTreeNode;
@@ -837,6 +837,23 @@ begin
   FormSaveFailure.ShowModal;
 end;
 
+procedure TFormFooNoteMain.EditNoteSearchKeyUp(Sender: TObject; var Key: word; Shift: TShiftState);
+begin
+  if key = 27 then begin
+    EditNoteSearch.Clear;
+  end else if (key = 10) or (key = 13) or (key = VK_DOWN) then begin
+    if TreeViewSearchTree.Visible then begin
+      if TreeViewSearchTree.CanSetFocus then begin
+        TreeViewSearchTree.SetFocus;
+      end;
+    end else begin
+      if TreeViewNoteTree.CanSetFocus then begin
+        TreeViewNoteTree.SetFocus;
+      end;
+    end;
+  end;
+end;
+
 procedure TFormFooNoteMain.DrawTreeSelectionPreview;
 var
   PreviewCanvas: TCanvas;
@@ -1074,23 +1091,6 @@ begin
     TimerSearchResult.Enabled := True;
     TreeViewNoteTree.Visible := False;
     TreeViewSearchTree.Visible := True;
-  end;
-end;
-
-procedure TFormFooNoteMain.EditNoteSearchKeyPress(Sender: TObject; var Key: char);
-begin
-  if key = #27 then begin
-    EditNoteSearch.Clear;
-  end else if (key = #10) or (key = #13) then begin
-    if TreeViewSearchTree.Visible then begin
-      if TreeViewSearchTree.CanSetFocus then begin
-        TreeViewSearchTree.SetFocus;
-      end;
-    end else begin
-      if TreeViewNoteTree.CanSetFocus then begin
-        TreeViewNoteTree.SetFocus;
-      end;
-    end;
   end;
 end;
 
@@ -1395,6 +1395,12 @@ begin
         // Show preview at the right position.
         PreviewForm.ShowCanvasAt(Point.X, Point.Y);
       end;
+    end;
+  end else begin
+    if Assigned(TreeViewNoteTree.GetNodeAt(X, Y)) then begin
+      TreeViewNoteTree.DragMode := dmAutomatic;
+    end else begin
+      TreeViewNoteTree.DragMode := dmManual;
     end;
   end;
 end;
