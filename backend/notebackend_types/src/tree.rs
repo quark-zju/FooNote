@@ -264,11 +264,6 @@ pub trait TreeBackend: Send + Sync + 'static {
         Ok(heads)
     }
 
-    /// Return `false` if `id` is a mirror to another `id`.
-    fn is_canonical(&self, _id: Self::Id) -> Result<bool> {
-        Ok(true)
-    }
-
     /// Write changes to the underlying backend.
     fn persist(&mut self) -> Result<()>;
 
@@ -378,10 +373,6 @@ impl TreeBackend for Box<dyn TreeBackend<Id = Id>> {
 
     fn autofill(&mut self, id: Self::Id) -> Result<()> {
         self.deref_mut().autofill(id)
-    }
-
-    fn is_canonical(&self, id: Self::Id) -> Result<bool> {
-        self.deref().is_canonical(id)
     }
 }
 

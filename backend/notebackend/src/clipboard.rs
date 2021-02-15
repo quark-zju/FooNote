@@ -67,9 +67,8 @@ pub(crate) fn copy_replace<S: TreeBackend, D: TreeBackend>(
     dst.set_text(dst_id, text.to_string())?;
     dst.set_raw_meta(dst_id, meta.to_string())?;
 
-    // Skip copying children if it's marked as not copyable, or is a
-    // non-first mount point.
-    if !src.is_children_copyable(src_id)? || !src.is_canonical(src_id)? {
+    // Skip copying children if it's marked as not copyable.
+    if !src.is_children_copyable(src_id)? {
         return Ok(());
     }
 

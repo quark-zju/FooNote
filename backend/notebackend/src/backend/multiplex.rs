@@ -530,23 +530,6 @@ impl TreeBackend for MultiplexBackend {
         }
         Ok(new_ids)
     }
-
-    /// Test if a node is within the first mount table.
-    /// Return false for mount nodes that aren't the first mount for a
-    /// single URL.
-    fn is_canonical(&self, id: FullId) -> Result<bool> {
-        let backend_id = id.0;
-        if backend_id == ROOT_BACKEND_ID {
-            return Ok(true);
-        }
-        self.with_mount(id, |m, _local_id| {
-            if m.source_id.contains(&id) && m.source_id[0] != id {
-                Ok(false)
-            } else {
-                Ok(true)
-            }
-        })
-    }
 }
 
 /// Dummy backend for warning purpose

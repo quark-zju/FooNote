@@ -99,12 +99,6 @@ where
             }
 
             let backend = self.backend.read();
-            if backend.is_canonical(id).ok() == Some(false) {
-                // Multiple mounts - skip non-first mounts.
-                // This also avoids visiting cycles.
-                continue;
-            }
-
             if let Ok(children) = backend.get_children(id) {
                 to_visit.extend(children.into_iter().rev());
             }
