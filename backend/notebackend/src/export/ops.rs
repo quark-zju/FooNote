@@ -131,34 +131,6 @@ pub extern "C" fn notebackend_type_of_url() -> i32 {
     errno::OK
 }
 
-/// (id: i32, url: String) -> ()
-#[no_mangle]
-pub extern "C" fn notebackend_mount_url() -> i32 {
-    let url: String = pop!();
-    let id = pop_fid!();
-    let b = attempt!(crate::url::open(&url));
-    let mut root = ROOT_BACKEND.write();
-    attempt!(root.update_meta(id, "mount=", &url));
-    errno::OK
-}
-
-/// (id: i32) -> ()
-#[no_mangle]
-pub extern "C" fn notebackend_umount() -> i32 {
-    let id = pop_fid!();
-    let mut root = ROOT_BACKEND.write();
-    attempt!(root.update_meta(id, "mount=", ""));
-    errno::OK
-}
-
-/// (id: i32) -> (bool: i32)
-#[no_mangle]
-pub extern "C" fn notebackend_is_mount() -> i32 {
-    let id = pop_fid!();
-    stack::push(0);
-    errno::OK
-}
-
 /// () -> ()
 #[no_mangle]
 pub extern "C" fn notebackend_close_all() {
