@@ -139,7 +139,7 @@ mod tests {
                 \_ 1 ("A")
                 \_ 5 ("E")
                 \_ 7 ("G")
-                \_ 10 ("") (type=trash)
+                \_ 10 ("Trash") (type=trash)
                    \_ 6 ("F")
                    \_ 9 ("I")
                    \_ 8 ("H")
@@ -155,7 +155,7 @@ mod tests {
             r#"
                 root
                 \_ 7 ("G")
-                \_ 10 ("") (type=trash)
+                \_ 10 ("Trash") (type=trash)
                    \_ 6 ("F")
                    \_ 2 ("B")
                    |  \_ 3 ("C")

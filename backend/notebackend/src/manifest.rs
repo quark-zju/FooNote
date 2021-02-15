@@ -20,8 +20,6 @@ pub struct Manifest {
     pub parents: BTreeMap<Id, Id>, // derived from children
     #[serde(skip)]
     pub mtime: HashMap<Id, Mtime>, // temporary in-process state
-    #[serde(default)]
-    pub has_trash: bool,
 }
 
 pub const ROOT_ID: Id = 0;
@@ -30,9 +28,7 @@ pub const TRASH_ID: Id = 1;
 impl PartialEq for Manifest {
     fn eq(&self, other: &Self) -> bool {
         // Do not test "parents" and "mtime" - they are derived.
-        &self.children == &other.children
-            && &self.metas == &other.metas
-            && self.has_trash == other.has_trash
+        &self.children == &other.children && &self.metas == &other.metas
     }
 }
 
@@ -44,7 +40,6 @@ impl Default for Manifest {
             parents: Default::default(),
             mtime: Default::default(),
             next_id: min_next_id(),
-            has_trash: false,
         };
         result.metas.insert(ROOT_ID, "type=root\n".to_string());
         result.rebuild_parents();
@@ -53,43 +48,12 @@ impl Default for Manifest {
 }
 
 impl Manifest {
-    /// Enable or disable trash.
-    pub fn with_trash(mut self, enabled: bool) -> Self {
-        if self.has_trash != enabled {
-            self.has_trash = enabled;
-            if enabled {
-                self.metas.insert(
-                    TRASH_ID,
-                    "type=trash\ncopyable=false\npin=true\nreadonly=true\n".to_string(),
-                );
-            }
-        }
-        self
-    }
-
-    pub fn get_children(&self, id: Id) -> Vec<Id> {
-        let mut children = self.children.get(&id).cloned().unwrap_or_default();
-        if id == ROOT_ID && self.has_trash && {
-            let trash_count = self
-                .children
-                .get(&TRASH_ID)
-                .map(|cs| cs.len())
-                .unwrap_or_default();
-            trash_count > 0
-        } {
-            children.push(TRASH_ID);
-        }
-        children
+    pub fn get_children(&self, id: Id) -> &[Id] {
+        static EMPTY: Vec<Id> = Vec::new();
+        self.children.get(&id).unwrap_or(&EMPTY)
     }
 
     pub fn get_parent(&self, id: Id) -> Option<Id> {
-        if id == TRASH_ID {
-            if self.has_trash {
-                return Some(ROOT_ID);
-            } else {
-                return None;
-            }
-        }
         let parent_id = self.parents.get(&id).cloned().unwrap_or(id);
         if parent_id == id {
             None

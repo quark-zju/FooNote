@@ -29,6 +29,7 @@ pub struct ManifestBasedBackend<T> {
     pub manifest: Manifest,
     pub text_io: T,
     read_only: bool,
+    has_trash: bool,
 }
 
 impl<T> ManifestBasedBackend<T> {
@@ -37,12 +38,19 @@ impl<T> ManifestBasedBackend<T> {
             manifest,
             text_io,
             read_only: false,
+            has_trash: false,
         }
     }
 
     /// Mark as read-only.
     pub fn freeze(mut self) -> Self {
         self.read_only = true;
+        self
+    }
+
+    /// Enable or disable trash.
+    pub fn with_trash(mut self, enabled: bool) -> Self {
+        self.has_trash = enabled;
         self
     }
 
@@ -62,11 +70,24 @@ impl<T: TextIO> TreeBackend for ManifestBasedBackend<T> {
     type Id = Id;
 
     fn get_children(&self, id: Self::Id) -> io::Result<Vec<Self::Id>> {
-        Ok(self.manifest.get_children(id))
+        let mut children = self.manifest.get_children(id).to_vec();
+        if id == ROOT_ID && self.has_trash && !self.manifest.get_children(TRASH_ID).is_empty() {
+            children.push(TRASH_ID);
+        }
+        Ok(children)
     }
 
     fn get_parent(&self, id: Self::Id) -> io::Result<Option<Self::Id>> {
-        Ok(self.manifest.get_parent(id))
+        let parent = if id == TRASH_ID {
+            if self.has_trash {
+                Some(ROOT_ID)
+            } else {
+                None
+            }
+        } else {
+            self.manifest.get_parent(id)
+        };
+        Ok(parent)
     }
 
     fn get_mtime(&self, id: Self::Id) -> io::Result<Mtime> {
@@ -81,6 +102,10 @@ impl<T: TextIO> TreeBackend for ManifestBasedBackend<T> {
     }
 
     fn get_raw_meta<'a>(&'a self, id: Self::Id) -> io::Result<std::borrow::Cow<'a, str>> {
+        if id == TRASH_ID {
+            return Ok("type=trash\ncopyable=false\npin=true\nreadonly=true\n".into());
+        }
+
         Ok(self
             .manifest
             .metas
@@ -233,7 +258,7 @@ impl<T: TextIO> TreeBackend for ManifestBasedBackend<T> {
             ));
         }
         self.touch(id)?;
-        let should_use_trash = if !self.manifest.has_trash {
+        let should_use_trash = if !self.has_trash {
             // Trash is disabled.
             false
         } else if self.is_ancestor(TRASH_ID, id)? {

@@ -180,12 +180,6 @@ impl GitBackend {
         let manifest = text_io.load_manifest()?;
         Ok(Self::from_manifest_text_io(manifest, text_io))
     }
-
-    /// Enable or disable trash.
-    pub fn with_trash(mut self, enabled: bool) -> Self {
-        self.manifest = self.manifest.with_trash(enabled);
-        self
-    }
 }
 
 impl GitInfo {

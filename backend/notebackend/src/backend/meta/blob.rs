@@ -117,10 +117,4 @@ impl<I: BlobIo> BlobBackend<I> {
         );
         Ok(result)
     }
-
-    /// Enable or disable trash.
-    pub fn with_trash(mut self, enabled: bool) -> Self {
-        self.manifest = self.manifest.with_trash(enabled);
-        self
-    }
 }
