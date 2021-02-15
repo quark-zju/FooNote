@@ -12,10 +12,20 @@ msgstr ""
 "Plural-Forms: nplurals=1; plural=0;\n"
 "Language: zh_CN\n"
 
+#: mainform.rsexit
+#, fuzzy
+msgctxt "mainform.rsexit"
+msgid "Exit"
+msgstr "退出"
+
 #: mainform.rsexitnosave
 msgctxt "mainform.rsexitnosave"
 msgid "Exit without saving"
 msgstr "退出而不保存"
+
+#: mainform.rsfailopenurl
+msgid "Failed to open [%s]: %s. What to do?"
+msgstr "无法打开 [%s]: %s. 怎么办？"
 
 #: mainform.rsfailsavestillexit
 msgctxt "mainform.rsfailsavestillexit"
@@ -26,6 +36,22 @@ msgstr "无法保存更改，仍然退出吗？"
 msgctxt "mainform.rsnoexit"
 msgid "Do not exit"
 msgstr "不退出"
+
+#: mainform.rsnoreload
+msgid "Do not reload"
+msgstr "不重新加载"
+
+#: mainform.rsopenfallbacknote
+msgid "Open Fallback Note"
+msgstr "打开纯内存笔记"
+
+#: mainform.rsreloadconfirm
+msgid "Reload will discard unsaved changes. Still reload?"
+msgstr "重新加载将会丢弃未保存的更改，确认吗？"
+
+#: mainform.rsyesreload
+msgid "Reload"
+msgstr "重新加载"
 
 #: platformwindows.rsdockleft
 msgctxt "platformwindows.rsdockleft"
@@ -58,7 +84,7 @@ msgstr "构建于"
 #: taboutfoonoteform.labelbuilddatevalue.caption
 msgctxt "taboutfoonoteform.labelbuilddatevalue.caption"
 msgid "1"
-msgstr ""
+msgstr "1"
 
 #: taboutfoonoteform.labelconfigpath.caption
 msgid "Config File Path"
@@ -70,11 +96,11 @@ msgstr "树形笔记伴侣。"
 
 #: taboutfoonoteform.labellink.caption
 msgid "https://github.com/quark-zju/foonote"
-msgstr ""
+msgstr "https://github.com/quark-zju/foonote"
 
 #: taboutfoonoteform.labelroottreeurl.caption
 msgid "Root Tree Path"
-msgstr "根节点源自"
+msgstr "根节点地址"
 
 #: taboutfoonoteform.labelversion.caption
 msgid "Version"
@@ -83,7 +109,7 @@ msgstr "版本"
 #: taboutfoonoteform.labelversionnumber.caption
 msgctxt "taboutfoonoteform.labelversionnumber.caption"
 msgid "1"
-msgstr ""
+msgstr "1"
 
 #: taboutfoonoteform.tabsheet1.caption
 msgid "About"
@@ -143,6 +169,10 @@ msgctxt "tformfoonotemain.actioneditpaste.hint"
 msgid "Paste"
 msgstr "粘贴"
 
+#: tformfoonotemain.actioneditreload.caption
+msgid "&Reload"
+msgstr "重新加载(&R)"
+
 #: tformfoonotemain.actioneditsave.caption
 msgctxt "tformfoonotemain.actioneditsave.caption"
 msgid "&Save"
@@ -153,11 +183,6 @@ msgctxt "tformfoonotemain.actioneditsave.hint"
 msgid "Save"
 msgstr "保存"
 
-#: tformfoonotemain.actionmounturl.caption
-msgctxt "tformfoonotemain.actionmounturl.caption"
-msgid "&Mount ..."
-msgstr "挂载(&M) ..."
-
 #: tformfoonotemain.actionnewfolder.caption
 msgctxt "tformfoonotemain.actionnewfolder.caption"
 msgid "New &Folder"
@@ -167,6 +192,10 @@ msgstr "新文件夹(&F)"
 msgctxt "tformfoonotemain.actionnewfolder.hint"
 msgid "New Folder"
 msgstr "添加一个文件夹"
+
+#: tformfoonotemain.actionnewmounturl.caption
+msgid "New &Mount ..."
+msgstr "新挂载点(&M) ..."
 
 #: tformfoonotemain.actionnewnote.caption
 msgctxt "tformfoonotemain.actionnewnote.caption"
@@ -218,10 +247,15 @@ msgctxt "tformfoonotemain.actionviewundock.hint"
 msgid "Undock"
 msgstr "不再停靠于桌面"
 
+#: tformfoonotemain.actionviewwarnunsaved.hint
+msgctxt "tformfoonotemain.actionviewwarnunsaved.hint"
+msgid "Failed to save"
+msgstr "无法保存"
+
 #: tformfoonotemain.caption
 msgctxt "tformfoonotemain.caption"
 msgid "FooNote"
-msgstr ""
+msgstr "FooNote"
 
 #: tformfoonotemain.editnotesearch.texthint
 msgctxt "tformfoonotemain.editnotesearch.texthint"
@@ -231,7 +265,76 @@ msgstr "搜索"
 #: tformfoonotemain.toolbuttondockedmenu.caption
 msgctxt "tformfoonotemain.toolbuttondockedmenu.caption"
 msgid "FooNote"
-msgstr ""
+msgstr "FooNote"
+
+#: tformopenurl.buttoncancel.caption
+msgid "&Cancel"
+msgstr "取消(&C)"
+
+#: tformopenurl.buttonopen.caption
+msgid "&Open"
+msgstr "打开(&O)"
+
+#: tformopenurl.caption
+msgid "Open FooNote"
+msgstr "打开 FooNote"
+
+#: tformopenurl.label1.caption
+msgid "Location of FooNote to open:"
+msgstr "FooNote 地址："
+
+#: tformopenurl.label2.caption
+msgid "Example: git@host.com:repo/notes.git"
+msgstr "例如：git@host.com:repo/notes.git"
+
+#: tformopenurl.label3.caption
+msgid "Example: filename.foonote"
+msgstr "例如：文件名.foonote"
+
+#: tformopenurl.label4.caption
+msgid "Example: memory:123"
+msgstr "例如：memory:123"
+
+#: tformopenurl.radiocustom.caption
+msgid "Custom"
+msgstr "自定义"
+
+#: tformopenurl.radiogit.caption
+msgid "Git"
+msgstr "Git 版本控制"
+
+#: tformopenurl.radiolocalfile.caption
+msgid "Local FooNote File"
+msgstr "本地 FooNote 文件"
+
+#: tformopenurl.radiomemory.caption
+msgid "Memory"
+msgstr "内存"
+
+#: tformsavefailure.buttonclose.caption
+msgid "&Close"
+msgstr "关闭(&C)"
+
+#: tformsavefailure.buttonnewinstance.caption
+msgid "&Start FooNote"
+msgstr "启动 FooNote (&S)"
+
+#: tformsavefailure.caption
+msgctxt "tformsavefailure.caption"
+msgid "Failed to save"
+msgstr "无法保存"
+
+#: tformsavefailure.editnewurl.text
+msgid "A.foonote"
+msgstr "A.foonote"
+
+#: tformsavefailure.label1.caption
+msgid "The last attempt to save has failed with error message:"
+msgstr "最近的保存失败了，错误信息如下："
+
+#: tformsavefailure.label2.caption
+msgid "If this is caused by unrecoverable network issues, you can start a new FooNote instance and copy-paste changes there."
+msgstr "如果这是由于不可恢复的网络问题，您可以启动一个新的 FooNote，复制未保存的改动，粘贴到新的 FooNote 内。"
 
 #: treenodedata.rstrash
 msgid "Trash"
@@ -239,4 +342,4 @@ msgstr "回收站"
 
 #: tsolidcolorpreviewform.caption
 msgid "FooNoteOverlay"
-msgstr ""
+msgstr "FooNote 叠加层"
