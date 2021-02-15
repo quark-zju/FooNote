@@ -481,6 +481,9 @@ object FormFooNoteMain: TFormFooNoteMain
     object MenuItem17: TMenuItem
       Action = ActionNewSeparator
     end
+    object MenuItem28: TMenuItem
+      Action = ActionNewMountUrl
+    end
     object MenuItem11: TMenuItem
       Caption = '-'
     end
