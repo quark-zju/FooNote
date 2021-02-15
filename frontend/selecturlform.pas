@@ -5,7 +5,7 @@ unit selecturlform;
 interface
 
 uses
-  Classes, SysUtils, Forms, Controls, Graphics, Dialogs, StdCtrls;
+  Classes, SysUtils, Forms, Controls, Graphics, Dialogs, StdCtrls, NoteBackend;
 
 type
 
@@ -18,11 +18,13 @@ type
     Label1: TLabel;
     Label2: TLabel;
     Label3: TLabel;
+    Label4: TLabel;
+    RadioGit: TRadioButton;
     RadioMemory: TRadioButton;
     RadioLocalFile: TRadioButton;
     RadioCustom: TRadioButton;
-    SaveDialogFooNote: TSaveDialog;
     procedure EditUrlChange(Sender: TObject);
+    procedure EditUrlKeyPress(Sender: TObject; var Key: char);
     procedure RadioCustomChange(Sender: TObject);
     procedure RadioGitChange(Sender: TObject);
     procedure RadioLocalFileChange(Sender: TObject);
@@ -42,55 +44,49 @@ implementation
 
 { TFormOpenUrl }
 
-procedure TFormOpenUrl.RadioMemoryChange(Sender: TObject);
-begin
-  EditUrl.Text := 'memory:memory';
-  EditUrl.ReadOnly := True;
-  EditUrl.Enabled := False;
-end;
-
-procedure TFormOpenUrl.RadioGitChange(Sender: TObject);
-var
-  S: string;
-begin
-  S := EditUrl.Text;
-  if not (S.StartsWith('git:') or S.EndsWith('.git')) then begin
-    S += '.git';
-    EditUrl.Text := S;
-  end;
-end;
-
 procedure TFormOpenUrl.EditUrlChange(Sender: TObject);
 var
   S: string;
 begin
   S := EditUrl.Text;
   ButtonOpen.Enabled := not S.IsEmpty;
+  S := NoteBackend.UrlType(S);
+  if S = 'foonote' then begin
+    RadioLocalFile.Checked := True;
+  end else if S = 'memory' then begin
+    RadioMemory.Checked := True;
+  end else if S = 'git' then begin
+    RadioGit.Checked := True;
+  end else begin
+    RadioCustom.Checked := True;
+  end;
+end;
+
+procedure TFormOpenUrl.EditUrlKeyPress(Sender: TObject; var Key: char);
+begin
+  if (key = #10) or (key = #13) then begin
+    ButtonOpen.Click;
+  end;
 end;
 
 procedure TFormOpenUrl.RadioCustomChange(Sender: TObject);
 begin
-  EditUrl.ReadOnly := False;
-  EditUrl.Enabled := True;
+  EditUrlChange(Sender);
+end;
+
+procedure TFormOpenUrl.RadioGitChange(Sender: TObject);
+begin
+  EditUrlChange(Sender);
 end;
 
 procedure TFormOpenUrl.RadioLocalFileChange(Sender: TObject);
-var
-  S: string;
 begin
-  if RadioLocalFile.Checked then begin
-    if SaveDialogFooNote.Execute then begin
-      S := SaveDialogFooNote.FileName;
-      if not S.EndsWith('.foonote') then begin
-        S := Format('foonote:%s', [S]);
-      end;
-      EditUrl.Text := S;
-      EditUrl.ReadOnly := True;
-      EditUrl.Enabled := False;
-    end else begin
-      RadioCustom.Checked := True;
-    end;
-  end;
+  EditUrlChange(Sender);
+end;
+
+procedure TFormOpenUrl.RadioMemoryChange(Sender: TObject);
+begin
+  EditUrlChange(Sender);
 end;
 
 end.

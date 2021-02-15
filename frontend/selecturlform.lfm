@@ -1,13 +1,13 @@
 object FormOpenUrl: TFormOpenUrl
   Left = 554
-  Height = 266
+  Height = 255
   Top = 258
-  Width = 484
+  Width = 376
   BorderIcons = [biSystemMenu]
   BorderStyle = bsDialog
   Caption = 'Open FooNote'
-  ClientHeight = 266
-  ClientWidth = 484
+  ClientHeight = 255
+  ClientWidth = 376
   Position = poWorkAreaCenter
   LCLVersion = '2.0.10.0'
   object Label1: TLabel
@@ -34,32 +34,33 @@ object FormOpenUrl: TFormOpenUrl
     BorderSpacing.Bottom = 10
     Caption = 'Local FooNote File'
     OnChange = RadioLocalFileChange
-    TabOrder = 2
+    TabOrder = 3
   end
   object EditUrl: TEdit
     AnchorSideLeft.Control = Owner
-    AnchorSideTop.Control = Label2
+    AnchorSideTop.Control = RadioCustom
     AnchorSideTop.Side = asrBottom
     AnchorSideRight.Control = Owner
     AnchorSideRight.Side = asrBottom
     Left = 10
     Height = 25
-    Top = 184
-    Width = 464
+    Top = 171
+    Width = 356
     Anchors = [akTop, akLeft, akRight]
     BorderSpacing.Left = 10
     BorderSpacing.Top = 20
     BorderSpacing.Right = 10
     OnChange = EditUrlChange
+    OnKeyPress = EditUrlKeyPress
     TabOrder = 0
   end
   object RadioCustom: TRadioButton
     AnchorSideLeft.Control = RadioMemory
-    AnchorSideTop.Control = Label3
+    AnchorSideTop.Control = RadioGit
     AnchorSideTop.Side = asrBottom
     Left = 20
     Height = 21
-    Top = 121
+    Top = 130
     Width = 66
     BorderSpacing.Top = 10
     BorderSpacing.Bottom = 5
@@ -80,70 +81,104 @@ object FormOpenUrl: TFormOpenUrl
     BorderSpacing.Bottom = 5
     Caption = 'Memory'
     OnChange = RadioMemoryChange
-    TabOrder = 3
+    TabOrder = 4
   end
   object ButtonOpen: TButton
     AnchorSideTop.Control = ButtonCancel
     AnchorSideRight.Control = ButtonCancel
-    Left = 284
-    Height = 25
-    Top = 219
-    Width = 90
+    Left = 234
+    Height = 27
+    Top = 206
+    Width = 58
     Anchors = [akTop, akRight]
+    AutoSize = True
     BorderSpacing.Right = 10
     Caption = '&Open'
     Enabled = False
     ModalResult = 1
-    TabOrder = 4
+    TabOrder = 5
   end
   object ButtonCancel: TButton
     AnchorSideTop.Control = EditUrl
     AnchorSideTop.Side = asrBottom
     AnchorSideRight.Control = Owner
     AnchorSideRight.Side = asrBottom
-    Left = 384
+    Left = 302
     Height = 27
-    Top = 219
-    Width = 90
-    Anchors = [akTop, akLeft, akRight]
+    Top = 206
+    Width = 64
+    Anchors = [akTop, akRight]
     AutoSize = True
     BorderSpacing.Top = 10
     BorderSpacing.Right = 10
     Cancel = True
     Caption = '&Cancel'
     ModalResult = 2
-    TabOrder = 5
+    TabOrder = 6
   end
   object Label2: TLabel
-    AnchorSideLeft.Control = RadioCustom
-    AnchorSideTop.Control = RadioCustom
-    AnchorSideTop.Side = asrBottom
-    Left = 45
+    AnchorSideLeft.Control = RadioGit
+    AnchorSideLeft.Side = asrBottom
+    AnchorSideTop.Control = RadioGit
+    AnchorSideTop.Side = asrCenter
+    AnchorSideRight.Control = EditUrl
+    AnchorSideRight.Side = asrBottom
+    Left = 144
     Height = 17
-    Top = 147
-    Width = 292
+    Top = 101
+    Width = 222
+    Anchors = [akTop, akRight]
     BorderSpacing.Left = 25
-    Caption = 'For example, git@host.com:repo/my-foo-notes.git'
+    Caption = 'Example: git@host.com:repo/notes.git'
     ParentColor = False
+    ParentFont = False
   end
-  object Label3: TLabel
-    AnchorSideLeft.Control = RadioCustom
+  object RadioGit: TRadioButton
+    AnchorSideLeft.Control = RadioMemory
     AnchorSideTop.Control = RadioMemory
     AnchorSideTop.Side = asrBottom
-    Left = 45
-    Height = 17
-    Top = 94
-    Width = 90
-    BorderSpacing.Left = 25
-    Caption = 'Discard on exit.'
-    ParentColor = False
+    Left = 20
+    Height = 21
+    Top = 99
+    Width = 38
+    BorderSpacing.Top = 10
+    BorderSpacing.Bottom = 5
+    Caption = 'Git'
+    OnChange = RadioGitChange
+    TabOrder = 2
   end
-  object SaveDialogFooNote: TSaveDialog
-    Title = 'Select FooNote File'
-    DefaultExt = '.foonote'
-    Filter = 'FooNote|*.foonote'
-    Options = [ofEnableSizing, ofDontAddToRecent, ofViewDetail]
-    Left = 240
-    Top = 16
+  object Label3: TLabel
+    AnchorSideLeft.Control = RadioLocalFile
+    AnchorSideLeft.Side = asrBottom
+    AnchorSideTop.Control = RadioLocalFile
+    AnchorSideTop.Side = asrCenter
+    AnchorSideRight.Control = EditUrl
+    AnchorSideRight.Side = asrBottom
+    Left = 212
+    Height = 17
+    Top = 39
+    Width = 154
+    Anchors = [akTop, akRight]
+    BorderSpacing.Left = 25
+    Caption = 'Example: filename.foonote'
+    ParentColor = False
+    ParentFont = False
+  end
+  object Label4: TLabel
+    AnchorSideLeft.Control = RadioMemory
+    AnchorSideLeft.Side = asrBottom
+    AnchorSideTop.Control = RadioMemory
+    AnchorSideTop.Side = asrCenter
+    AnchorSideRight.Control = EditUrl
+    AnchorSideRight.Side = asrBottom
+    Left = 238
+    Height = 17
+    Top = 70
+    Width = 128
+    Anchors = [akTop, akRight]
+    BorderSpacing.Left = 25
+    Caption = 'Example: memory:123'
+    ParentColor = False
+    ParentFont = False
   end
 end
