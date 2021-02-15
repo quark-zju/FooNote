@@ -2,6 +2,7 @@
 
 use super::null::NullBackend;
 use crate::clipboard;
+use crate::t;
 use notebackend_types::meta::TreeMeta;
 use notebackend_types::BackendId;
 use notebackend_types::Id;
@@ -536,11 +537,16 @@ impl TreeBackend for MultiplexBackend {
 /// Dummy backend for warning purpose
 fn warning_backend(message: String) -> BoxBackend {
     let mut backend = crate::backend::MemBackend::empty();
+    let title = t!(
+        cn: "加载失败",
+        en: "Failed to load",
+    );
+    let text = format!("{}\n\n{}", title, message);
     backend
         .insert(
             backend.get_root_id(),
             InsertPos::Append,
-            message,
+            text,
             "type=warn\nreadonly=true\ncopyable=false\nmovable=false\n".into(),
         )
         .expect("insert to MemBackend should succeed");

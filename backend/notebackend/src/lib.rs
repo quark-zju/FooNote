@@ -19,5 +19,8 @@ mod url;
 /// Merge algorithms.
 mod merge;
 
+/// i18 related utilities.
+mod lang;
+
 /// Exported FFI.
 mod export;

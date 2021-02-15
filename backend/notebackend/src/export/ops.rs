@@ -6,6 +6,7 @@ use crate::backend;
 use crate::backend::FullId;
 use crate::backend::MultiplexBackend;
 use crate::clipboard;
+use crate::lang::LangId;
 use crate::search::Search;
 use backend::MemBackend;
 use log::Level::{Debug, Error, Info, Trace, Warn};
@@ -475,6 +476,22 @@ pub extern "C" fn notebackend_search_is_complete() -> i32 {
 pub extern "C" fn notebackend_search_input() -> i32 {
     let input = SEARCH.read().input().to_string();
     stack::push(input);
+    errno::OK
+}
+
+/// (str) -> ()
+/// Set the current language.
+#[no_mangle]
+pub extern "C" fn notebackend_set_i18n() -> i32 {
+    let name: String = pop!();
+    let name = name.to_lowercase();
+    let lang_id: LangId = if name.contains("cn") || name.contains("zh") {
+        LangId::Cn
+    } else {
+        LangId::En
+    };
+    // safety: reading the u8 is atomic.
+    unsafe { crate::lang::CURRENT_LANG_ID = lang_id };
     errno::OK
 }
 

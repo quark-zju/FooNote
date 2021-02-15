@@ -1,5 +1,6 @@
 //! Null backend. Useful as "umounted" backend in a multiplex backend.
 
+use crate::t;
 use notebackend_types::Id;
 use notebackend_types::InsertPos;
 use notebackend_types::Mtime;
@@ -13,7 +14,10 @@ pub struct NullBackend;
 fn error<T>() -> Result<T> {
     Err(io::Error::new(
         io::ErrorKind::NotConnected,
-        "backend was umounted",
+        t!(
+            cn: "无法修改已关闭节点",
+            en: "backend was umounted",
+        ),
     ))
 }
 
