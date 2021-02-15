@@ -9,9 +9,11 @@ frontend/*.res
 frontend/*.exe
 frontend/*.dll
 frontend/*.so
+frontend/*.cfg
 frontend/*.foonote
 frontend/*.ini
 frontend/*.dbg
+frontend/*.lnk
 frontend/*.lrj
 frontend/*.lps
 frontend/.*
