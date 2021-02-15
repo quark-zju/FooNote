@@ -34,7 +34,7 @@ object FormOpenUrl: TFormOpenUrl
     BorderSpacing.Bottom = 10
     Caption = 'Local FooNote File'
     OnChange = RadioLocalFileChange
-    TabOrder = 3
+    TabOrder = 5
   end
   object EditUrl: TEdit
     AnchorSideLeft.Control = Owner
@@ -67,8 +67,7 @@ object FormOpenUrl: TFormOpenUrl
     Caption = 'Custom'
     Checked = True
     OnChange = RadioCustomChange
-    TabOrder = 1
-    TabStop = True
+    TabOrder = 3
   end
   object RadioMemory: TRadioButton
     AnchorSideLeft.Control = RadioLocalFile
@@ -81,7 +80,7 @@ object FormOpenUrl: TFormOpenUrl
     BorderSpacing.Bottom = 5
     Caption = 'Memory'
     OnChange = RadioMemoryChange
-    TabOrder = 4
+    TabOrder = 6
   end
   object ButtonOpen: TButton
     AnchorSideTop.Control = ButtonCancel
@@ -96,7 +95,7 @@ object FormOpenUrl: TFormOpenUrl
     Caption = '&Open'
     Enabled = False
     ModalResult = 1
-    TabOrder = 5
+    TabOrder = 1
   end
   object ButtonCancel: TButton
     AnchorSideTop.Control = EditUrl
@@ -114,7 +113,7 @@ object FormOpenUrl: TFormOpenUrl
     Cancel = True
     Caption = '&Cancel'
     ModalResult = 2
-    TabOrder = 6
+    TabOrder = 2
   end
   object Label2: TLabel
     AnchorSideLeft.Control = RadioGit
@@ -145,7 +144,7 @@ object FormOpenUrl: TFormOpenUrl
     BorderSpacing.Bottom = 5
     Caption = 'Git'
     OnChange = RadioGitChange
-    TabOrder = 2
+    TabOrder = 4
   end
   object Label3: TLabel
     AnchorSideLeft.Control = RadioLocalFile

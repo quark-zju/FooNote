@@ -13,7 +13,7 @@ uses
   LazUtf8, FGL, LogFFI, Math, NoteBackend, NoteTypes, MemoUtil,
   LCLTranslator, Buttons, JSONPropStorage, TreeNodeData, StackFFI,
   TreeViewSync, Settings, PreviewForm, AboutForm, FileUtil, md5,
-  savemsgform, selecturlform;
+  savemsgform, selecturlform, LocaleUtils;
 
 type
 
@@ -24,6 +24,7 @@ type
     ActionEditReload: TAction;
     MenuItem10: TMenuItem;
     MenuItem27: TMenuItem;
+    MenuItem28: TMenuItem;
     MenuItemRootPath: TMenuItem;
     MenuItem3: TMenuItem;
     MenuItem6: TMenuItem;
@@ -409,7 +410,7 @@ end;
 
 procedure TFormFooNoteMain.InitI18n;
 begin
-  SetDefaultLang(AppConfig.Locale, 'locale');
+  LocaleUtils.InitLocale(AppConfig.Locale);
 end;
 
 procedure TFormFooNoteMain.LoadSplitterPosition;

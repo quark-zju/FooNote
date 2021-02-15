@@ -1,5 +1,6 @@
 //! i18n utilities
 
+use std::fmt;
 /// Describe a language id.
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 #[repr(u8)]
@@ -25,4 +26,14 @@ macro_rules! t {
             $crate::lang::LangId::En => format!($e, $($args)*),
         }
     };
+}
+
+impl fmt::Display for LangId {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let name = match self {
+            LangId::Cn => "cn",
+            LangId::En => "en",
+        };
+        f.write_str(name)
+    }
 }

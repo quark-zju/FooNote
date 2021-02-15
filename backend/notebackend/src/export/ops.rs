@@ -482,16 +482,26 @@ pub extern "C" fn notebackend_search_input() -> i32 {
 /// (str) -> ()
 /// Set the current language.
 #[no_mangle]
-pub extern "C" fn notebackend_set_i18n() -> i32 {
+pub extern "C" fn notebackend_set_lang() -> i32 {
     let name: String = pop!();
     let name = name.to_lowercase();
-    let lang_id: LangId = if name.contains("cn") || name.contains("zh") {
+    let lang_id: LangId = if name.contains("cn") || name.contains("zh") || name.contains("ch") {
         LangId::Cn
     } else {
         LangId::En
     };
-    // safety: reading the u8 is atomic.
+    // safety: writing the u8 is atomic.
     unsafe { crate::lang::CURRENT_LANG_ID = lang_id };
+    errno::OK
+}
+
+/// () -> (str)
+/// Get the current language ("cn", "en").
+#[no_mangle]
+pub extern "C" fn notebackend_get_lang() -> i32 {
+    // safety: reading the u8 is atomic.
+    let lang_id = unsafe { crate::lang::CURRENT_LANG_ID };
+    stack::push(lang_id.to_string());
     errno::OK
 }
 
