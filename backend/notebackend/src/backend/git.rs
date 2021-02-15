@@ -1251,7 +1251,6 @@ mod tests {
 
     #[test]
     fn test_conflict_handling() {
-        env_logger::init();
         let dir = tempfile::tempdir().unwrap();
         let cache_path = dir.path().join("cache");
         let git_repo_path = match populate_git_repo(dir.path()) {

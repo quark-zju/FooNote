@@ -1,6 +1,6 @@
 use notebackend_types::TreeBackend;
 use parking_lot::RwLock;
-use std::collections::HashMap;
+use std::collections::HashSet;
 use std::ops::Deref;
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::Ordering::Acquire;
@@ -78,10 +78,13 @@ where
 
     fn run_search(&self) {
         let mut to_visit: Vec<T::Id> = self.roots.clone();
-        let visited: HashMap<T::Id, bool> = Default::default();
+        let mut visited: HashSet<T::Id> = Default::default();
         while let Some(id) = to_visit.pop() {
             if self.aborted.load(Acquire) {
                 break;
+            }
+            if !visited.insert(id) {
+                continue;
             }
             let text = {
                 let backend = self.backend.read();

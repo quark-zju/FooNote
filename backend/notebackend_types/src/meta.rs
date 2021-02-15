@@ -8,6 +8,7 @@ pub trait TreeMeta: TreeBackend {
     }
 
     fn is_children_copyable(&self, id: Self::Id) -> Result<bool> {
+        // mount points are not copyable.
         Ok(self.extract_meta(id, "mount=")?.is_empty())
     }
 
