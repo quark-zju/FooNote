@@ -540,16 +540,28 @@ var
   Ancestors: VecFullId;
   Ancestor: FullId;
   I: integer;
+  C: integer;
 begin
+  // Update tree selection.
   if Assigned(TreeViewNoteTree.Selected) and (NodeData(TreeViewNoteTree.Selected).Id = Id) then begin
+    // Update editor text box selection.
+    if SelectedId <> Id then begin
+      SelectedId := Id;
+    end;
     exit;
   end;
+
+  C := 0;
 
   // Expand ancestors recursively.
   Ancestors := NoteBackend.GetAncestors(Id);
   Node := TreeViewNoteTree.Items.GetFirstNode;
   for I := Length(Ancestors) - 1 downto 0 do begin
     Ancestor := Ancestors[I];
+    Inc(c);
+    if c > 20 then begin
+      raise Exception.Create('!!!');
+    end;
     if Ancestor = RootNodeData.Id then begin
       // RootNode is not in the tree view.
       continue;
@@ -582,8 +594,8 @@ begin
       if LogHasDebug then begin
         LogDebug(Format('Select %s', [Id.ToString()]));
       end;
+      // This will also update SelectedId.
       TreeViewNoteTree.Select(Node);
-      SelectedId := Id;
       break;
     end else begin
       Node := Node.GetNextSibling;
@@ -600,19 +612,33 @@ procedure TFormFooNoteMain.SetSelectedId(Id: FullId);
 var
   AText, ReadOnly: string;
 begin
-  FSelectedId := Id;
-  MemoNote.ReadOnly := True; // Disable MemoNote.OnChange
-  AText := NoteBackend.GetText(Id);
-  MemoNote.Text := AText;
-  ReadOnly := NoteBackend.ExtractMeta(Id, 'readonly=');
-  if not (ReadOnly = 'true') then begin
-    MemoNote.ReadOnly := False;
-    if MemoNote.Lines.Count < 2 then begin
-      MemoNote.SelStart := LazUtf8.UTF8Length(AText);
+  if Id <> FSelectedId then begin
+    MemoNote.ReadOnly := True; // Disable MemoNote.OnChange
+    // Special case: root node is not editable (see OnChange), and has empty text.
+    if Id <> RootNodeData.Id then begin
+      try
+        AText := NoteBackend.GetText(Id);
+        ReadOnly := NoteBackend.ExtractMeta(Id, 'readonly=');
+      except
+        on e: EExternal do begin
+          if LogFFI.LogHasWarn then begin
+            LogFFI.LogWarn(Format('Cannot SetSelectedId to %s. Fallback to Root Id', [Id.ToString()]));
+          end;
+          Id := RootNodeData.Id;
+        end
+      end;
     end;
-    MemoNote.Color := clWindow;
-  end else begin
-    MemoNote.Color := clBtnFace;
+    MemoNote.Text := AText;
+    if not (ReadOnly = 'true') then begin
+      MemoNote.ReadOnly := False;
+      if MemoNote.Lines.Count < 2 then begin
+        MemoNote.SelStart := LazUtf8.UTF8Length(AText);
+      end;
+      MemoNote.Color := clWindow;
+    end else begin
+      MemoNote.Color := clBtnFace;
+    end;
+    FSelectedId := Id;
   end;
 end;
 
@@ -642,6 +668,8 @@ begin
         FSelectedId := Id;
         First := False;
       end;
+      // Mark as selected. This avoids expanding and selecting recusive nodes.
+      IdSet.Remove(Id);
     end;
   end;
   FreeAndNil(IdSet);
@@ -736,7 +764,7 @@ begin
   if MemoNote.ReadOnly then begin
     exit;
   end;
-  if SelectedId.Id = 0 then begin
+  if SelectedId = RootNodeData.Id then begin
     // Create a new node on demand.
     SelectExpandNode(NewNode(MemoNote.Text, ''));
     Exit;
@@ -1070,6 +1098,7 @@ begin
     if not url.IsEmpty then begin
       Id := NewNode(url, 'type=mount' + #10 + 'mount=' + url + #10, 0);
       RefreshFullTree;
+      SelectExpandNode(Id);
     end;
   end;
 end;
@@ -1527,12 +1556,17 @@ begin
 end;
 
 procedure TFormFooNoteMain.EditDeleteExecute(Sender: TObject);
+var
+  ToSelect: FullId;
 begin
   if TreeViewNoteTree.Focused then begin
-    NoteBackend.TryRemove(SelectedIds);
-    TreeViewNoteTree.Select([]);
-    RefreshFullTree;
-    ScheduleAutoSave;
+    ToSelect := NoteBackend.GetPrevious(SelectedId);
+    if NoteBackend.TryRemove(SelectedIds) then begin
+      // Select the old parent node.
+      SelectExpandNode(ToSelect);
+      RefreshFullTree;
+      ScheduleAutoSave;
+    end;
   end;
 end;
 

@@ -15,6 +15,7 @@ function UrlType(Url: string): string;
 function GetRootId(): FullId;
 function GetChildren(Id: FullId): VecFullId;
 function GetParent(Id: FullId): FullId;
+function GetPrevious(Id: FullId): FullId;
 function GetAncestors(Id: FullId): VecFullId;
 function GetRawMeta(Id: FullId): string;
 function GetMtime(Id: FullId): NodeMtime;
@@ -182,6 +183,30 @@ begin
     raise EExternal.Create(Format('GetParent(%s) failed', [Id.ToString()]));
   end;
   Result := StackPopFullId();
+  if Result = Id then begin
+    Result := GetRootId();
+  end;
+end;
+
+function GetPrevious(Id: FullId): FullId;
+var
+  Parent: FullId;
+  I: integer;
+  Children: VecFullId;
+begin
+  Parent := GetParent(Id);
+  Result := Parent;
+  Children := GetChildren(Parent);
+  for I := 1 to Length(Children) - 1 do begin
+    if Children[I] = Id then begin
+      Result := Children[I - 1];
+      break;
+    end;
+  end;
+  if Result = Id then begin
+    // Fallback - break cycles.
+    Result := GetRootId();
+  end;
 end;
 
 function GetAncestors(Id: FullId): VecFullId;
