@@ -2,10 +2,12 @@
 //! For example, serialize selected nodes into a binary format.
 
 use crate::backend::MemBackend;
+use crate::t;
 pub use notebackend_types::BackendId;
 use notebackend_types::InsertPos;
 use notebackend_types::TreeBackend;
 use notebackend_types::TreeMeta;
+use std::io;
 use std::io::Result;
 
 /// Copy copyable selected ids and descendants to a temporary backend.
@@ -62,6 +64,12 @@ pub(crate) fn copy_replace<S: TreeBackend, D: TreeBackend>(
     dst_id: D::Id,
     mut dst_new_ids: Option<&mut Vec<D::Id>>,
 ) -> Result<()> {
+    if !src.is_copyable(src_id)? {
+        return Err(io::Error::new(
+            io::ErrorKind::PermissionDenied,
+            t!(cn = "节点不可复制", en = "Node is not copyable",),
+        ));
+    }
     log::trace!("copy_replace {:?} => {:?}", &src_id, &dst_id);
     let text = src.get_text(src_id)?;
     let meta = src.get_raw_meta(src_id)?;
