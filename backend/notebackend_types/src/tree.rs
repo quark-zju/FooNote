@@ -244,6 +244,7 @@ pub trait TreeBackend: Send + Sync + 'static {
     /// Return the sorted result.
     fn get_heads(&self, ids: &[Self::Id]) -> Result<Vec<Self::Id>> {
         let id_set: HashSet<Self::Id> = ids.iter().cloned().collect();
+        let mut taken: HashSet<Self::Id> = Default::default();
 
         let mut heads = Vec::with_capacity(ids.len());
         for &id in ids {
@@ -256,7 +257,7 @@ pub trait TreeBackend: Send + Sync + 'static {
                 }
                 current = self.get_parent(parent)?;
             }
-            if should_take {
+            if should_take && taken.insert(id) {
                 heads.push(id);
             }
         }
