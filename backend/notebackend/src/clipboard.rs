@@ -31,6 +31,7 @@ where
 }
 
 /// Paste content in a temporary backend to the given destination.
+/// Return all ids added. Consider calling get_heads to simplify the ids.
 pub fn paste<T>(
     src: &MemBackend,
     dst: &mut T,

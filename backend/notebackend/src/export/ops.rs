@@ -389,6 +389,7 @@ pub extern "C" fn notebackend_paste() -> i32 {
 
     let mut backend = ROOT_BACKEND.write();
     let ids = attempt!(clipboard::paste(&copied, &mut *backend, dest, pos.into()));
+    let ids = attempt!(backend.get_heads(&ids));
     push_fid_list(&ids);
     errno::OK
 }
