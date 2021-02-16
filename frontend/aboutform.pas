@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, Forms, Controls, Graphics, Dialogs, ExtCtrls, StdCtrls,
-  ComCtrls, FileInfo, Settings, BuildInfo, LclIntf;
+  ComCtrls, FileInfo, Settings, BuildInfo, LclIntf, LogFFI;
 
 type
 
@@ -42,9 +42,6 @@ type
 var
   AboutFooNoteForm: TAboutFooNoteForm;
 
-const
-  VersionText = '1.1';
-
 implementation
 
 {$R *.lfm}
@@ -58,7 +55,7 @@ end;
 
 procedure TAboutFooNoteForm.FormCreate(Sender: TObject);
 begin
-  LabelVersionNumber.Caption := VersionText;
+  LabelVersionNumber.Caption := LogFFI.GitDesc();
   LabelBuildDateValue.Caption := BuildDateText;
   EditRootTreeUrl.Text := AppConfig.RootTreeUrl;
   EditConfigFilePath.Text := AppConfig.ConfigFileName;

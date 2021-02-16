@@ -20,6 +20,8 @@ procedure LogTrace(S: string);
 
 procedure InitLogFFI;
 
+function GitDesc: string;
+
 implementation
 
 var
@@ -32,6 +34,7 @@ procedure notebackend_log_warn(); cdecl; external 'notebackend';
 procedure notebackend_log_info(); cdecl; external 'notebackend';
 procedure notebackend_log_debug(); cdecl; external 'notebackend';
 procedure notebackend_log_trace(); cdecl; external 'notebackend';
+procedure notebackend_git_desc(); cdecl; external 'notebackend';
 
 procedure InitLogFFI;
 begin
@@ -73,6 +76,12 @@ procedure LogTrace(S: string);
 begin
   StackPushString(S);
   notebackend_log_trace();
+end;
+
+function GitDesc: string;
+begin
+  notebackend_git_desc();
+  Result := StackPopString();
 end;
 
 initialization
