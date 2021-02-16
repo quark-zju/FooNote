@@ -13,7 +13,6 @@ msgstr ""
 "Language: zh_CN\n"
 
 #: mainform.rsexit
-#, fuzzy
 msgctxt "mainform.rsexit"
 msgid "Exit"
 msgstr "退出"
@@ -24,8 +23,8 @@ msgid "Exit without saving"
 msgstr "退出而不保存"
 
 #: mainform.rsfailopenurl
-msgid "Failed to open [%s]: %s. What to do?"
-msgstr "无法打开 [%s]: %s. 怎么办？"
+msgid "Failed to open [%s]: %s"
+msgstr "无法打开 [%s]: %s"
 
 #: mainform.rsfailsavestillexit
 msgctxt "mainform.rsfailsavestillexit"
@@ -41,9 +40,9 @@ msgstr "不退出"
 msgid "Do not reload"
 msgstr "不重新加载"
 
-#: mainform.rsopenfallbacknote
-msgid "Open Fallback Note"
-msgstr "打开纯内存笔记"
+#: mainform.rsok
+msgid "OK"
+msgstr "确定"
 
 #: mainform.rsreloadconfirm
 msgid "Reload will discard unsaved changes. Still reload?"
@@ -343,4 +342,3 @@ msgstr "回收站"
 #: tsolidcolorpreviewform.caption
 msgid "FooNoteOverlay"
 msgstr "FooNote 叠加层"
-

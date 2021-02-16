@@ -1,0 +1,1 @@
+\lazarus\tools\lazres cn.lrs foonote.cn.po
