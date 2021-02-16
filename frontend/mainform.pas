@@ -282,6 +282,7 @@ begin
     Url := ParamStr(1);
   end else begin
     Url := DefaultUrl;
+    MenuItemRootPath.Visible := False;
   end;
   AppConfig.ConfigFileName := Format('FooNote-%s.cfg', [MDPrint(MD5String(url)).Substring(0, 7)]);
   AppConfig.RootTreeUrl := Url;
