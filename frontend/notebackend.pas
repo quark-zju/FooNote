@@ -36,6 +36,9 @@ function IsSearchComplete(): boolean;
 function GetSearchResult(Skip: integer): VecFullIdText;
 function GetSearchInput(): string;
 
+procedure RemoveNodes(Ids: VecFullId);
+procedure SetParentNode(var Ids: VecFullId; Parent: FullId; Pos: Int32);
+
 // Return True on success.
 
 function TryPersist(): boolean;
@@ -121,20 +124,25 @@ begin
   Result := LogResultErrorMessage(ErrNo, S);
 end;
 
+procedure LogResultRaise(ErrNo: integer);
+var
+  S: string;
+begin
+  if LogResultErrorMessage(ErrNo, S) <> OK then begin
+    raise EExternal.Create(S);
+  end;
+end;
+
 procedure CloseAll;
 begin
   notebackend_close_all;
 end;
 
 function Open(Url: string): FullId;
-var
-  S: string;
 begin
   StackClear();
   StackPushString(Url);
-  if LogResultErrorMessage(notebackend_open_root_url(), S) <> OK then begin
-    raise EExternal.Create(Format('Open(%s) failed: %s', [Url, S]));
-  end;
+  LogResultRaise(notebackend_open_root_url());
   Result := StackPopFullId();
 end;
 
@@ -152,26 +160,26 @@ end;
 function GetRootId(): FullId;
 begin
   StackClear();
-  if notebackend_get_root_id() <> OK then begin
-    raise EExternal.Create('GetRootId() failed');
-  end;
+  LogResultRaise(notebackend_get_root_id());
   Result := StackPopFullId();
 end;
 
 function GetChildren(Id: FullId): VecFullId;
 var
   I, Length: Int32;
+  S: string;
 begin
   StackClear();
   StackPushFullId(Id);
-  if LogResultError(notebackend_get_children()) <> OK then begin
-    raise EExternal.Create(Format('GetChildren(%s) failed', [Id.ToString()]));
-  end;
-  Length := StackPopInt();
-  Result := VecFullId.Create;
-  SetLength(Result, Length);
-  for I := 1 to Length do begin
-    Result[Length - I] := StackPopFullId();
+  if LogResultErrorMessage(LogResultError(notebackend_get_children()), S) = OK then begin
+    Length := StackPopInt();
+    Result := VecFullId.Create;
+    SetLength(Result, Length);
+    for I := 1 to Length do begin
+      Result[Length - I] := StackPopFullId();
+    end;
+  end else begin
+    SetLength(Result, 0);
   end;
 end;
 
@@ -179,11 +187,12 @@ function GetParent(Id: FullId): FullId;
 begin
   StackClear();
   StackPushFullId(Id);
-  if LogResultError(notebackend_get_parent()) <> OK then begin
-    raise EExternal.Create(Format('GetParent(%s) failed', [Id.ToString()]));
-  end;
-  Result := StackPopFullId();
-  if Result = Id then begin
+  if LogResultError(notebackend_get_parent()) = OK then begin
+    Result := StackPopFullId();
+    if Result = Id then begin
+      Result := GetRootId();
+    end;
+  end else begin
     Result := GetRootId();
   end;
 end;
@@ -233,30 +242,27 @@ function GetMtime(Id: FullId): NodeMtime;
 begin
   StackClear();
   StackPushFullId(Id);
-  if LogResultError(notebackend_get_mtime()) <> OK then begin
-    raise EExternal.Create(Format('GetMtime(%s) failed', [Id.ToString()]));
+  if LogResultError(notebackend_get_mtime()) = OK then begin
+    Result := StackPopInt();
   end;
-  Result := StackPopInt();
 end;
 
 function GetText(Id: FullId): string;
 begin
   StackClear();
   StackPushFullId(Id);
-  if LogResultError(notebackend_get_text()) <> OK then begin
-    raise EExternal.Create(Format('GetText(%s) failed', [Id.ToString()]));
+  if LogResultError(notebackend_get_text()) = OK then begin
+    Result := StackPopString();
   end;
-  Result := StackPopString();
 end;
 
 function GetTextFirstLine(Id: FullId): string;
 begin
   StackClear();
   StackPushFullId(Id);
-  if LogResultError(notebackend_get_text_first_line()) <> OK then begin
-    raise EExternal.Create(Format('GetTextFirstLine(%s) failed', [Id.ToString()]));
+  if LogResultError(notebackend_get_text_first_line()) = OK then begin
+    Result := StackPopString();
   end;
-  Result := StackPopString();
 end;
 
 function GetRawMeta(Id: FullId): string;
@@ -264,7 +270,7 @@ begin
   StackClear();
   StackPushFullId(Id);
   if LogResultError(notebackend_get_raw_meta()) <> OK then begin
-    raise EExternal.Create(Format('GetMeta(%s) failed', [Id.ToString()]));
+    exit;
   end;
   Result := StackPopString();
 end;
@@ -273,9 +279,7 @@ function GetHeads(IdList: VecFullId): VecFullId;
 begin
   StackClear();
   StackPushFullIdList(IdList);
-  if LogResultError(notebackend_get_heads()) <> OK then begin
-    raise EExternal.Create('GetHeads() failed');
-  end;
+  LogResultRaise(notebackend_get_heads());
   Result := StackPopFullIdList();
 end;
 
@@ -285,10 +289,9 @@ begin
   StackClear();
   StackPushFullId(Id);
   StackPushString(Prefix);
-  if LogResultError(notebackend_extract_meta()) <> OK then begin
-    raise EExternal.Create(Format('ExtractMeta(%s, %s) failed', [Id.ToString(), Prefix]));
+  if LogResultError(notebackend_extract_meta()) = OK then begin
+    Result := StackPopString();
   end;
-  Result := StackPopString();
 end;
 
 function InsertNode(Id: FullId; Pos: integer; Text: string; meta: string; AutoFill: boolean = True): FullId;
@@ -298,15 +301,13 @@ begin
   StackPushInt(Pos);
   StackPushString(Text);
   StackPushString(meta);
-  if LogResultError(notebackend_insert()) <> OK then begin
-    raise EExternal.Create(Format('InsertNode(%s, %d, %s, %s) failed', [Id.ToString(), Pos, Text, meta]));
-  end;
+  LogResultRaise(notebackend_insert());
   Result := StackPopFullId();
   if autofill then begin
     StackClear();
     StackPushFullId(Result);
     if LogResultError(notebackend_autofill()) <> OK then begin
-      raise EExternal.Create(Format('Autofill(%s) failed', [Result.ToString()]));
+      // Not a fatal error.
     end;
   end;
 end;
@@ -315,9 +316,7 @@ function CopyToBytes(Ids: VecFullId): TBytes;
 begin
   StackClear();
   StackPushFullIdList(Ids);
-  if LogResultError(notebackend_copy()) <> OK then begin
-    raise EExternal.Create('CopyToBytes() failed');
-  end;
+  LogResultRaise(notebackend_copy());
   Result := StackPopBytes();
 end;
 
@@ -327,9 +326,7 @@ begin
   StackPushFullId(DestId);
   StackPushInt(Pos);
   StackPushBytes(Bytes);
-  if LogResultError(notebackend_paste()) <> OK then begin
-    raise EExternal.Create('PasteFromBytes() failed');
-  end;
+  LogResultRaise(notebackend_paste());
   Result := StackPopFullIdList();
 end;
 
@@ -354,6 +351,15 @@ begin
   end;
 end;
 
+procedure SetParentNode(var Ids: VecFullId; Parent: FullId; Pos: Int32);
+begin
+  StackClear();
+  StackPushFullIdList(Ids);
+  StackPushFullId(Parent);
+  StackPushInt(Pos);
+  LogResultRaise(notebackend_set_parent_batch());
+  Ids := StackPopFullIdList();
+end;
 
 function TrySetText(Id: FullId; Text: string): boolean;
 begin
@@ -394,6 +400,13 @@ begin
   Result := (LogResultError(notebackend_remove_batch()) = OK);
 end;
 
+procedure RemoveNodes(Ids: VecFullId);
+begin
+  StackClear();
+  StackPushFullIdList(Ids);
+  LogResultRaise(notebackend_remove_batch());
+end;
+
 function TryPersist(): boolean;
 begin
   StackClear();
@@ -429,25 +442,19 @@ begin
   StackClear();
   StackPushString(Text);
   StackPushFullIdList(Ids);
-  if LogResultError(notebackend_search_start()) <> OK then begin
-    raise EExternal.Create('StartSearch() failed');
-  end;
+  LogResultRaise(notebackend_search_start());
 end;
 
 procedure StopSearch();
 begin
   StackClear();
-  if LogResultError(notebackend_search_stop()) <> OK then begin
-    raise EExternal.Create('StopSearch() failed');
-  end;
+  LogResultRaise(notebackend_search_stop());
 end;
 
 function IsSearchComplete(): boolean;
 begin
   StackClear();
-  if LogResultError(notebackend_search_is_complete()) <> OK then begin
-    raise EExternal.Create('IsSearchComplete() failed');
-  end;
+  LogResultRaise(notebackend_search_is_complete());
   Result := StackPopInt() <> 0;
 end;
 
@@ -458,24 +465,23 @@ var
 begin
   StackClear();
   StackPushInt(Skip);
-  if LogResultError(notebackend_search_result()) <> OK then begin
-    raise EExternal.Create('GetSearchResult() failed');
-  end;
-  N := StackPopInt();
-  SetLength(Result, N);
-  for I := 1 to N do begin
-    T.Text := StackPopString();
-    T.Id := StackPopFullId();
-    Result[I - 1] := T;
+  if LogResultError(notebackend_search_result()) = OK then begin
+    N := StackPopInt();
+    SetLength(Result, N);
+    for I := 1 to N do begin
+      T.Text := StackPopString();
+      T.Id := StackPopFullId();
+      Result[I - 1] := T;
+    end;
+  end else begin
+    SetLength(Result, 0);
   end;
 end;
 
 function GetSearchInput(): string;
 begin
   StackClear();
-  if LogResultError(notebackend_search_input()) <> OK then begin
-    raise EExternal.Create('GetSearchInput() failed');
-  end;
+  LogResultRaise(notebackend_search_input());
   Result := StackPopString();
 end;
 

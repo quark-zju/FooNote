@@ -234,9 +234,9 @@ resourcestring
   RSNoExit = 'Do not exit';
   RSYesReload = 'Reload';
   RSNoReload = 'Do not reload';
-  RSFailOpenUrl = 'Failed to open [%s]: %s. What to do?';
-  RSOpenFallbackNote = 'Open Fallback Note';
+  RSFailOpenUrl = 'Failed to open [%s]: %s';
   RSExit = 'Exit';
+  RSOk = 'OK';
 
 implementation
 
@@ -253,6 +253,11 @@ type
   TIdBoolMap = specialize TFPGMap<FullId, boolean>;
 
 { TFormFooNoteMain }
+
+procedure ErrorDlg(Message: string);
+begin
+  QuestionDlg('FooNote', Message, mtError, [mbOK, RSOk], 0);
+end;
 
 procedure TFormFooNoteMain.RefreshFullTree;
 begin
@@ -297,10 +302,8 @@ begin
       // Use fallback Url.
       AppConfig.RootTreeUrl := FallbackUrl;
       RootId := NoteBackend.Open(FallbackUrl);
-      if QuestionDlg('FooNote', Format(RSFailOpenUrl, [Url, e.Message]), mtWarning,
-        [mrYes, RSOpenFallbackNote, mrNo, RSExit], '') = mrNo then begin
-        Close;
-      end;
+      ErrorDlg(Format(RSFailOpenUrl, [Url, e.Message]));
+      Application.Terminate;
     end;
   end;
 
@@ -758,19 +761,40 @@ end;
 
 procedure TFormFooNoteMain.ActionNewFolderExecute(Sender: TObject);
 begin
-  SelectExpandNode(NewNode('', 'type=folder' + #10, 1));
+  try
+    SelectExpandNode(NewNode('', 'type=folder' + #10, 1));
+  except
+    on e: EExternal do begin
+      ErrorDlg(e.Message);
+      exit;
+    end;
+  end;
   MemoNote.SetFocus;
 end;
 
 procedure TFormFooNoteMain.ActionNewNoteExecute(Sender: TObject);
 begin
-  SelectExpandNode(NewNode('', ''));
+  try
+    SelectExpandNode(NewNode('', ''));
+  except
+    on e: EExternal do begin
+      ErrorDlg(e.Message);
+      exit;
+    end;
+  end;
   MemoNote.SetFocus;
 end;
 
 procedure TFormFooNoteMain.ActionNewSeparatorExecute(Sender: TObject);
 begin
-  SelectExpandNode(NewNode('', 'type=separator' + #10 + 'readonly=true' + #10));
+  try
+    SelectExpandNode(NewNode('', 'type=separator' + #10 + 'readonly=true' + #10));
+  except
+    on e: EExternal do begin
+      ErrorDlg(e.Message);
+      exit;
+    end;
+  end;
 end;
 
 procedure TFormFooNoteMain.MemoNoteChange(Sender: TObject);
@@ -780,7 +804,14 @@ begin
   end;
   if SelectedId = RootNodeData.Id then begin
     // Create a new node on demand.
-    SelectExpandNode(NewNode(MemoNote.Text, ''));
+    try
+      SelectExpandNode(NewNode(MemoNote.Text, ''));
+    except
+      on e: EExternal do begin
+        ErrorDlg(e.Message);
+        exit;
+      end;
+    end;
     Exit;
   end;
   NoteBackend.TrySetText(SelectedId, MemoNote.Text);
@@ -1045,7 +1076,14 @@ begin
         B := S.bytes;
         SetLength(B, L);
         DestId := InsertLocation(SelectedId, 0, Pos);
-        Ids := NoteBackend.PasteFromBytes(DestId, Pos, B);
+        try
+          Ids := NoteBackend.PasteFromBytes(DestId, Pos, B);
+        except
+          on e: EExternal do begin
+            ErrorDlg(e.Message);
+            exit;
+          end;
+        end;
         RefreshFullTree;
         // For some reason, accessing Selected can SIGSEGV here? RootId?
         // TreeViewNoteTree.Selected.Expanded := True;
@@ -1054,7 +1092,14 @@ begin
       end else begin
         T := ClipBoard.AsText;
         if not T.IsEmpty then begin
-          SelectExpandNode(NewNode(T, ''));
+          try
+            SelectExpandNode(NewNode(T, ''));
+          except
+            on e: EExternal do begin
+              ErrorDlg(e.Message);
+              exit;
+            end;
+          end;
           MemoNote.SetFocus;
         end;
       end;
@@ -1110,7 +1155,14 @@ begin
   if FormOpenUrl.ShowModal = mrOk then begin
     url := FormOpenUrl.EditUrl.Text;
     if not url.IsEmpty then begin
-      Id := NewNode(url, 'type=mount' + #10 + 'mount=' + url + #10, 0);
+      try
+        Id := NewNode(url, 'type=mount' + #10 + 'mount=' + url + #10, 0);
+      except
+        on e: EExternal do begin
+          ErrorDlg(e.Message);
+          exit;
+        end;
+      end;
       RefreshFullTree;
       SelectExpandNode(Id);
     end;
@@ -1294,11 +1346,19 @@ begin
     DestId := NodeData(CandidateDropNode).Id;
     // Move selections to the drop location.
     Ids := SelectedIds;
-    if NoteBackend.TrySetParent(Ids, DestId, CandidateInsertPosition) then begin
-      RefreshFullTree;
-      SelectedIds := Ids;
-      ScheduleAutoSave;
+
+    try
+      NoteBackend.SetParentNode(Ids, DestId, CandidateInsertPosition);
+    except
+      on e: EExternal do begin
+        ErrorDlg(e.Message);
+        exit;
+      end;
     end;
+
+    RefreshFullTree;
+    SelectedIds := Ids;
+    ScheduleAutoSave;
   end;
 end;
 
@@ -1575,12 +1635,18 @@ var
 begin
   if TreeViewNoteTree.Focused then begin
     ToSelect := NoteBackend.GetPrevious(SelectedId);
-    if NoteBackend.TryRemove(SelectedIds) then begin
-      // Select the old parent node.
-      SelectExpandNode(ToSelect);
-      RefreshFullTree;
-      ScheduleAutoSave;
+    try
+      NoteBackend.RemoveNodes(SelectedIds);
+    except
+      on e: EExternal do begin
+        ErrorDlg(e.Message);
+        exit;
+      end;
     end;
+    // Select the old parent node.
+    SelectExpandNode(ToSelect);
+    RefreshFullTree;
+    ScheduleAutoSave;
   end;
 end;
 
