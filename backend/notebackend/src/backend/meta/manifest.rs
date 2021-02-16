@@ -251,7 +251,16 @@ impl<T: TextIO> TreeBackend for ManifestBasedBackend<T> {
 
     fn remove(&mut self, id: Self::Id) -> io::Result<()> {
         self.ensure_not_read_only()?;
-        if id == ROOT_ID || id == TRASH_ID {
+        if id == TRASH_ID {
+            // Translate to "delete children of trash".
+            for id in self.get_children(TRASH_ID)? {
+                self.manifest.remove_parent(id);
+                self.manifest.remove(id);
+                self.text_io.remove_raw_text(id)?;
+            }
+            return Ok(());
+        }
+        if id == ROOT_ID {
             return notebackend_types::error::invalid_input(t!(
                 cn = "无法删除特殊节点",
                 en = "special nodes cannot be removed"
