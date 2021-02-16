@@ -1040,7 +1040,14 @@ begin
       // As text.
       ClipBoard.AsText := T;
       // As binary.
-      B := NoteBackend.CopyToBytes(Ids);
+      try
+        B := NoteBackend.CopyToBytes(Ids);
+      except
+        on e: EExternal do begin
+          ErrorDlg(e.Message);
+          exit;
+        end;
+      end;
       S := TBytesStream.Create(B);
       if LogHasDebug then begin
         LogDebug(Format('Copy binary len %d', [Length(B)]));
