@@ -209,7 +209,13 @@ type
     function GetSelectedIds(): VecFullId;
     procedure SetSelectedIds(Ids: VecFullId);
     procedure DrawTreeSelectionPreview;
+
+    // Set the main selected Id. This updates the text editor but does not update the tree view.
+    // Use SelectExpandNode to update the tree view and also update the selected id.
     property SelectedId: FullId read FSelectedId write SetSelectedId;
+
+    // Set the selected ids. This updates the tree view, and the text editor, and SelectedId.
+    // The first id in selection is used to update SelectedId.
     property SelectedIds: VecFullId read GetSelectedIds write SetSelectedIds;
 
     procedure FocusEditorEnd;
@@ -542,6 +548,10 @@ var
   I: integer;
   C: integer;
 begin
+  if LogHasDebug then begin
+    LogDebug(Format('SelectExpandNode %s', [Id.ToString()]));
+  end;
+
   // Update tree selection.
   if Assigned(TreeViewNoteTree.Selected) and (NodeData(TreeViewNoteTree.Selected).Id = Id) then begin
     // Update editor text box selection.
@@ -658,15 +668,19 @@ begin
   TreeViewNoteTree.ClearSelection();
   for Item in TreeViewNoteTree.Items do begin
     Id := TTreeNodeData(Item.Data).Id;
-    item.MultiSelected := IdSet.TryGetData(Id, B);
+    B := False;
+    IdSet.TryGetData(Id, B);
+    item.MultiSelected := B;
     if B then begin
       if Assigned(item.Parent) and not IdSet.TryGetData(TTreeNodeData(Item.Parent.Data).Id, B) then begin
         item.Parent.Expanded := True;
       end;
       if First then begin
-        item.Selected := True;
-        FSelectedId := Id;
+        SelectedId := Id;
         First := False;
+      end;
+      if LogHasDebug then begin
+        LogDebug(format('Multi Select %s', [Id.ToString()]));
       end;
       // Mark as selected. This avoids expanding and selecting recusive nodes.
       IdSet.Remove(Id);
