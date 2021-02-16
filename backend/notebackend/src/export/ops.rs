@@ -564,3 +564,13 @@ pub extern "C" fn notebackend_log_trace() {
         export_log!(Trace, "{}", s)
     }
 }
+
+// () -> (str)
+// Obtain the git version.
+#[no_mangle]
+pub extern "C" fn notebackend_git_desc() -> i32 {
+    // NOTEBACKEND_GIT_DESC is set by build.rs.
+    let desc = env!("NOTEBACKEND_GIT_DESC");
+    stack::push(desc.to_string());
+    errno::OK
+}
