@@ -12,6 +12,7 @@ use notebackend_types::PersistCallbackFunc;
 use notebackend_types::TreeBackend;
 use parking_lot::Mutex;
 use parking_lot::RwLock;
+use parking_lot::RwLockUpgradableReadGuard;
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -159,16 +160,38 @@ impl MultiplexBackend {
 
     /// Unmount descendants of `id`.
     fn umount_recursive(&mut self, id: FullId) -> io::Result<()> {
-        let mut table = self.table.write();
+        log::debug!("umount_recursive {:?}", id);
+        let table = self.table.upgradable_read();
         let mut to_umount_index = Vec::new();
-        for (i, mount) in table.mounts.iter_mut().enumerate() {
-            mount.source_id = mount
-                .source_id
+        let mut source_ids_vec = table
+            .mounts
+            .iter()
+            .map(|m| m.source_id.clone())
+            .collect::<Vec<_>>();
+        for (i, source_ids) in source_ids_vec.iter_mut().enumerate() {
+            // self.is_ancestors might take read lock too!
+            *source_ids = source_ids
                 .drain(..)
                 .filter(|&src_id| self.is_ancestor(id, src_id).ok() != Some(true))
                 .collect();
-            if mount.source_id.is_empty() {
+            if source_ids.is_empty() {
                 to_umount_index.push(i);
+            }
+        }
+
+        let mut table = RwLockUpgradableReadGuard::upgrade(table);
+
+        // Update source_ids
+        for (i, source_ids) in source_ids_vec.into_iter().enumerate() {
+            let mount = &mut table.mounts[i];
+            if mount.source_id != source_ids {
+                log::trace!(
+                    " backend {} source {:?} => {:?}",
+                    i + 1,
+                    &mount.source_id,
+                    &source_ids
+                );
+                table.mounts[i].source_id = source_ids;
             }
         }
 
@@ -179,13 +202,15 @@ impl MultiplexBackend {
                 None => continue,
             };
             // Attempt to avoid losing unsaved content.
+            log::trace!(" saving backend {} ({})", i + 1, &url);
             mount.backend.persist()?;
             mount.backend = Box::new(NullBackend);
             mount.url = None;
             mount.error_message = Some("umounted".to_string());
             table.url_to_id.remove(&url);
-            log::info!("Umounted backend {} ({})", i + 1, &url);
+            log::info!("umounted backend {} ({})", i + 1, &url);
         }
+        log::trace!("umount_recursive {:?} done", id);
 
         Ok(())
     }
