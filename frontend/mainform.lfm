@@ -1,5 +1,5 @@
 object FormFooNoteMain: TFormFooNoteMain
-  Left = 1108
+  Left = 1032
   Height = 510
   Top = 116
   Width = 257
@@ -376,6 +376,7 @@ object FormFooNoteMain: TFormFooNoteMain
       Caption = 'New &Separator'
       Hint = 'New Separator'
       OnExecute = ActionNewSeparatorExecute
+      ShortCut = 24765
     end
     object ActionNewMountUrl: TAction
       Category = 'New'
