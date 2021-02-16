@@ -231,7 +231,11 @@ impl MultiplexBackend {
             } else {
                 return Err(io::Error::new(
                     io::ErrorKind::InvalidData,
-                    t!(cn = "后端未挂载", en = "backend out of bound"),
+                    t!(
+                        cn = "后端 {} 未挂载",
+                        en = "backend {} is out of bound",
+                        backend_id
+                    ),
                 ));
             }
         }
@@ -253,7 +257,11 @@ impl MultiplexBackend {
             } else {
                 return Err(io::Error::new(
                     io::ErrorKind::InvalidData,
-                    t!(cn = "后端未挂载", en = "backend out of bound"),
+                    t!(
+                        cn = "后端 {} 未挂载",
+                        en = "backend {} is out of bound",
+                        backend_id
+                    ),
                 ));
             }
         }
@@ -448,6 +456,7 @@ impl TreeBackend for MultiplexBackend {
     }
 
     fn remove(&mut self, id: Self::Id) -> Result<()> {
+        log::debug!("remove {:?}", id);
         self.with_mount_mut(id, |m, local_id| m.backend.remove(local_id))?;
         self.touch(id)?;
         if !self.is_ancestor(self.get_root_id(), id)? {
@@ -462,6 +471,7 @@ impl TreeBackend for MultiplexBackend {
         log::debug!("touch {:?}", id);
         if id.0 == ROOT_BACKEND_ID {
             // Fast path.
+            log::trace!(" touch root backend {:?}", id.1);
             self.root.backend.touch(id.1)?;
             return Ok(());
         }
@@ -473,17 +483,24 @@ impl TreeBackend for MultiplexBackend {
         let mut table = self.table.write();
         while let Some(id) = to_touch.pop() {
             if !touched.insert(id) {
+                log::trace!(" touched {:?}", id);
                 continue;
             }
             if id.0 == ROOT_BACKEND_ID {
+                log::trace!(" touch root backend {}", id.1);
                 self.root.backend.touch(id.1)?;
                 continue;
             }
-            if let Some(mount) = table.mounts.get_mut(id.0 - 1) {
+            let backend_id = id.0;
+            let backend_index = backend_id - 1;
+            if let Some(mount) = table.mounts.get_mut(backend_index) {
+                log::trace!(" touch backend {} {}", backend_id, id.1);
                 mount.backend.touch(id.1)?;
+                log::trace!(" touch extend {:?}", &mount.source_id);
                 to_touch.extend_from_slice(&mount.source_id);
             }
         }
+        log::trace!("touch {:?} done", id);
 
         Ok(())
     }
@@ -578,6 +595,17 @@ impl TreeBackend for MultiplexBackend {
             pos = InsertPos::After;
         }
         Ok(new_ids)
+    }
+
+    fn remove_batch(&mut self, ids: &[Self::Id]) -> Result<()> {
+        log::debug!("remove_batch {:?}", ids);
+        let heads = self.get_heads(ids)?;
+        log::trace!("remove_batch {:?}", &heads);
+        for id in heads {
+            self.remove(id)?;
+        }
+        log::trace!("remove_batch - done");
+        Ok(())
     }
 }
 
