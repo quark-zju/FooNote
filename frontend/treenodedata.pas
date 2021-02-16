@@ -40,9 +40,6 @@ function NodeData(Node: TTreeNode): TTreeNodeData;
 
 implementation
 
-resourcestring
-  RSTrash = 'Trash';
-
 function NodeData(Node: TTreeNode): TTreeNodeData;
 begin
   assert(Node.Data <> nil);
@@ -116,13 +113,6 @@ var
   S: string;
 begin
   Result := FirstLine;
-  if Result.IsEmpty then begin
-    // Check pre-defined titles.
-    S := ExtractMeta('type=');
-    if S = 'trash' then begin
-      Result := RSTrash;
-    end;
-  end;
 end;
 
 procedure TTreeNodeData.SetMetaItem(Prefix, Value: string);

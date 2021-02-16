@@ -549,7 +549,6 @@ var
   Ancestors: VecFullId;
   Ancestor: FullId;
   I: integer;
-  C: integer;
 begin
   if LogHasDebug then begin
     LogDebug(Format('SelectExpandNode %s', [Id.ToString()]));
@@ -564,17 +563,11 @@ begin
     exit;
   end;
 
-  C := 0;
-
   // Expand ancestors recursively.
   Ancestors := NoteBackend.GetAncestors(Id);
   Node := TreeViewNoteTree.Items.GetFirstNode;
   for I := Length(Ancestors) - 1 downto 0 do begin
     Ancestor := Ancestors[I];
-    Inc(c);
-    if c > 20 then begin
-      raise Exception.Create('!!!');
-    end;
     if Ancestor = RootNodeData.Id then begin
       // RootNode is not in the tree view.
       continue;
@@ -615,7 +608,10 @@ begin
     end;
   end;
   if not Assigned(Node) then begin
-    if LogHasWarn then begin
+    // Special case: root node.
+    if Id = RootNodeData.Id then begin
+      SelectedId := Id;
+    end else if LogHasWarn then begin
       LogWarn(Format('Cannot find %s to select!', [Id.ToString()]));
     end;
   end;

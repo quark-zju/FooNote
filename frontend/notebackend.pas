@@ -203,6 +203,8 @@ var
   I: integer;
   Children: VecFullId;
 begin
+  // This function is only called by the "delete" action
+  // to figure what to select next.
   Parent := GetParent(Id);
   Result := Parent;
   Children := GetChildren(Parent);
@@ -214,6 +216,10 @@ begin
   end;
   if Result = Id then begin
     // Fallback - break cycles.
+    Result := GetRootId();
+  end;
+  // Special case: Trash -> Root. This avoids selecting "Trash".
+  if ExtractMeta(Result, 'type=') = 'trash' then begin
     Result := GetRootId();
   end;
 end;
