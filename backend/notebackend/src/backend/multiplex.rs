@@ -508,13 +508,13 @@ impl TreeBackend for MultiplexBackend {
         let state = Arc::new(Mutex::new(State {
             callback: Some(callback),
             result: Default::default(),
-            waiting_count: 0,
+            // Must match the call count of "process" below.
+            waiting_count: 1 + table.mounts.iter().filter(|m| m.url.is_some()).count(),
         }));
 
         let process = |mount: &mut Mount| {
             let state = state.clone();
             let url = mount.url.clone().unwrap_or_else(|| "".to_string());
-            state.lock().waiting_count += 1;
             mount.backend.persist_async(Box::new(move |r| {
                 let mut state = state.lock();
                 state.waiting_count -= 1;
