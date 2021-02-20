@@ -468,6 +468,12 @@ object FormFooNoteMain: TFormFooNoteMain
       OnExecute = ActionViewWarnUnsavedExecute
       Visible = False
     end
+    object ActionToggleFolder: TAction
+      Category = 'Edit'
+      Caption = 'Toggle Folder'
+      OnExecute = ActionToggleFolderExecute
+      ShortCut = 16575
+    end
   end
   object PopupMenuEdit: TPopupMenu
     Images = ImageListElementaryIcons

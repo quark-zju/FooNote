@@ -20,6 +20,7 @@ type
   { TFormFooNoteMain }
 
   TFormFooNoteMain = class(TForm)
+    ActionToggleFolder: TAction;
     ActionViewWarnUnsaved: TAction;
     ActionEditReload: TAction;
     MenuItem10: TMenuItem;
@@ -101,6 +102,7 @@ type
 
     procedure ActionAppAboutExecute(Sender: TObject);
     procedure ActionEditReloadExecute(Sender: TObject);
+    procedure ActionToggleFolderExecute(Sender: TObject);
     procedure ActionViewWarnUnsavedExecute(Sender: TObject);
     procedure EditNoteSearchKeyUp(Sender: TObject; var Key: word; Shift: TShiftState);
     procedure PanelDockSplitterLeftMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: integer);
@@ -899,6 +901,25 @@ begin
   end;
 end;
 
+procedure TFormFooNoteMain.ActionToggleFolderExecute(Sender: TObject);
+var
+  S: string;
+begin
+  if SelectedId = RootNodeData.Id then begin
+    exit;
+  end;
+  S := NoteBackend.ExtractMeta(SelectedId, 'type=');
+  if S = 'folder' then begin
+    if Length(NoteBackend.GetChildren(SelectedId)) = 0 then begin
+      // Switch to text if the folder has no children.
+      NoteBackend.TryUpdateMeta(SelectedId, 'type=', '');
+    end;
+  end else if S = '' then begin
+    NoteBackend.TryUpdateMeta(SelectedId, 'type=', 'folder');
+  end;
+  RefreshFullTree;
+end;
+
 procedure TFormFooNoteMain.ActionViewWarnUnsavedExecute(Sender: TObject);
 begin
   if not Assigned(FormSaveFailure) then begin
@@ -1112,6 +1133,8 @@ begin
     end;
   end else if MemoNote.Focused then begin
     MemoNote.PasteFromClipboard;
+    // Might cause title change.
+    RefreshFullTree;
   end;
 end;
 
