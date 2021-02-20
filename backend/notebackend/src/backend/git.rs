@@ -176,7 +176,11 @@ impl GitBackend {
             last_manifest: Default::default(),
             persist_threads: Default::default(),
         };
-        text_io.info.fetch()?;
+        if let Err(e) = text_io.info.fetch() {
+            log::warn!("cannot fetch remote: {}", e);
+            text_io.info.reload_remote_branch_oid()?;
+        }
+        text_io.info.read_local_head_oid()?;
         let manifest = text_io.load_manifest()?;
         Ok(Self::from_manifest_text_io(manifest, text_io))
     }
@@ -193,6 +197,10 @@ impl GitInfo {
             object_reader: Default::default(),
         };
         info
+    }
+
+    fn local_ref_name(&self) -> String {
+        format!("local-{}-{}", self.remote_name, self.branch_name)
     }
 
     // Update `remote_head_oid`.
@@ -305,6 +313,7 @@ impl GitInfo {
 
     /// Create a merge commit that resolves conflicts.
     /// local and other are <commit-ish>.
+    /// Will call "commit" and update local_head_oid.
     fn merge_conflict(&self, local_oid: &HexOid, other_oid: &HexOid) -> io::Result<HexOid> {
         let base_oid = HexOid(
             self.git()
@@ -491,6 +500,48 @@ impl GitInfo {
         log::info!("Committed: {}", &commit_oid.0);
         *self.local_head_oid.write() = Some(commit_oid.clone());
         Ok(commit_oid)
+    }
+
+    /// Read local_head_oid from disk.
+    /// The local_head_oid is discarded if it can fast-forward to remote oid.
+    fn read_local_head_oid(&self) -> io::Result<()> {
+        let local_ref_name = self.local_ref_name();
+        let mut local_head_oid = self.local_head_oid.write();
+        if local_head_oid.is_none() {
+            if let Ok(local_oid) = self.rev_parse(&local_ref_name) {
+                // Check if local_oid is ahead of remote_oid (unsaved changes).
+                if let Some(remote_oid) = self.remote_head_oid.read().clone() {
+                    let merge_oid = self
+                        .git()
+                        .args(&["merge-base", local_oid.as_str(), remote_oid.as_str()])
+                        .output()?;
+                    let merge_oid = HexOid(merge_oid.trim().to_string());
+                    if merge_oid == local_oid {
+                        log::debug!(
+                            "local {} can fast-forward to remote {}",
+                            local_oid.as_str(),
+                            remote_oid.as_str()
+                        );
+                    } else if merge_oid == remote_oid {
+                        log::info!(
+                            "local {} is ahead of remote {}",
+                            local_oid.as_str(),
+                            remote_oid.as_str()
+                        );
+                        *local_head_oid = Some(local_oid);
+                    } else {
+                        log::debug!(
+                            "local {} and remote {} need a merge",
+                            local_oid.as_str(),
+                            remote_oid.as_str()
+                        );
+                        drop(local_head_oid);
+                        self.merge_conflict(&local_oid, &remote_oid)?;
+                    }
+                }
+            }
+        }
+        Ok(())
     }
 
     /// Read an object (git-cat). Return (oid, data). There is no caching.
@@ -825,7 +876,7 @@ fn fast_import_payload<'a>(
     }
 
     // Prepare the commit object.
-    let local_ref_name = format!("next-{}-{}", info.remote_name, info.branch_name);
+    let local_ref_name = info.local_ref_name();
     let when = format!("{} +0000", epoch());
     let file_modifications = {
         let mut modifications = vec![];
@@ -1355,5 +1406,81 @@ mod tests {
                    |  \_ 17 text="F" meta="t=F"
                    \_ 13 text="D""#
         );
+    }
+
+    #[test]
+    fn test_push_fail() {
+        let dir = tempfile::tempdir().unwrap();
+        let cache_path = dir.path().join("cache");
+        let git_repo_path1 = match populate_git_repo(dir.path()) {
+            Some(path) => path,
+            None => return, /* git does not work */
+        };
+        let git_repo_path2 = git_repo_path1.with_extension(".tmp");
+
+        // Create changes that are local only (not pushed).
+        let url1 = format!("{}#mytrunk", git_repo_path1.display());
+        {
+            let mut backend1 = GitBackend::from_git_url(&url1, Some(&cache_path)).unwrap();
+            backend1.insert_ascii(r#"A"#);
+            backend1.persist().unwrap();
+
+            // Make the remote repo temporarily unavailable.
+            std::fs::rename(&git_repo_path1, &git_repo_path2).unwrap();
+            backend1.insert_ascii("B");
+            // The push will fail. But local commit is done for "B".
+            backend1.persist().unwrap_err();
+        }
+
+        // Check that reloading the URL will pick up the local changes (B).
+        // The backend should still work even if `fetch` will fail.
+        {
+            let backend1 = GitBackend::from_git_url(&url1, Some(&cache_path)).unwrap();
+            assert_eq!(
+                backend1.draw_ascii_all(),
+                r#"
+                0 text=""
+                \_ 10 text="A"
+                \_ 11 text="B""#
+            );
+        }
+
+        // Change the remote git repo via another backend.
+        let url2 = format!("{}#mytrunk", git_repo_path2.display());
+        {
+            let mut backend2 = GitBackend::from_git_url(&url2, Some(&cache_path)).unwrap();
+            backend2.insert_ascii("C");
+            backend2.persist().unwrap();
+            // Rename back to restore the repo.
+            std::fs::rename(&git_repo_path2, &git_repo_path1).unwrap();
+        }
+
+        // Reload - local changes (B) should be picked up and merged.
+        {
+            let mut backend1 = GitBackend::from_git_url(&url1, Some(&cache_path)).unwrap();
+            assert_eq!(
+                backend1.draw_ascii_all(),
+                r#"
+                0 text=""
+                \_ 10 text="A"
+                \_ 12 text="B"
+                \_ 11 text="C""#
+            );
+            // And can be pushed.
+            backend1.persist().unwrap();
+        }
+
+        // Check the merge preserves the changes.
+        {
+            let backend1 = GitBackend::from_git_url(&url1, Some(&cache_path)).unwrap();
+            assert_eq!(
+                backend1.draw_ascii_all(),
+                r#"
+                0 text=""
+                \_ 10 text="A"
+                \_ 12 text="B"
+                \_ 11 text="C""#
+            );
+        }
     }
 }
