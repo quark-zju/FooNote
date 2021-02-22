@@ -2,35 +2,27 @@
 
 ![build](https://github.com/quark-zju/FooNote/workflows/build/badge.svg)
 
----
-
-⚠ This is still a WIP. No stable release yet.
-
-⚠ 注意：开发中，尚未发布稳定版。
-
----
-
 Lightweight tree note taking companion.
 
 Designed to be used as a complement to other "main" apps. For paper books, it's natural to take notes in the margins. FooNote provides such margins on the screen for notes of other apps.
 
 Features
-- Dock on the screen like the Windows Taskbar.
-- Tree Edits: Multi-selection, drag-drop, and copy-paste.
-- Multiple Data Sources: Local File, Git (for sync).
-- Free Software: Users fully control their data.
-
-Currently mainly tested on Windows, although the code builds and runs on other platforms.
+- Tree Structured: Notes are organized by a tree.
+- Tree Editing: Support multi-selection, drag-drop, and copy-paste support.
+- Docking: Dock on the screen like the Windows Taskbar. Maximized windows won't overlap with the FooNote.
+- Syncing: Support syncing via Git.
+- Lightweight: Compressed binary is less than 2MB. Runtime memory usage is less than 2MB.
+- Portable: Do not need installation. Do not modify Windows registry.
+- Free Software: Source code and data format are open. No vendor lock-in.
 
 
 树形笔记伴侣。
 
-类似于在纸质书侧边栏处做笔记，FooNote 在屏幕上留出侧边栏，用于学习或使用其他的大型应用时做笔记。
+类似于在纸质书的空白侧边栏。FooNote 在宽屏桌面划出侧边栏，用于学习或使用其他应用时做笔记。
 
 主要功能
-- 侧边停靠，类似于 Windows 任务栏。
-- 树形编辑：多选，拖拽，复制粘贴。
-- 多数据源：本地文件，或通过 Git 同步。
-- 自由软件：用户全权控制其数据。
-
-目前主要支持 Windows 版，但源码在其他平台也能编译运行。
+- 树形编辑：笔记形成无层级限制的树形结构。并支持多选、拖拽、复制粘贴。
+- 侧边停靠：可像 Windows 任务栏一样侧边停靠。最大化窗口不会覆盖停靠区域。
+- 数据同步：支持通过 Git 同步数据。
+- 绿色小巧：压缩包和内存占用均小于 2MB。无需安装，不修改 Windows 注册表。
+- 自由软件：代码及文件格式开放。不存在私有格式套牢。
