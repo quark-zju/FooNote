@@ -54,7 +54,14 @@ pub(crate) mod tests {
             let mut last_index = 0;
             for id in subset {
                 let index = children.iter().position(|i| i == id).unwrap();
-                assert!(index >= last_index);
+                assert!(
+                    index >= last_index,
+                    "check_children({:?}, subset={:?}, ids={:?}) children={:?}",
+                    id,
+                    subset,
+                    ids,
+                    &children,
+                );
                 last_index = index;
             }
             for id in ids {

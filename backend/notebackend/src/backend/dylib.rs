@@ -145,3 +145,147 @@ impl TreeBackend for DylibBackend {
         self.tree.get_heads(ids)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::backend::tests::TestTreeBackend;
+    const BACKEND_PY: &str = r#"
+import collections
+
+class NoteBackend:
+    ROOT = 0
+
+    def __init__(self):
+        self.text = collections.defaultdict(str)
+        self.meta = collections.defaultdict(str)
+        self.mtime = collections.defaultdict(int)
+        self.children = collections.defaultdict(list)
+        self.next_id = 1
+        self.parent = collections.defaultdict(int)
+
+    def get_children(self, id):
+        return self.children[id]
+
+    def get_parent(self, id):
+        if id == self.ROOT:
+            return None
+        return self.parent[id]
+
+    def get_text(self, id):
+        return self.text[id]
+
+    def get_mtime(self, id):
+        return self.mtime[id]
+
+    def get_raw_meta(self, id):
+        return self.meta[id]
+
+    def insert(self, dest_id, pos, text, meta):
+        id = self._next_free_id()
+        self.text[id] = text
+        self.meta[id] = meta
+        if pos == 0:  # Append
+            self.parent[id] = dest_id
+            self.children[dest_id].append(id)
+        else:
+            parent_id = self.parent[dest_id]
+            self.parent[id] = parent_id
+            children = self.children[parent_id]
+            idx = children.index(dest_id)
+            if pos > 0:
+                idx += 1
+            children.insert(idx, id)
+        self._bump_mtime(id)
+        return id
+
+    def set_parent(self, id, dest_id, pos):
+        if self._is_ancestor(id, dest_id):
+            raise "Cannot move to descent"
+        self._bump_mtime(id)
+        parent_id = self.parent[id]
+        old_children = self.children[parent_id]
+        if id in old_children:
+            old_children.remove(id)
+        if pos == 0:  # Append
+            parent_id = dest_id
+            self.parent[id] = parent_id
+            self.children[parent_id].append(id)
+        else:
+            parent_id = self.parent[dest_id]
+            self.parent[id] = parent_id
+            children = self.children[parent_id]
+            idx = children.index(dest_id)
+            if pos > 0:  # After
+                idx += 1
+            children.insert(idx, id)
+        self._bump_mtime(id)
+        return id
+
+    def set_text(self, id, text):
+        if self.text[id] == text:
+            return False
+        self.text[id] = text
+        self._bump_mtime(id)
+        return True  # changed
+
+    def set_raw_meta(self, id, meta):
+        if self.meta[id] == meta:
+            return False
+        self.meta[id] = meta
+        self._bump_mtime(id)
+        return True  # changed
+
+    def remove(self, id):
+        if id == self.ROOT:
+            return
+        self._bump_mtime(id)
+        parent_id = self.parent[id]
+        old_children = self.children[parent_id]
+        if id in old_children:
+            old_children.remove(id)
+
+    def persist(self, id):
+        pass
+
+    def _bump_mtime(self, id):
+        while True:
+            self.mtime[id] += 1
+            pid = self.parent[id]
+            if pid == id:
+                break
+            id = pid
+
+    def _next_free_id(self):
+        id = self.next_id
+        self.next_id += 1
+        return id
+
+    def _is_ancestor(self, anc, id):
+        while True:
+            if id == anc:
+                return True
+            new_id = self.parent[id]
+            if id == new_id:
+                break
+            id = new_id
+        return False
+
+def get_instance(url):
+    return NoteBackend()
+"#;
+    #[test]
+    fn test_basic() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path();
+        let py_path = path.join("a.py");
+        std::fs::write(&py_path, BACKEND_PY).unwrap();
+        match crate::url::open(&py_path.display().to_string()) {
+            Ok(mut backend) => {
+                backend.check_generic().unwrap();
+            }
+            Err(e) => {
+                eprintln!("skip: python backend is not available: {}", e);
+            }
+        }
+    }
+}
