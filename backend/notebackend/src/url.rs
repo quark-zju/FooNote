@@ -1,4 +1,5 @@
 use crate::backend;
+use crate::t;
 use notebackend_types::Id;
 use notebackend_types::TreeBackend;
 use std::fmt;
@@ -56,7 +57,7 @@ pub fn backend_type_from_url(url: &str) -> io::Result<BackendType> {
     } else {
         return Err(io::Error::new(
             io::ErrorKind::InvalidInput,
-            format!("invalid backend URL: {}", url),
+            t!(cn = "无效地址：{}", en = "invalid backend URL: {}", url),
         ));
     };
     Ok(backend_type)
