@@ -8,6 +8,5 @@ edition = "2018"
 crate-type = ["cdylib"]
 
 [dependencies]
-base64 = "0.13"
 cpython = "0.5"
 notebackend_types = { path = "../notebackend_types" }

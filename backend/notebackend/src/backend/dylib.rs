@@ -149,7 +149,7 @@ impl TreeBackend for DylibBackend {
 #[cfg(test)]
 mod tests {
     use crate::backend::tests::TestTreeBackend;
-    const BACKEND_PY: &str = r#"
+    const BACKEND_PY_CODE: &str = r#"
 import collections
 
 class NoteBackend:
@@ -271,15 +271,17 @@ class NoteBackend:
         return False
 
 def get_instance(url):
+    assert url == "MEMORY"
     return NoteBackend()
 "#;
     #[test]
-    fn test_basic() {
+    fn test_python_url() {
         let dir = tempfile::tempdir().unwrap();
         let path = dir.path();
         let py_path = path.join("a.py");
-        std::fs::write(&py_path, BACKEND_PY).unwrap();
-        match crate::url::open(&py_path.display().to_string()) {
+        let url = format!("{} MEMORY", py_path.display());
+        std::fs::write(&py_path, BACKEND_PY_CODE).unwrap();
+        match crate::url::open(&url) {
             Ok(mut backend) => {
                 backend.check_generic().unwrap();
             }

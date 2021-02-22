@@ -1,45 +1,33 @@
-use cpython::*;
+use cpython::{NoArgs, ObjectProtocol, PyDict, PyErr, PyObject, PyResult, Python};
 use notebackend_types::CreateBackendFunc;
 use notebackend_types::Id;
 use notebackend_types::PersistCallbackFunc;
 use notebackend_types::TreeBackend;
 use std::fs;
 use std::io;
-use std::path::Path;
 
 #[no_mangle]
 pub fn notebackend_create(url: &str) -> io::Result<Box<dyn TreeBackend<Id = Id>>> {
-    let split = if Path::new(url).exists() {
-        vec!["python", url]
-    } else {
-        url.splitn(2, ':').collect::<Vec<_>>()
+    let split = url.splitn(2, ' ').collect::<Vec<_>>();
+    let (path, arg) = match split[..] {
+        [path, arg] => (path, arg),
+        [path] => (path, ""),
+        _ => return unsupported(url),
     };
-    if let [scheme, path] = split[..] {
-        let code = if scheme == "python" {
-            fs::read_to_string(path)?
-        } else if scheme == "python-base64" {
-            let decoded = base64::decode(path.to_string().as_bytes())
-                .map_err(|e| io::Error::new(io::ErrorKind::InvalidInput, e))?;
-            String::from_utf8_lossy(&decoded).to_string()
+    let code = fs::read_to_string(path)?;
+
+    with_gil(|py| -> io::Result<Box<dyn TreeBackend<Id = Id>>> {
+        let globals = py.eval("globals().copy()", None, None).map_err(map_pyerr)?;
+        let scope = globals.extract::<PyDict>(py).map_err(map_pyerr)?;
+        py.run(&code, Some(&scope), None).map_err(map_pyerr)?;
+        if let Some(get_instance) = scope.get_item(py, "get_instance") {
+            let instance = get_instance.call(py, (arg,), None).map_err(map_pyerr)?;
+            let backend = PythonBackend { instance };
+            Ok(Box::new(backend))
         } else {
-            return unsupported(url);
-        };
-        with_gil(|py| -> io::Result<Box<dyn TreeBackend<Id = Id>>> {
-            let globals = py.eval("globals().copy()", None, None).map_err(map_pyerr)?;
-            let scope = globals.extract::<PyDict>(py).map_err(map_pyerr)?;
-            py.run(&code, Some(&scope), None).map_err(map_pyerr)?;
-            if let Some(get_instance) = scope.get_item(py, "get_instance") {
-                let arg = path.splitn(2, ':').nth(1).unwrap_or_default();
-                let instance = get_instance.call(py, (arg,), None).map_err(map_pyerr)?;
-                let backend = PythonBackend { instance };
-                Ok(Box::new(backend))
-            } else {
-                python_error("get_instance(path) does not exist")
-            }
-        })
-    } else {
-        unsupported(url)
-    }
+            python_error("get_instance(path) does not exist")
+        }
+    })
 }
 
 // Ensure the function signature matches.

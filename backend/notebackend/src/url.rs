@@ -52,7 +52,13 @@ pub fn backend_type_from_url(url: &str) -> io::Result<BackendType> {
         BackendType::Local
     } else if url == "memory" || url.starts_with("memory:") {
         BackendType::Memory
-    } else if url.ends_with(".py") {
+    } else if url.ends_with(".py")
+        || url
+            .splitn(2, ' ')
+            .next()
+            .unwrap_or_default()
+            .ends_with(".py")
+    {
         BackendType::Python
     } else {
         return Err(io::Error::new(
