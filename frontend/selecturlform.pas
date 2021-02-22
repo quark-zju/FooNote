@@ -51,6 +51,7 @@ begin
   S := EditUrl.Text;
   ButtonOpen.Enabled := not S.IsEmpty;
   S := NoteBackend.UrlType(S);
+  ButtonOpen.Enabled := not S.IsEmpty;
   if S = 'foonote' then begin
     RadioLocalFile.Checked := True;
   end else if S = 'memory' then begin
