@@ -1,14 +1,19 @@
+use cpython::*;
 use notebackend_types::CreateBackendFunc;
 use notebackend_types::Id;
 use notebackend_types::PersistCallbackFunc;
 use notebackend_types::TreeBackend;
-use pyo3::{prelude::*, types::PyDict};
 use std::fs;
 use std::io;
+use std::path::Path;
 
 #[no_mangle]
 pub fn notebackend_create(url: &str) -> io::Result<Box<dyn TreeBackend<Id = Id>>> {
-    let split = url.splitn(2, ':').collect::<Vec<_>>();
+    let split = if Path::new(url).exists() {
+        vec!["python", url]
+    } else {
+        url.splitn(2, ':').collect::<Vec<_>>()
+    };
     if let [scheme, path] = split[..] {
         let code = if scheme == "python" {
             fs::read_to_string(path)?
@@ -19,20 +24,19 @@ pub fn notebackend_create(url: &str) -> io::Result<Box<dyn TreeBackend<Id = Id>>
         } else {
             return unsupported(url);
         };
-        let gil = Python::acquire_gil();
-        let py = gil.python();
-        let globals = py.eval("globals().copy()", None, None)?;
-        let scope = globals.cast_as::<PyDict>().unwrap();
-        py.run(&code, Some(scope), None).map_err(map_err)?;
-        if let Some(get_instance) = scope.get_item("get_instance") {
-            let arg = path.splitn(2, ':').nth(1).unwrap_or_default();
-            let instance = get_instance.call1((arg,)).map_err(map_err)?;
-            let instance = instance.to_object(py);
-            let backend = PythonBackend { instance };
-            Ok(Box::new(backend))
-        } else {
-            python_error("get_instance(path) does not exist")
-        }
+        with_gil(|py| -> io::Result<Box<dyn TreeBackend<Id = Id>>> {
+            let globals = py.eval("globals().copy()", None, None).map_err(map_pyerr)?;
+            let scope = globals.extract::<PyDict>(py).map_err(map_pyerr)?;
+            py.run(&code, Some(&scope), None).map_err(map_pyerr)?;
+            if let Some(get_instance) = scope.get_item(py, "get_instance") {
+                let arg = path.splitn(2, ':').nth(1).unwrap_or_default();
+                let instance = get_instance.call(py, (arg,), None).map_err(map_pyerr)?;
+                let backend = PythonBackend { instance };
+                Ok(Box::new(backend))
+            } else {
+                python_error("get_instance(path) does not exist")
+            }
+        })
     } else {
         unsupported(url)
     }
@@ -52,11 +56,23 @@ fn unsupported<T>(url: &str) -> io::Result<T> {
     ))
 }
 
-fn map_err<E>(e: E) -> io::Error
-where
-    E: Into<Box<dyn std::error::Error + Send + Sync>>,
-{
-    io::Error::new(io::ErrorKind::Other, e)
+fn map_pyerr(e: PyErr) -> io::Error {
+    let message = (|| -> PyResult<String> {
+        with_gil(|py| {
+            let locals = PyDict::new(py);
+            locals.set_item(py, "tb", &e.ptraceback)?;
+            locals.set_item(py, "ty", &e.ptype)?;
+            locals.set_item(py, "e", &e.pvalue)?;
+            let msg = py
+                .eval(
+                    "''.join(__import__('traceback').format_exception(ty,(isinstance(e,ty) and e or ty(e)),tb))",
+                    None,
+                    Some(&locals),
+                )?;
+            msg.extract(py)
+        })
+    })().unwrap_or_else(|_| format!("{:?}", e));
+    io::Error::new(io::ErrorKind::Other, message)
 }
 
 fn with_gil<F, R>(func: F) -> R
@@ -68,6 +84,15 @@ where
     func(py)
 }
 
+fn with_gil_map_err<F, T>(func: F) -> io::Result<T>
+where
+    F: FnOnce(Python) -> PyResult<T>,
+{
+    let gil = Python::acquire_gil();
+    let py = gil.python();
+    func(py).map_err(map_pyerr)
+}
+
 struct PythonBackend {
     instance: PyObject,
 }
@@ -76,37 +101,37 @@ impl TreeBackend for PythonBackend {
     type Id = Id;
 
     fn get_children(&self, id: Self::Id) -> io::Result<Vec<Self::Id>> {
-        with_gil(|py| {
-            let children = self.instance.call_method1(py, "get_children", (id,))?;
+        with_gil_map_err(|py| {
+            let children = self.instance.call_method(py, "get_children", (id,), None)?;
             Ok(children.extract(py)?)
         })
     }
 
     fn get_parent(&self, id: Self::Id) -> io::Result<Option<Self::Id>> {
-        with_gil(|py| {
-            let parent = self.instance.call_method1(py, "get_parent", (id,))?;
+        with_gil_map_err(|py| {
+            let parent = self.instance.call_method(py, "get_parent", (id,), None)?;
             Ok(parent.extract(py)?)
         })
     }
 
     fn get_mtime(&self, id: Self::Id) -> io::Result<notebackend_types::Mtime> {
-        with_gil(|py| {
-            let result = self.instance.call_method1(py, "get_mtime", (id,))?;
+        with_gil_map_err(|py| {
+            let result = self.instance.call_method(py, "get_mtime", (id,), None)?;
             Ok(result.extract(py)?)
         })
     }
 
     fn get_text<'a>(&'a self, id: Self::Id) -> io::Result<std::borrow::Cow<'a, str>> {
-        with_gil(|py| {
-            let result = self.instance.call_method1(py, "get_text", (id,))?;
+        with_gil_map_err(|py| {
+            let result = self.instance.call_method(py, "get_text", (id,), None)?;
             Ok(result.extract::<String>(py)?)
         })
         .map(Into::into)
     }
 
     fn get_raw_meta<'a>(&'a self, id: Self::Id) -> io::Result<std::borrow::Cow<'a, str>> {
-        with_gil(|py| {
-            let result = self.instance.call_method1(py, "get_raw_meta", (id,))?;
+        with_gil_map_err(|py| {
+            let result = self.instance.call_method(py, "get_raw_meta", (id,), None)?;
             Ok(result.extract::<String>(py)?)
         })
         .map(Into::into)
@@ -119,10 +144,13 @@ impl TreeBackend for PythonBackend {
         text: String,
         meta: String,
     ) -> io::Result<Self::Id> {
-        with_gil(|py| {
-            let result =
-                self.instance
-                    .call_method1(py, "insert", (dest_id, i32::from(pos), text, meta))?;
+        with_gil_map_err(|py| {
+            let result = self.instance.call_method(
+                py,
+                "insert",
+                (dest_id, i32::from(pos), text, meta),
+                None,
+            )?;
             Ok(result.extract::<Id>(py)?)
         })
     }
@@ -133,40 +161,42 @@ impl TreeBackend for PythonBackend {
         dest_id: Self::Id,
         pos: notebackend_types::InsertPos,
     ) -> io::Result<Self::Id> {
-        with_gil(|py| {
+        with_gil_map_err(|py| {
             let result =
                 self.instance
-                    .call_method1(py, "set_parent", (id, dest_id, i32::from(pos)))?;
+                    .call_method(py, "set_parent", (id, dest_id, i32::from(pos)), None)?;
             Ok(result.extract::<Id>(py)?)
         })
     }
 
     fn set_text(&mut self, id: Self::Id, text: String) -> io::Result<bool> {
-        with_gil(move |py| {
-            let result = self.instance.call_method1(py, "set_text", (id, text))?;
+        with_gil_map_err(move |py| {
+            let result = self
+                .instance
+                .call_method(py, "set_text", (id, text), None)?;
             Ok(result.extract::<bool>(py)?)
         })
     }
 
     fn set_raw_meta(&mut self, id: Self::Id, content: String) -> io::Result<bool> {
-        with_gil(move |py| {
+        with_gil_map_err(move |py| {
             let result = self
                 .instance
-                .call_method1(py, "set_raw_meta", (id, content))?;
+                .call_method(py, "set_raw_meta", (id, content), None)?;
             Ok(result.extract::<bool>(py)?)
         })
     }
 
     fn remove(&mut self, id: Self::Id) -> io::Result<()> {
-        with_gil(move |py| {
-            self.instance.call_method1(py, "remove", (id,))?;
+        with_gil_map_err(move |py| {
+            self.instance.call_method(py, "remove", (id,), None)?;
             Ok(())
         })
     }
 
     fn persist(&mut self) -> io::Result<()> {
-        with_gil(move |py| {
-            self.instance.call_method0(py, "persist")?;
+        with_gil_map_err(move |py| {
+            self.instance.call_method(py, "persist", NoArgs, None)?;
             Ok(())
         })
     }
