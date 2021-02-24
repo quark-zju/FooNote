@@ -2,6 +2,8 @@
 
 ![build](https://github.com/quark-zju/FooNote/workflows/build/badge.svg)
 
+<img align="right" src="doc/image/main-window-win32.png" />
+
 Lightweight tree note taking companion.
 
 Designed to be used as a complement to other "main" apps. For paper books, it's natural to take notes in the margins. FooNote provides such margins on the screen for notes of other apps.
