@@ -28,3 +28,9 @@ Features
 - 数据同步：支持通过 Git 同步数据。
 - 绿色小巧：压缩包和内存占用均小于 2MB。无需安装，不修改 Windows 注册表。
 - 自由软件：代码及文件格式开放。不存在私有格式套牢。
+
+----
+
+感谢：
+- Opera (<= 12, 后为 Vivaldi) 浏览器：提供了树形笔记的主要想法
+- [BooguNote](https://github.com/boogunote/bn1)：提供了 Windows 下桌面停靠的参考实现
