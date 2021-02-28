@@ -28,6 +28,7 @@ type
     // Saved on disk. Changes will trigger callbacks.
     FStayOnTop: boolean;
     FDockSide: TDockSide;
+    FDockMonitorIndex: integer;
     FFeatureLevel: TFeatureLevel;
     FZenMode: boolean;
     FAutoSaveInterval: integer;
@@ -79,6 +80,7 @@ type
 
     // Do not trigger callbacks.
     property EditorFont: TFont read FEditorFont write FEditorFont;
+    property DockMonitorIndex: integer read FDockMonitorIndex write FDockMonitorIndex;
     property DockWidth: longint read FDockWidth write FDockWidth;
     property DockNoteSplitTop: longint read FDockNoteSplitTop write FDockNoteSplitTop;
     property NonDockWidth: longint read FNonDockWidth write FNonDockWidth;

@@ -100,6 +100,38 @@ begin
   PostMessage(Form.Handle, WM_SYSCOMMAND, SC_SIZE, 0);
 end;
 
+procedure UpdateCurrentMonitor();
+var
+  Point: TPoint;
+  Monitor: TMonitor;
+  I: integer;
+begin
+  Point := Mouse.CursorPos;
+  Monitor := Screen.MonitorFromPoint(Point);
+  for I := 0 to Screen.MonitorCount - 1 do begin
+    if Screen.Monitors[I] = Monitor then begin
+      if AppConfig.DockMonitorIndex <> I then begin
+        if LogHasDebug then begin
+          LogDebug(Format('Current Monitor: %d', [I]));
+        end;
+        AppConfig.DockMonitorIndex := I;
+      end;
+      exit;
+    end;
+  end;
+end;
+
+function GetDockMonitor(): TMonitor;
+var
+  I: integer;
+begin
+  I := AppConfig.DockMonitorIndex;
+  if I >= Screen.MonitorCount then begin
+    I := Screen.MonitorCount - 1;
+  end;
+  Exit(Screen.Monitors[I]);
+end;
+
 function RegisterAppBar: boolean;
 begin
   if not BarRegistered then begin
@@ -127,6 +159,7 @@ end;
 procedure ProposeDockRect(side: TDockSide; var rc: RECT; preview: boolean = False);
 var
   Width: longint;
+  Monitor: TMonitor;
 begin
   if side = dsNone then begin
     rc.Width := AppConfig.NonDockWidth + OuterBorderWidth;
@@ -144,26 +177,26 @@ begin
     end;
   end;
 
-  // TODO: Check Multi-monitor support?
-  rc.Top := 0;
-  rc.Height := Screen.WorkAreaHeight;
+  Monitor := GetDockMonitor();
+  rc.Top := Monitor.WorkareaRect.Top;
+  rc.Height := Monitor.WorkareaRect.Height;
 
   // preview: true for previewing moving/resize result (incompatible with ABM_QUERYPOS);
   // false for ABM_QUERYPOS.
 
   if (Side = dsRight) then begin
     if preview then begin
-      rc.Left := screen.WorkAreaWidth - Width;
+      rc.Left := Monitor.WorkareaRect.Right - Width;
     end else begin
       // Do use WorkspaceWidth! The current AppBar affects WorkspaceWidth and it might move recursively.
-      rc.Left := Screen.Width - Width;
+      rc.Left := Monitor.Width + Monitor.Left - Width;
     end;
     rc.Width := Width;
   end else if Side = dsLeft then begin
     if preview then begin
-      rc.Left := Screen.WorkAreaRect.Left;
+      rc.Left := Monitor.WorkareaRect.Left;
     end else begin
-      rc.Left := 0;
+      rc.Left := Monitor.Left;
     end;
     rc.Width := Width;
   end;
@@ -332,10 +365,12 @@ end;
 function InferDockSide(CursorPos: TPoint): TDockSide;
 var
   Area: TRect;
+  Monitor: TMonitor;
 const
   Threshold = 70;
 begin
-  Area := Screen.WorkAreaRect;
+  Monitor := GetDockMonitor();
+  Area := Monitor.WorkAreaRect;
   if CursorPos.X <= Area.Left + Threshold then begin
     Result := dsLeft;
   end else if CursorPos.X + 1 + Threshold >= Area.Right then begin
@@ -354,6 +389,7 @@ begin
   Result := MovingStartRect;
   Pos := Mouse.CursorPos;
   Result.Offset(Pos - MovingStartCursorPos);
+  UpdateCurrentMonitor;
   Side := InferDockSide(Pos);
   // Calculate "docked" RECT.
   ProposeDockRect(Side, Result, True);
