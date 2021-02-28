@@ -11,7 +11,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Build backend
-      run: cargo build --manifest-path backend/Cargo.toml --verbose --target-dir=target
+      run: cargo build --release --manifest-path backend/Cargo.toml --verbose --target-dir=target
     - name: Install Lazarus
       uses: gcarreno/setup-lazarus@v2.2.8
       with:
@@ -21,8 +21,8 @@ jobs:
     - name: Copy Binaries
       run: |
         mkdir dist
-        cp target/debug/notebackend.dll dist
-        cp target/debug/notebackend_python.dll dist
+        cp target/release/notebackend.dll dist
+        cp target/release/notebackend_python.dll dist
         cp frontend/foonote.exe dist
         $compress = @{
           Path = "dist\*"
