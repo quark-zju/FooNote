@@ -24,7 +24,12 @@ jobs:
         cp target/debug/notebackend.dll dist
         cp target/debug/notebackend_python.dll dist
         cp frontend/foonote.exe dist
-        zip --junk-paths FooNote.zip dist/*
+        $compress = @{
+          Path = "dist\*"
+          CompressionLevel = "Optimal"
+          DestinationPath = "FooNote.Zip"
+        }
+        Compress-Archive @compress
     - name: Create Release
       id: create_release
       uses: actions/create-release@v1
