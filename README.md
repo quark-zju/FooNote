@@ -1,6 +1,8 @@
 ![FooNote](doc/image/banner.png)
 
 ![build](https://github.com/quark-zju/FooNote/workflows/build/badge.svg)
+[![QQ Group 513408556](https://img.shields.io/badge/QQ群-513408556-blue.svg)](https://jq.qq.com/?_wv=1027&k=RYw10ME8)
+
 
 <img align="right" src="doc/image/main-window-win32.png" />
 
