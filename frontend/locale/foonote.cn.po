@@ -67,9 +67,17 @@ msgctxt "platformwindows.rsstayontop"
 msgid "Stay On &Top"
 msgstr "置顶(&T)"
 
+#: settingsform.rsdebugtab
+msgid "Debug"
+msgstr "调试"
+
+#: settingsform.rsstayontop
+msgid "Stay on top of other windows."
+msgstr "置于其他窗口前面。"
+
 #: taboutfoonoteform.buttonok.caption
 msgctxt "taboutfoonoteform.buttonok.caption"
-msgid "&Ok"
+msgid "&OK"
 msgstr "确定(&O)"
 
 #: taboutfoonoteform.caption
@@ -209,12 +217,16 @@ msgstr "添加一条笔记"
 #: tformfoonotemain.actionnewseparator.caption
 msgctxt "tformfoonotemain.actionnewseparator.caption"
 msgid "New &Separator"
-msgstr "新分隔符(&S)"
+msgstr "新分隔栏(&S)"
 
 #: tformfoonotemain.actionnewseparator.hint
 msgctxt "tformfoonotemain.actionnewseparator.hint"
 msgid "New Separator"
 msgstr "添加一条分隔栏"
+
+#: tformfoonotemain.actiontogglefolder.caption
+msgid "Toggle Folder"
+msgstr "切换文件夹"
 
 #: tformfoonotemain.actionviewdockleft.caption
 msgctxt "tformfoonotemain.actionviewdockleft.caption"
@@ -265,6 +277,27 @@ msgstr "搜索"
 msgctxt "tformfoonotemain.toolbuttondockedmenu.caption"
 msgid "FooNote"
 msgstr "FooNote"
+
+#: tformfoonotesettings.buttonok.caption
+msgctxt "tformfoonotesettings.buttonok.caption"
+msgid "&OK"
+msgstr "确定(&O)"
+
+#: tformfoonotesettings.buttonselfont.caption
+msgid "Select &Font"
+msgstr "字体(&F)"
+
+#: tformfoonotesettings.caption
+msgid "FooNote Settings"
+msgstr "FooNote 设置"
+
+#: tformfoonotesettings.checkboxontop.caption
+msgid "Stay on &Top"
+msgstr "置顶(&T)"
+
+#: tformfoonotesettings.groupboxinterfacesettings.caption
+msgid "Interface"
+msgstr "界面"
 
 #: tformopenurl.buttoncancel.caption
 msgid "&Cancel"
@@ -342,4 +375,3 @@ msgstr "回收站"
 #: tsolidcolorpreviewform.caption
 msgid "FooNoteOverlay"
 msgstr "FooNote 叠加层"
-

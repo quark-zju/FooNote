@@ -32,7 +32,7 @@ object AboutFooNoteForm: TAboutFooNoteForm
       BorderSpacing.Top = -5
       BorderSpacing.Around = 5
       Cancel = True
-      Caption = '&Ok'
+      Caption = '&OK'
       Constraints.MinWidth = 80
       Default = True
       ModalResult = 1
