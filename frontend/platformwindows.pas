@@ -374,6 +374,12 @@ var
 const
   Threshold = 70;
 begin
+  // Disable docking if Ctrl is pressed.
+  if GetAsyncKeyState(VK_CONTROL) <> 0 then begin
+    Result := dsNone;
+    exit;
+  end;
+
   Monitor := GetDockMonitor();
   Area := Monitor.WorkAreaRect;
   if CursorPos.X <= Area.Left + Threshold then begin
