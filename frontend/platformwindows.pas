@@ -5,7 +5,7 @@ unit PlatformWindows;
 interface
 
 uses
-  Classes, SysUtils, Windows, Forms, Controls, Settings, ShellAPI, LogFFI;
+  Classes, SysUtils, Windows, Forms, Controls, Settings, ShellAPI, LogFFI, LazUTF8;
 
 procedure SetupMainForm(Form: TForm);
 procedure StartMoving(Form: TForm);
@@ -349,13 +349,18 @@ end;
 
 procedure OnConfigChange(Name: string; Config: TAppConfig);
 var
+  WRSStayOnTop, WRSDockLeft, WRSDockRight: UnicodeString;
   SysMenu: HMENU;
 begin
   if (Name = AnyConfigName) or (Name = 'StayOnTop') then begin
     SysMenu := GetSystemMenu(RefForm.Handle, False);
-    ModifyMenu(SysMenu, WMToggleStayOnTop, MenuFlags(Config.StayOnTop), WMToggleStayOnTop, PChar(RSStayOnTop));
-    ModifyMenu(SysMenu, WMDockLeft, MenuFlags(AppConfig.DockSide = dsLeft), WMDockLeft, PChar(RSDockLeft));
-    ModifyMenu(SysMenu, WMDockRight, MenuFlags(AppConfig.DockSide = dsRight), WMDockRight, PChar(RSDockRight));
+
+    WRSStayOnTop := UTF8ToUTF16(RSStayOnTop);
+    WRSDockLeft := UTF8ToUTF16(RSDockLeft);
+    WRSDockRight := UTF8ToUTF16(RSDockRight);
+    ModifyMenuW(SysMenu, WMToggleStayOnTop, MenuFlags(Config.StayOnTop), WMToggleStayOnTop, PWChar(WRSStayOnTop));
+    ModifyMenuW(SysMenu, WMDockLeft, MenuFlags(AppConfig.DockSide = dsLeft), WMDockLeft, PWChar(WRSDockLeft));
+    ModifyMenuW(SysMenu, WMDockRight, MenuFlags(AppConfig.DockSide = dsRight), WMDockRight, PWChar(WRSDockRight));
   end;
   if (Name = AnyConfigName) or (Name = 'DockSide') then begin
     ApplyDock;
@@ -510,6 +515,7 @@ procedure EnsureWrappedWndProc;
 var
   Handle: HWND;
   SysMenu: HMENU;
+  WRSStayOnTop, WRSDockLeft, WRSDockRight: UnicodeString;
 begin
   if RefForm = nil then begin
     exit;
@@ -523,12 +529,17 @@ begin
   end;
   Handle := RefForm.Handle;
   BarData.hWnd := Handle;
+
+  WRSStayOnTop := UTF8ToUTF16(RSStayOnTop);
+  WRSDockLeft := UTF8ToUTF16(RSDockLeft);
+  WRSDockRight := UTF8ToUTF16(RSDockRight);
+
   SysMenu := GetSystemMenu(Handle, False);
   AppendMenu(SysMenu, MF_SEPARATOR, 0, '');
-  AppendMenu(SysMenu, MenuFlags(AppConfig.DockSide = dsLeft), WMDockLeft, PChar(RSDockLeft));
-  AppendMenu(SysMenu, MenuFlags(AppConfig.DockSide = dsRight), WMDockRight, PChar(RSDockRight));
+  AppendMenuW(SysMenu, MenuFlags(AppConfig.DockSide = dsLeft), WMDockLeft, PWChar(WRSDockLeft));
+  AppendMenuW(SysMenu, MenuFlags(AppConfig.DockSide = dsRight), WMDockRight, PWChar(WRSDockRight));
   AppendMenu(SysMenu, MF_SEPARATOR, 0, '');
-  AppendMenu(SysMenu, MenuFlags(AppConfig.StayOnTop), WMToggleStayOnTop, PChar(RSStayOnTop));
+  AppendMenuW(SysMenu, MenuFlags(AppConfig.StayOnTop), WMToggleStayOnTop, PWChar(WRSStayOnTop));
   PrevWndProc := Windows.WNDPROC(SetWindowLongPtr(Handle, GWL_WNDPROC, PtrUInt(@WrappedWndProc)));
 end;
 
