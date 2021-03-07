@@ -47,6 +47,9 @@ type
     FRememberPosition: boolean;
     FLastSelection: Int32;
     FEditorFont: TFont;
+    FTreeViewFont: TFont;
+    FTreeViewSearchFont: TFont;
+    FSearchBarFont: TFont;
     FEditorScrollBars: TScrollStyle;
     FWindowColor: TColor;
 
@@ -80,6 +83,10 @@ type
 
     // Do not trigger callbacks.
     property EditorFont: TFont read FEditorFont write FEditorFont;
+    property TreeViewFont: TFont read FTreeViewFont write FTreeViewFont;
+    property TreeViewSearchFont: TFont read FTreeViewSearchFont write FTreeViewSearchFont;
+    property SearchBarFont: TFont read FSearchBarFont write FSearchBarFont;
+
     property DockMonitorIndex: integer read FDockMonitorIndex write FDockMonitorIndex;
     property DockWidth: longint read FDockWidth write FDockWidth;
     property DockNoteSplitTop: longint read FDockNoteSplitTop write FDockNoteSplitTop;

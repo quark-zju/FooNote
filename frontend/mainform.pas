@@ -13,7 +13,7 @@ uses
   LazUtf8, FGL, LogFFI, Math, NoteBackend, NoteTypes, MemoUtil,
   LCLTranslator, Buttons, JSONPropStorage, TreeNodeData, StackFFI,
   TreeViewSync, Settings, PreviewForm, AboutForm, FileUtil, md5,
-  savemsgform, selecturlform, LocaleUtils;
+  savemsgform, selecturlform, LocaleUtils, SettingsForm;
 
 type
 
@@ -534,6 +534,9 @@ end;
 procedure TFormFooNoteMain.InitAppConfigLink;
 begin
   AppConfig.EditorFont := MemoNote.Font;
+  AppConfig.TreeViewFont := TreeViewNoteTree.Font;
+  AppConfig.TreeViewSearchFont := TreeViewSearchTree.Font;
+  AppConfig.SearchBarFont := EditNoteSearch.Font;
 end;
 
 function TFormFooNoteMain.InsertLocation(Id: FullId; NParent: integer; out Pos: integer): FullId;
@@ -1748,11 +1751,11 @@ end;
 
 procedure TFormFooNoteMain.ActionAppSettingPreferencesExecute(Sender: TObject);
 begin
-  //if FooNoteSettingsForm = nil then begin
-  //  Application.CreateForm(TFooNoteSettingsForm, FooNoteSettingsForm);
-  //end;
-  //FooNoteSettingsForm.Show;
-  //FooNoteSettingsForm.SetFocus;
+  if FormFooNoteSettings = nil then begin
+    Application.CreateForm(TFormFooNoteSettings, FormFooNoteSettings);
+  end;
+  FormFooNoteSettings.Show;
+  FormFooNoteSettings.SetFocus;
 end;
 
 initialization

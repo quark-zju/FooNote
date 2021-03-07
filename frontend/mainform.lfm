@@ -390,7 +390,6 @@ object FormFooNoteMain: TFormFooNoteMain
       ImageIndex = 4
       OnExecute = ActionAppSettingPreferencesExecute
       ShortCut = 24656
-      Visible = False
     end
     object ActionAppQuit: TAction
       Category = 'App'
@@ -529,7 +528,6 @@ object FormFooNoteMain: TFormFooNoteMain
     end
     object MenuItem12: TMenuItem
       Caption = '-'
-      Visible = False
     end
     object MenuItem13: TMenuItem
       Action = ActionAppSettingPreferences

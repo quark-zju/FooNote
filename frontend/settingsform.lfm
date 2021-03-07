@@ -1,0 +1,86 @@
+object FormFooNoteSettings: TFormFooNoteSettings
+  Left = 108
+  Height = 184
+  Top = 275
+  Width = 237
+  BorderIcons = [biSystemMenu]
+  BorderStyle = bsDialog
+  Caption = 'FooNote Settings'
+  ClientHeight = 184
+  ClientWidth = 237
+  OnCreate = FormCreate
+  OnShow = FormShow
+  Position = poWorkAreaCenter
+  LCLVersion = '2.0.10.0'
+  object ButtonOk: TButton
+    AnchorSideRight.Control = Owner
+    AnchorSideRight.Side = asrBottom
+    AnchorSideBottom.Control = Owner
+    AnchorSideBottom.Side = asrBottom
+    Left = 147
+    Height = 27
+    Top = 147
+    Width = 80
+    Anchors = [akRight, akBottom]
+    AutoSize = True
+    BorderSpacing.Top = -5
+    BorderSpacing.Around = 10
+    Cancel = True
+    Caption = '&OK'
+    Constraints.MinWidth = 80
+    Default = True
+    ModalResult = 1
+    OnClick = ButtonOkClick
+    TabOrder = 0
+  end
+  object GroupBoxInterfaceSettings: TGroupBox
+    AnchorSideLeft.Control = Owner
+    AnchorSideTop.Control = Owner
+    AnchorSideRight.Control = Owner
+    AnchorSideRight.Side = asrBottom
+    Left = 10
+    Height = 100
+    Top = 10
+    Width = 217
+    Anchors = [akTop, akLeft, akRight]
+    AutoSize = True
+    BorderSpacing.Around = 10
+    Caption = 'Interface'
+    ClientHeight = 78
+    ClientWidth = 213
+    TabOrder = 1
+    object ButtonSelFont: TButton
+      AnchorSideLeft.Control = GroupBoxInterfaceSettings
+      AnchorSideTop.Control = CheckBoxOnTop
+      AnchorSideTop.Side = asrBottom
+      Left = 10
+      Height = 27
+      Top = 41
+      Width = 89
+      AutoSize = True
+      BorderSpacing.Around = 10
+      Caption = 'Select &Font'
+      OnClick = ButtonSelFontClick
+      TabOrder = 0
+    end
+    object CheckBoxOnTop: TCheckBox
+      AnchorSideLeft.Control = GroupBoxInterfaceSettings
+      AnchorSideTop.Control = GroupBoxInterfaceSettings
+      Left = 10
+      Height = 21
+      Top = 10
+      Width = 92
+      BorderSpacing.Around = 10
+      Caption = 'Stay on &Top'
+      OnChange = CheckBoxOnTopChange
+      TabOrder = 1
+    end
+  end
+  object FontDialog1: TFontDialog
+    MinFontSize = 0
+    MaxFontSize = 0
+    Options = [fdEffects, fdNoVectorFonts]
+    Left = 144
+    Top = 56
+  end
+end
