@@ -30,6 +30,7 @@ type
     MenuItem3: TMenuItem;
     MenuItem6: TMenuItem;
     PanelZen: TPanel;
+    TimerAutoRefresh: TTimer;
     TimerAutoSave: TTimer;
     ActionViewToggleZenMode: TAction;
     ActionEditPaste: TAction;
@@ -114,6 +115,7 @@ type
     procedure IdleTimerWndProcTimer(Sender: TObject);
     procedure ActionNewMountUrlExecute(Sender: TObject);
     procedure EditNoteSearchChange(Sender: TObject);
+    procedure TimerAutoRefreshTimer(Sender: TObject);
     procedure TimerAutoSaveTimer(Sender: TObject);
     procedure TimerCheckSaveResultTimer(Sender: TObject);
     procedure TreeViewNoteTreeAdvancedCustomDrawItem(Sender: TCustomTreeView; Node: TTreeNode;
@@ -270,8 +272,8 @@ begin
       RootNodeData, True);
     TreeViewNoteTree.EndUpdate;
   end else begin
-    if LogHasDebug then begin
-      LogDebug('Root Note Not changed');
+    if LogHasTrace then begin
+      LogTrace('Root Note Not changed');
     end;
   end;
 end;
@@ -1217,6 +1219,11 @@ begin
     TreeViewNoteTree.Visible := False;
     TreeViewSearchTree.Visible := True;
   end;
+end;
+
+procedure TFormFooNoteMain.TimerAutoRefreshTimer(Sender: TObject);
+begin
+  RefreshFullTree;
 end;
 
 procedure TFormFooNoteMain.TimerAutoSaveTimer(Sender: TObject);

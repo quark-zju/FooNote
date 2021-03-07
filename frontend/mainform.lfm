@@ -1826,4 +1826,10 @@ object FormFooNoteMain: TFormFooNoteMain
     Left = 176
     Top = 200
   end
+  object TimerAutoRefresh: TTimer
+    Interval = 2000
+    OnTimer = TimerAutoRefreshTimer
+    Left = 176
+    Top = 136
+  end
 end
