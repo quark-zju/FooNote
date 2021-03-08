@@ -913,7 +913,7 @@ mod tests {
         assert_eq!(
             root.get_text(id).unwrap(),
             r#"Inlined memory
-base64:eyJub3RlcyI6eyIxMCI6ImZvbyJ9LCJtYW5pZmVzdCI6eyJjaGlsZHJlbiI6eyIwIjpbMTBdfSwibWV0YXMiOnsiMCI6InR5cGU9cm9vdFxuIn0sIm5leHRfaWQiOjExfX0="#
+base64:omVub3Rlc6EKY2Zvb2htYW5pZmVzdKNoY2hpbGRyZW6hAIEKZW1ldGFzoQBqdHlwZT1yb290CmduZXh0X2lkCw=="#
         );
 
         // Change again
@@ -922,13 +922,13 @@ base64:eyJub3RlcyI6eyIxMCI6ImZvbyJ9LCJtYW5pZmVzdCI6eyJjaGlsZHJlbiI6eyIwIjpbMTBdf
         assert_eq!(
             root.get_text(id).unwrap(),
             r#"Inlined memory
-base64:eyJub3RlcyI6eyIxMCI6ImZvbyJ9LCJtYW5pZmVzdCI6eyJjaGlsZHJlbiI6eyIwIjpbMTBdfSwibWV0YXMiOnsiMCI6InR5cGU9cm9vdFxuIn0sIm5leHRfaWQiOjExfX0="#
+base64:omVub3Rlc6EKY2Zvb2htYW5pZmVzdKNoY2hpbGRyZW6hAIEKZW1ldGFzoQBqdHlwZT1yb290CmduZXh0X2lkCw=="#
         );
         root.persist().unwrap();
         assert_eq!(
             root.get_text(id).unwrap(),
             r#"Inlined memory
-base64:eyJub3RlcyI6eyIxMCI6ImZvbyIsIjExIjoiYmFyIn0sIm1hbmlmZXN0Ijp7ImNoaWxkcmVuIjp7IjAiOlsxMCwxMV19LCJtZXRhcyI6eyIwIjoidHlwZT1yb290XG4ifSwibmV4dF9pZCI6MTJ9fQ=="#
+base64:omVub3Rlc6IKY2ZvbwtjYmFyaG1hbmlmZXN0o2hjaGlsZHJlbqEAggoLZW1ldGFzoQBqdHlwZT1yb290CmduZXh0X2lkDA=="#
         );
         drop(root);
 

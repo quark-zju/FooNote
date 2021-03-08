@@ -1,4 +1,5 @@
 use crate::backend::meta::blob::BlobBackend;
+use crate::backend::meta::blob::BlobFormat;
 use crate::backend::meta::blob::BlobIo;
 use once_cell::sync::Lazy;
 use parking_lot::Mutex;
@@ -34,6 +35,10 @@ impl BlobIo for MemBlobIo {
 
     fn inline_data(&self) -> Option<&[u8]> {
         Some(&self.data)
+    }
+
+    fn format() -> BlobFormat {
+        BlobFormat::CBOR
     }
 }
 
