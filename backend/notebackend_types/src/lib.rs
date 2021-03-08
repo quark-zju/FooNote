@@ -16,7 +16,8 @@ pub use tree::Mtime;
 pub use tree::TreeBackend;
 
 /// Function to construct a backend. Useful for Rust shared libraries.
-pub type CreateBackendFunc = fn(url: &str) -> std::io::Result<Box<dyn TreeBackend<Id = Id>>>;
+pub type CreateBackendFunc =
+    fn(url: &str, inline_data: Option<&[u8]>) -> std::io::Result<Box<dyn TreeBackend<Id = Id>>>;
 
 pub use tree::PersistCallbackFunc;
 

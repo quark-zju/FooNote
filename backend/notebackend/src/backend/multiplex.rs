@@ -59,7 +59,7 @@ impl Default for MultiplexBackend {
 
 impl MultiplexBackend {
     pub fn open_url(url: &str) -> io::Result<Self> {
-        let backend = crate::url::open(url)?;
+        let backend = crate::url::open(url, None)?;
         let result = Self {
             root: Mount {
                 backend,
@@ -117,7 +117,7 @@ impl MultiplexBackend {
 
         log::debug!("Attempt to mount {} at {:?}", &url, id);
         let mut error_message = None;
-        let backend = match crate::url::open(url.as_ref()) {
+        let backend = match crate::url::open(url.as_ref(), None) {
             Ok(backend) => backend,
             Err(e) => {
                 log::warn!("Failed to mount {}: {:?}", &url, e);
@@ -607,6 +607,10 @@ impl TreeBackend for MultiplexBackend {
         }
         log::trace!("remove_batch - done");
         Ok(())
+    }
+
+    fn inline_data(&self) -> Option<&[u8]> {
+        None
     }
 }
 

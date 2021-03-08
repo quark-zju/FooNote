@@ -75,4 +75,8 @@ impl TreeBackend for NullBackend {
     fn persist_async(&mut self, callback: PersistCallbackFunc) {
         callback(Ok(()))
     }
+
+    fn inline_data(&self) -> Option<&[u8]> {
+        None
+    }
 }

@@ -7,7 +7,10 @@ use std::fs;
 use std::io;
 
 #[no_mangle]
-pub fn notebackend_create(url: &str) -> io::Result<Box<dyn TreeBackend<Id = Id>>> {
+pub fn notebackend_create(
+    url: &str,
+    _inline_data: Option<&[u8]>,
+) -> io::Result<Box<dyn TreeBackend<Id = Id>>> {
     let split = url.splitn(2, ' ').collect::<Vec<_>>();
     let (path, arg) = match split[..] {
         [path, arg] => (path, arg),
@@ -187,6 +190,10 @@ impl TreeBackend for PythonBackend {
             self.instance.call_method(py, "persist", NoArgs, None)?;
             Ok(())
         })
+    }
+
+    fn inline_data(&self) -> Option<&[u8]> {
+        None
     }
 
     fn persist_async(&mut self, callback: PersistCallbackFunc) {

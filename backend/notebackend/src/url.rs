@@ -8,7 +8,7 @@ use std::io;
 use std::{io::Result, path::Path};
 
 /// Load a backend from a URL.
-pub fn open(url: &str) -> Result<Box<dyn TreeBackend<Id = Id>>> {
+pub fn open(url: &str, inline_data: Option<&[u8]>) -> Result<Box<dyn TreeBackend<Id = Id>>> {
     log::info!("open url: {}", url);
 
     let backend: Box<dyn TreeBackend<Id = Id>> = match backend_type_from_url(url)? {
@@ -39,7 +39,11 @@ pub fn open(url: &str) -> Result<Box<dyn TreeBackend<Id = Id>>> {
             }
             backend
         }
-        BackendType::Python => Box::new(backend::DylibBackend::open("notebackend_python", url)?),
+        BackendType::Python => Box::new(backend::DylibBackend::open(
+            "notebackend_python",
+            url,
+            inline_data,
+        )?),
     };
 
     Ok(backend)

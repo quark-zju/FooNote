@@ -265,6 +265,9 @@ pub trait TreeBackend: Send + Sync + 'static {
         Ok(heads)
     }
 
+    /// Obtains the serialized data. Useful for inline trees.
+    fn inline_data(&self) -> Option<&[u8]>;
+
     /// Write changes to the underlying backend.
     fn persist(&mut self) -> Result<()>;
 
@@ -374,6 +377,10 @@ impl TreeBackend for Box<dyn TreeBackend<Id = Id>> {
 
     fn autofill(&mut self, id: Self::Id) -> Result<()> {
         self.deref_mut().autofill(id)
+    }
+
+    fn inline_data(&self) -> Option<&[u8]> {
+        self.deref().inline_data()
     }
 }
 

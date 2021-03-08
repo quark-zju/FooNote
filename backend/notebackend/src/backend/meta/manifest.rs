@@ -23,6 +23,9 @@ pub trait TextIO: Send + Sync + 'static {
         let r = self.persist_with_manifest(manifest);
         callback(r)
     }
+    fn get_inline_data(&self) -> Option<&[u8]> {
+        None
+    }
 }
 /// Manifest-based tree backend. Includes how to deal with texts.
 pub struct ManifestBasedBackend<T> {
@@ -315,5 +318,9 @@ impl<T: TextIO> TreeBackend for ManifestBasedBackend<T> {
         self.ensure_not_read_only()?;
         self.manifest.touch(id);
         Ok(())
+    }
+
+    fn inline_data(&self) -> Option<&[u8]> {
+        self.text_io.get_inline_data()
     }
 }

@@ -15,7 +15,7 @@ pub struct DylibBackend {
 }
 
 impl DylibBackend {
-    pub fn open(lib_name: &str, url: &str) -> io::Result<Self> {
+    pub fn open(lib_name: &str, url: &str, inline_data: Option<&[u8]>) -> io::Result<Self> {
         let lib =
             Library::new(lib_name).map_err(|e| io::Error::new(io::ErrorKind::InvalidInput, e))?;
         // safety: the shared library should be built, shipped together with
@@ -24,7 +24,7 @@ impl DylibBackend {
             lib.get(b"notebackend_create")
                 .map_err(|e| io::Error::new(io::ErrorKind::NotFound, e))?
         };
-        let tree = create_func(url).map_err(|e| {
+        let tree = create_func(url, inline_data).map_err(|e| {
             // The error data might refer to static segments in the dylib.
             // They will become invalid after dropping "lib". So turn them
             // into plain strings first.
@@ -143,6 +143,10 @@ impl TreeBackend for DylibBackend {
 
     fn get_heads(&self, ids: &[Self::Id]) -> io::Result<Vec<Self::Id>> {
         self.tree.get_heads(ids)
+    }
+
+    fn inline_data(&self) -> Option<&[u8]> {
+        self.tree.inline_data()
     }
 }
 
@@ -281,7 +285,7 @@ def get_instance(url):
         let py_path = path.join("a.py");
         let url = format!("{} MEMORY", py_path.display());
         std::fs::write(&py_path, BACKEND_PY_CODE).unwrap();
-        match crate::url::open(&url) {
+        match crate::url::open(&url, None) {
             Ok(mut backend) => {
                 backend.check_generic().unwrap();
             }
