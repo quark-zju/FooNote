@@ -3,6 +3,7 @@
 
 use crate::backend::meta::manifest::ManifestBasedBackend;
 use crate::backend::meta::manifest::TextIO;
+use crate::manifest::CompactManifest;
 use crate::manifest::Manifest;
 use notebackend_types::Id;
 use serde::Deserialize;
@@ -64,15 +65,21 @@ impl<I: BlobIo> TextIO for BlobTextIo<I> {
     }
 
     fn persist_with_manifest(&mut self, manifest: &mut Manifest) -> Result<()> {
-        let data = RefTreeData {
-            texts: &self.texts,
-            manifest: manifest,
-        };
         let buf = match I::format() {
-            BlobFormat::CBOR => serde_cbor::to_vec(&data)
-                .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?,
-            BlobFormat::JSON => serde_json::to_vec(&data)
-                .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?,
+            BlobFormat::JSON => {
+                let data = RefTreeData {
+                    texts: &self.texts,
+                    manifest: &manifest,
+                };
+                serde_json::to_vec(&data).expect("serialize should succeed")
+            }
+            BlobFormat::CBOR => {
+                let data = CompactRefTreeData {
+                    texts: &self.texts,
+                    manifest: manifest.to_compact(),
+                };
+                serde_cbor::to_vec(&data).expect("serialize should succeed")
+            }
         };
         self.blob_io.save(buf)?;
         Ok(())
@@ -84,16 +91,25 @@ impl<I: BlobIo> TextIO for BlobTextIo<I> {
 }
 #[derive(Serialize)]
 struct RefTreeData<'a> {
-    #[serde(rename = "notes")]
+    #[serde(rename = "notes", alias = "t")]
     texts: &'a BTreeMap<Id, String>,
+    #[serde(rename = "manifest", alias = "m")]
     manifest: &'a Manifest,
+}
+
+#[derive(Serialize)]
+struct CompactRefTreeData<'a> {
+    #[serde(alias = "notes", rename = "t")]
+    texts: &'a BTreeMap<Id, String>,
+    #[serde(alias = "manifest", rename = "m")]
+    manifest: CompactManifest<'a>,
 }
 
 #[derive(Deserialize, Default)]
 struct TreeData {
-    #[serde(default, rename = "notes")]
+    #[serde(default, rename = "notes", alias = "t")]
     texts: BTreeMap<Id, String>,
-    #[serde(default)]
+    #[serde(default, rename = "manifest", alias = "m")]
     manifest: Manifest,
 }
 
@@ -108,20 +124,23 @@ impl<I: BlobIo> BlobBackend<I> {
 
     /// Converts to bytes.
     pub fn to_bytes(&self) -> Vec<u8> {
-        let data = self.to_serializable_data();
         let buf = match I::format() {
-            BlobFormat::JSON => serde_json::to_vec(&data).expect("serialize should succeed"),
-            BlobFormat::CBOR => serde_cbor::to_vec(&data).expect("serialize should succeed"),
+            BlobFormat::JSON => {
+                let data = RefTreeData {
+                    texts: &self.text_io.texts,
+                    manifest: &self.manifest,
+                };
+                serde_json::to_vec(&data).expect("serialize should succeed")
+            }
+            BlobFormat::CBOR => {
+                let data = CompactRefTreeData {
+                    texts: &self.text_io.texts,
+                    manifest: self.manifest.to_compact(),
+                };
+                serde_cbor::to_vec(&data).expect("serialize should succeed")
+            }
         };
         buf
-    }
-
-    /// Convert to serializable data.
-    fn to_serializable_data(&self) -> RefTreeData {
-        RefTreeData {
-            texts: &self.text_io.texts,
-            manifest: &self.manifest,
-        }
     }
 
     /// Construct from `BlobIo`.

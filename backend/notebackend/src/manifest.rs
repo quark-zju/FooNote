@@ -10,16 +10,37 @@ use std::hash::Hash;
 /// Metadata about the tree. Does not include the actual "text" of nodes.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Manifest {
-    #[serde(default)]
+    #[serde(default, rename = "children", alias = "c")]
     pub children: BTreeMap<Id, Vec<Id>>,
-    #[serde(default)]
+    #[serde(default, rename = "metas", alias = "m")]
     pub metas: BTreeMap<Id, String>,
-    #[serde(default = "min_next_id")]
+    #[serde(default = "min_next_id", rename = "next_id", alias = "n")]
     pub next_id: Id,
     #[serde(skip)]
     pub parents: BTreeMap<Id, Id>, // derived from children
     #[serde(skip)]
     pub mtime: HashMap<Id, Mtime>, // temporary in-process state
+}
+
+/// Like manifest, but more compact in serialization (shorter fields).
+#[derive(Serialize, Debug, Clone)]
+pub struct CompactManifest<'a> {
+    #[serde(default, alias = "children", rename = "c")]
+    children: &'a BTreeMap<Id, Vec<Id>>,
+    #[serde(default, alias = "metas", rename = "m")]
+    metas: &'a BTreeMap<Id, String>,
+    #[serde(default = "min_next_id", alias = "next_id", rename = "n")]
+    next_id: Id,
+}
+
+impl Manifest {
+    pub fn to_compact(&self) -> CompactManifest {
+        CompactManifest {
+            children: &self.children,
+            metas: &self.metas,
+            next_id: self.next_id,
+        }
+    }
 }
 
 pub const ROOT_ID: Id = 0;

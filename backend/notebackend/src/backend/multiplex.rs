@@ -912,8 +912,7 @@ mod tests {
         );
         assert_eq!(
             root.get_text(id).unwrap(),
-            r#"Inlined memory
-base64:omVub3Rlc6EKY2Zvb2htYW5pZmVzdKNoY2hpbGRyZW6hAIEKZW1ldGFzoQBqdHlwZT1yb290CmduZXh0X2lkCw=="#
+            "Inlined memory\nbase64:omF0oQpjZm9vYW2jYWOhAIEKYW2hAGp0eXBlPXJvb3QKYW4L"
         );
 
         // Change again
@@ -921,14 +920,13 @@ base64:omVub3Rlc6EKY2Zvb2htYW5pZmVzdKNoY2hpbGRyZW6hAIEKZW1ldGFzoQBqdHlwZT1yb290C
             .unwrap();
         assert_eq!(
             root.get_text(id).unwrap(),
-            r#"Inlined memory
-base64:omVub3Rlc6EKY2Zvb2htYW5pZmVzdKNoY2hpbGRyZW6hAIEKZW1ldGFzoQBqdHlwZT1yb290CmduZXh0X2lkCw=="#
+            "Inlined memory\nbase64:omF0oQpjZm9vYW2jYWOhAIEKYW2hAGp0eXBlPXJvb3QKYW4L"
         );
         root.persist().unwrap();
         assert_eq!(
             root.get_text(id).unwrap(),
             r#"Inlined memory
-base64:omVub3Rlc6IKY2ZvbwtjYmFyaG1hbmlmZXN0o2hjaGlsZHJlbqEAggoLZW1ldGFzoQBqdHlwZT1yb290CmduZXh0X2lkDA=="#
+base64:omF0ogpjZm9vC2NiYXJhbaNhY6EAggoLYW2hAGp0eXBlPXJvb3QKYW4M"#
         );
         drop(root);
 
