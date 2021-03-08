@@ -25,6 +25,17 @@ pub trait BlobIo: Send + Sync + 'static {
     fn inline_data(&self) -> Option<&[u8]> {
         None
     }
+
+    /// True: CBOR; False: JSON.
+    fn format() -> BlobFormat {
+        BlobFormat::JSON
+    }
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum BlobFormat {
+    JSON,
+    CBOR,
 }
 
 pub type BlobBackend<I> = ManifestBasedBackend<BlobTextIo<I>>;
@@ -57,8 +68,12 @@ impl<I: BlobIo> TextIO for BlobTextIo<I> {
             texts: &self.texts,
             manifest: manifest,
         };
-        let buf =
-            serde_json::to_vec(&data).map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+        let buf = match I::format() {
+            BlobFormat::CBOR => serde_cbor::to_vec(&data)
+                .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?,
+            BlobFormat::JSON => serde_json::to_vec(&data)
+                .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?,
+        };
         self.blob_io.save(buf)?;
         Ok(())
     }
@@ -94,7 +109,10 @@ impl<I: BlobIo> BlobBackend<I> {
     /// Converts to bytes.
     pub fn to_bytes(&self) -> Vec<u8> {
         let data = self.to_serializable_data();
-        let buf = serde_json::to_vec(&data).expect("serialize should succeed");
+        let buf = match I::format() {
+            BlobFormat::JSON => serde_json::to_vec(&data).expect("serialize should succeed"),
+            BlobFormat::CBOR => serde_cbor::to_vec(&data).expect("serialize should succeed"),
+        };
         buf
     }
 
@@ -113,7 +131,11 @@ impl<I: BlobIo> BlobBackend<I> {
         let mut data: TreeData = if buf.is_empty() {
             Default::default()
         } else {
-            serde_json::from_slice(buf)?
+            match I::format() {
+                BlobFormat::JSON => serde_json::from_slice(buf)?,
+                BlobFormat::CBOR => serde_cbor::from_slice(buf)
+                    .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?,
+            }
         };
         data.manifest.rebuild_parents();
         let result = Self::from_manifest_text_io(
