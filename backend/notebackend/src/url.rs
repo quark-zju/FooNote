@@ -27,7 +27,8 @@ pub fn open(url: &str, inline_data: Option<&[u8]>) -> Result<Box<dyn TreeBackend
                 if let Some(name) = name {
                     Box::new(backend::NamedMemBackend::from_named_memory(name)?)
                 } else {
-                    Box::new(backend::MemBackend::empty())
+                    let data = inline_data.map(|d| d.to_vec()).unwrap_or_default();
+                    Box::new(backend::MemBackend::from_bytes(data)?)
                 }
             };
             #[cfg(test)]

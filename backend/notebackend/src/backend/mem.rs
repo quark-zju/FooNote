@@ -31,6 +31,10 @@ impl BlobIo for MemBlobIo {
         self.data = Arc::new(data);
         Ok(())
     }
+
+    fn inline_data(&self) -> Option<&[u8]> {
+        Some(&self.data)
+    }
 }
 
 static NAMED_MEMORY_BUFFERS: Lazy<Mutex<HashMap<String, Vec<u8>>>> = Lazy::new(Default::default);

@@ -39,7 +39,7 @@ struct MountTable {
     mounts: Vec<Mount>,
 
     /// Url to backend Id.
-    url_to_id: HashMap<String, BackendId>,
+    key_to_id: HashMap<String, BackendId>,
 }
 
 struct Mount {
@@ -49,6 +49,12 @@ struct Mount {
     /// The node that has the "mount=url" meta.
     source_id: Vec<FullId>,
     url: Option<String>,
+    key: Option<String>,
+
+    /// Whether this mount is "inlined".
+    /// An inlined mount does not save to the "url", but inlined
+    /// in its mount source.
+    inline: bool,
 }
 
 impl Default for MultiplexBackend {
@@ -66,6 +72,8 @@ impl MultiplexBackend {
                 error_message: None,
                 source_id: Vec::new(),
                 url: Some(url.to_string()),
+                key: None,
+                inline: false,
             },
             table: Default::default(),
         };
@@ -79,6 +87,8 @@ impl MultiplexBackend {
                 error_message: None,
                 source_id: Vec::new(),
                 url: None,
+                key: None,
+                inline: false,
             },
             table: Default::default(),
         }
@@ -97,8 +107,15 @@ impl MultiplexBackend {
             return Ok(id);
         }
 
+        let inline = self.extract_inline(id)?;
+        let key = if inline {
+            format!("i:{:?}:{}", id, url)
+        } else {
+            format!("u:{}", url)
+        };
+
         let mut table = self.table.write();
-        if let Some(&backend_index) = table.url_to_id.get(url.as_ref()) {
+        if let Some(&backend_index) = table.key_to_id.get(&key) {
             // Already mounted.
             log::trace!("Reuse backend {} for URL {}", backend_index, &url,);
             let mount = &mut table.mounts[backend_index];
@@ -115,9 +132,17 @@ impl MultiplexBackend {
             return Ok(id);
         }
 
-        log::debug!("Attempt to mount {} at {:?}", &url, id);
+        log::debug!("Attempt to mount {} at {:?} (inline={})", &url, id, inline);
         let mut error_message = None;
-        let backend = match crate::url::open(url.as_ref(), None) {
+        let inline_data = if inline {
+            // Pick the text.
+            let text = self.get_text(id)?;
+            let data = decode_inlined_last_line(&text)?;
+            Some(data)
+        } else {
+            None
+        };
+        let backend = match crate::url::open(url.as_ref(), inline_data.as_deref()) {
             Ok(backend) => backend,
             Err(e) => {
                 log::warn!("Failed to mount {}: {:?}", &url, e);
@@ -139,6 +164,8 @@ impl MultiplexBackend {
             error_message,
             source_id: vec![id],
             url: Some(url.to_string()),
+            key: Some(key.clone()),
+            inline,
         };
         let backend_index = match backend_index {
             None => {
@@ -151,7 +178,7 @@ impl MultiplexBackend {
                 i
             }
         };
-        table.url_to_id.insert(url.to_string(), backend_index);
+        table.key_to_id.insert(key, backend_index);
 
         let backend_id = backend_index + 1;
         log::info!("Mounted {} for {:?} as backend {}", &url, id, backend_id);
@@ -208,7 +235,11 @@ impl MultiplexBackend {
             mount.backend = Box::new(NullBackend);
             mount.url = None;
             mount.error_message = Some("umounted".to_string());
-            table.url_to_id.remove(&url);
+            let key = match mount.key.as_ref() {
+                Some(key) => key.clone(),
+                None => continue,
+            };
+            table.key_to_id.remove(&key);
             log::info!("umounted backend {} ({})", i + 1, &url);
         }
         log::trace!("umount_recursive {:?} done", id);
@@ -289,7 +320,11 @@ impl MultiplexBackend {
         self.extract_meta(id, "mount=")
     }
 
-    fn get_children_ex(&self, id: FullId, auto_mount: bool) -> Result<Vec<FullId>> {
+    fn extract_inline(&self, id: FullId) -> io::Result<bool> {
+        Ok(!self.extract_meta(id, "inline=")?.is_empty())
+    }
+
+    fn get_children_follow_mounts(&self, id: FullId, auto_mount: bool) -> Result<Vec<FullId>> {
         let fid = self.follow_mount(id, auto_mount)?;
         let children = self
             .with_mount(fid, |m, id| m.backend.get_children(id))?
@@ -297,6 +332,40 @@ impl MultiplexBackend {
             .map(|i| (fid.0, i))
             .collect();
         Ok(children)
+    }
+
+    fn save_inlined_backends(&mut self) -> Result<()> {
+        let mut table = self.table.write();
+        let mut to_write = Vec::new();
+
+        // Save all inlined backends first.
+        for mount in table.mounts.iter_mut() {
+            if !mount.inline {
+                continue;
+            }
+            mount.backend.persist()?;
+
+            let data = mount.backend.inline_data().unwrap_or(b"");
+            log::trace!(
+                "write inline data {:?} to {:?}",
+                &data[..64],
+                &mount.source_id
+            );
+            to_write.push((data.to_vec(), mount.source_id.clone()));
+        }
+
+        drop(table);
+
+        for (data, source_ids) in to_write {
+            let encoded = encode_base64(&data);
+            for id in source_ids {
+                let text = self.get_text(id).unwrap_or_default();
+                let text = replace_last_line(&text, &encoded);
+                self.set_text(id, text)?;
+            }
+        }
+
+        Ok(())
     }
 }
 
@@ -308,7 +377,7 @@ impl TreeBackend for MultiplexBackend {
     }
 
     fn get_children(&self, id: Self::Id) -> Result<Vec<Self::Id>> {
-        self.get_children_ex(id, true)
+        self.get_children_follow_mounts(id, true)
     }
 
     fn get_parent(&self, id: Self::Id) -> Result<Option<Self::Id>> {
@@ -507,6 +576,7 @@ impl TreeBackend for MultiplexBackend {
     }
 
     fn persist(&mut self) -> Result<()> {
+        self.save_inlined_backends()?;
         let mut table = self.table.write();
         for mount in table.mounts.iter_mut().rev() {
             mount.backend.persist()?;
@@ -516,13 +586,18 @@ impl TreeBackend for MultiplexBackend {
     }
 
     fn persist_async(&mut self, callback: PersistCallbackFunc) {
+        // Save all inlined backends first.
+        if let Err(e) = self.save_inlined_backends() {
+            callback(Err(e));
+            return;
+        }
+
+        let mut table = self.table.write();
         struct State {
             callback: Option<PersistCallbackFunc>,
             result: Vec<(String, io::Result<()>)>,
             waiting_count: usize,
         }
-
-        let mut table = self.table.write();
         let state = Arc::new(Mutex::new(State {
             callback: Some(callback),
             result: Default::default(),
@@ -573,7 +648,7 @@ impl TreeBackend for MultiplexBackend {
         };
 
         for mount in table.mounts.iter_mut().rev() {
-            if mount.url.is_some() {
+            if mount.url.is_some() && !mount.inline {
                 process(mount)
             }
         }
@@ -628,6 +703,33 @@ fn warning_backend(message: String) -> BoxBackend {
         )
         .expect("insert to MemBackend should succeed");
     Box::new(backend.freeze())
+}
+
+fn replace_last_line(text: &str, line: &str) -> String {
+    let mut lines: Vec<&str> = text.lines().collect();
+    match lines.last_mut() {
+        Some(last) if last.starts_with("base64:") => {
+            *last = line;
+        }
+        _ => {
+            lines.push(line);
+        }
+    }
+    lines.join("\n")
+}
+
+fn encode_base64(data: &[u8]) -> String {
+    format!("base64:{}", base64::encode(data))
+}
+
+fn decode_inlined_last_line(text: &str) -> Result<Vec<u8>> {
+    let prefix = "base64:";
+    let last_line = text.lines().filter(|l| l.starts_with(prefix)).last();
+    match last_line {
+        None => Ok(Vec::new()),
+        Some(s) => base64::decode(&s[prefix.len()..])
+            .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e)),
+    }
 }
 
 #[cfg(test)]
@@ -763,5 +865,83 @@ mod tests {
         );
         let p = root.get_parent(root.find("C")).unwrap();
         assert_eq!(root.find("A"), p.unwrap());
+    }
+
+    #[test]
+    fn test_inline_mount() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("a.foonote");
+        let backend = crate::backend::SingleFileBackend::from_path(&path).unwrap();
+        let mut root = MultiplexBackend::from_root_backend(Box::new(backend));
+        let id = root
+            .insert(
+                root.get_root_id(),
+                InsertPos::Append,
+                "Inlined memory\n".to_string(),
+                "mount=memory\ninline=true\n".into(),
+            )
+            .unwrap();
+        root.insert(id, InsertPos::Append, "foo".to_string(), Default::default())
+            .unwrap();
+        assert_eq!(
+            root.draw_ascii(&root.all_ids()),
+            r#"
+                root
+                \_ 1 ("Inlined memory")
+                   \_ 2 ("foo")"#
+        );
+        root.persist().unwrap();
+        assert_eq!(
+            root.draw_ascii(&root.all_ids()),
+            r#"
+                root
+                \_ 1 ("Inlined memory")
+                   \_ 2 ("foo")"#
+        );
+        drop(root);
+
+        // Reload
+        let backend = crate::backend::SingleFileBackend::from_path(&path).unwrap();
+        let mut root = MultiplexBackend::from_root_backend(Box::new(backend));
+        assert_eq!(
+            root.draw_ascii(&root.all_ids()),
+            r#"
+                root
+                \_ 1 ("Inlined memory")
+                   \_ 2 ("foo")"#
+        );
+        assert_eq!(
+            root.get_text(id).unwrap(),
+            r#"Inlined memory
+base64:eyJub3RlcyI6eyIxMCI6ImZvbyJ9LCJtYW5pZmVzdCI6eyJjaGlsZHJlbiI6eyIwIjpbMTBdfSwibWV0YXMiOnsiMCI6InR5cGU9cm9vdFxuIn0sIm5leHRfaWQiOjExfX0="#
+        );
+
+        // Change again
+        root.insert(id, InsertPos::Append, "bar".to_string(), Default::default())
+            .unwrap();
+        assert_eq!(
+            root.get_text(id).unwrap(),
+            r#"Inlined memory
+base64:eyJub3RlcyI6eyIxMCI6ImZvbyJ9LCJtYW5pZmVzdCI6eyJjaGlsZHJlbiI6eyIwIjpbMTBdfSwibWV0YXMiOnsiMCI6InR5cGU9cm9vdFxuIn0sIm5leHRfaWQiOjExfX0="#
+        );
+        root.persist().unwrap();
+        assert_eq!(
+            root.get_text(id).unwrap(),
+            r#"Inlined memory
+base64:eyJub3RlcyI6eyIxMCI6ImZvbyIsIjExIjoiYmFyIn0sIm1hbmlmZXN0Ijp7ImNoaWxkcmVuIjp7IjAiOlsxMCwxMV19LCJtZXRhcyI6eyIwIjoidHlwZT1yb290XG4ifSwibmV4dF9pZCI6MTJ9fQ=="#
+        );
+        drop(root);
+
+        // Reload again
+        let backend = crate::backend::SingleFileBackend::from_path(&path).unwrap();
+        let root = MultiplexBackend::from_root_backend(Box::new(backend));
+        assert_eq!(
+            root.draw_ascii(&root.all_ids()),
+            r#"
+                root
+                \_ 1 ("Inlined memory")
+                   \_ 3 ("foo")
+                   \_ 2 ("bar")"#
+        );
     }
 }

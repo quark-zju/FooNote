@@ -20,6 +20,11 @@ pub trait BlobIo: Send + Sync + 'static {
 
     /// Write data to backend.
     fn save(&mut self, data: Vec<u8>) -> io::Result<()>;
+
+    /// Inlined data.
+    fn inline_data(&self) -> Option<&[u8]> {
+        None
+    }
 }
 
 pub type BlobBackend<I> = ManifestBasedBackend<BlobTextIo<I>>;
@@ -56,6 +61,10 @@ impl<I: BlobIo> TextIO for BlobTextIo<I> {
             serde_json::to_vec(&data).map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
         self.blob_io.save(buf)?;
         Ok(())
+    }
+
+    fn get_inline_data(&self) -> Option<&[u8]> {
+        self.blob_io.inline_data()
     }
 }
 #[derive(Serialize)]
