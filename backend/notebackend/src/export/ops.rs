@@ -10,6 +10,7 @@ use crate::lang::LangId;
 use crate::search::Search;
 use backend::MemBackend;
 use log::Level::{Debug, Error, Info, Trace, Warn};
+use notebackend_types::log;
 use notebackend_types::InsertPos;
 use notebackend_types::TreeBackend;
 use once_cell::sync::Lazy;
@@ -520,11 +521,11 @@ pub extern "C" fn notebackend_log_max_level() -> i32 {
 macro_rules! export_log {
     ($lvl:expr, $($arg:tt)+) => ({
         let lvl = $lvl;
-        if lvl <= ::log::STATIC_MAX_LEVEL && lvl <= ::log::max_level() {
-            ::log::__private_api_log(
-                ::log::__log_format_args!($($arg)+),
+        if lvl <= log::STATIC_MAX_LEVEL && lvl <= log::max_level() {
+            log::__private_api_log(
+                log::__log_format_args!($($arg)+),
                 lvl,
-                &(TARGET, TARGET, ::log::__log_file!(), ::log::__log_line!()),
+                &(TARGET, TARGET, log::__log_file!(), log::__log_line!()),
             );
         }
     });

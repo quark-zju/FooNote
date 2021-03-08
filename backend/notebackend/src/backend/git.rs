@@ -5,6 +5,7 @@ use crate::manifest::Manifest;
 use crate::merge;
 use crate::t;
 use git_cmd::GitCommand;
+use notebackend_types::log;
 use notebackend_types::Id;
 use notebackend_types::PersistCallbackFunc;
 use parking_lot::lock_api::RwLockUpgradableReadGuard;
@@ -1059,6 +1060,7 @@ fn fast_import_file_delete(path: &str) -> String {
 }
 
 mod git_cmd {
+    use notebackend_types::log;
     use once_cell::sync::Lazy;
     use std::io;
     use std::path::Path;

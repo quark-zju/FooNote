@@ -3,6 +3,7 @@
 
 use crate::backend::MemBackend;
 use crate::t;
+use notebackend_types::log;
 pub use notebackend_types::BackendId;
 use notebackend_types::InsertPos;
 use notebackend_types::TreeBackend;

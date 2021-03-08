@@ -19,3 +19,5 @@ pub use tree::TreeBackend;
 pub type CreateBackendFunc = fn(url: &str) -> std::io::Result<Box<dyn TreeBackend<Id = Id>>>;
 
 pub use tree::PersistCallbackFunc;
+
+pub use log;

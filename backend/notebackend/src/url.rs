@@ -1,5 +1,6 @@
 use crate::backend;
 use crate::t;
+use notebackend_types::log;
 use notebackend_types::Id;
 use notebackend_types::TreeBackend;
 use std::fmt;

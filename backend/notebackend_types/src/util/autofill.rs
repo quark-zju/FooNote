@@ -8,6 +8,7 @@ pub(crate) fn autofill(seq: &[&str]) -> Option<String> {
     }
     // Try without common prefix / suffix.
     if let Some(predict) = autofill_no_prefix_suffix(seq) {
+        log::debug!("autofill {:?} => {:?}", seq, &predict);
         return Some(predict);
     }
     // Remove common prefix / suffix and try again.
@@ -29,7 +30,9 @@ pub(crate) fn autofill(seq: &[&str]) -> Option<String> {
     autofill_no_prefix_suffix(&short_seq).map(|s| {
         let prefix = &seq[0][0..prefix_len];
         let suffix = &seq[0][seq[0].len() - suffix_len..];
-        format!("{}{}{}", prefix, s, suffix)
+        let result = format!("{}{}{}", prefix, s, suffix);
+        log::debug!("autofill {:?} => {:?}", seq, &result);
+        result
     })
 }
 

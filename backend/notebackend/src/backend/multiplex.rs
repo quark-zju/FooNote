@@ -3,6 +3,7 @@
 use super::null::NullBackend;
 use crate::clipboard;
 use crate::t;
+use notebackend_types::log;
 use notebackend_types::meta::TreeMeta;
 use notebackend_types::BackendId;
 use notebackend_types::Id;
