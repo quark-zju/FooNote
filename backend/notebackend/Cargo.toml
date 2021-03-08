@@ -23,5 +23,13 @@ serde_json = { version = "1" }
 tempfile = "3"
 base64 = "0.13"
 
+scrypt = { version = "0.5", optional = true }
+rand = { version = "0.8", optional = true }
+aes-gcm-siv = { version = "0.9", optional = true }
+
+[features]
+encrypt = ["aes-gcm-siv", "scrypt", "rand"]
+default = ["encrypt"]
+
 [dev-dependencies]
 drawdag = { package = "esl01-drawdag", version = "0.1" }

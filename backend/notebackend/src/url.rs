@@ -50,6 +50,23 @@ pub fn open(url: &str, inline_data: Option<&[u8]>) -> Result<Box<dyn TreeBackend
     Ok(backend)
 }
 
+pub fn open_aes256(password: &str, data: Vec<u8>) -> io::Result<Box<dyn TreeBackend<Id = Id>>> {
+    #[cfg(feature = "encrypt")]
+    {
+        let backend = crate::backend::Aes256Backend::from_encrypted_bytes(data, password)?;
+        return Ok(Box::new(backend));
+    }
+
+    #[allow(unreachable_code)]
+    Err(io::Error::new(
+        io::ErrorKind::AddrNotAvailable,
+        t!(
+            cn = "AES256 功能未编译",
+            en = "AES256 feature was not compiled"
+        ),
+    ))
+}
+
 /// Find out the backend type from a URL.
 pub fn backend_type_from_url(url: &str) -> io::Result<BackendType> {
     let backend_type = if url.ends_with(".git") || url.ends_with(".git/") {

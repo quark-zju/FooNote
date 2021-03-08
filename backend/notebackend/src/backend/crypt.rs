@@ -1,0 +1,135 @@
+use crate::backend::meta::blob::BlobBackend;
+use crate::backend::meta::blob::BlobFormat;
+use crate::backend::meta::blob::BlobIo;
+use crate::t;
+use aes_gcm_siv::aead::{generic_array::GenericArray, Aead, NewAead};
+use aes_gcm_siv::Aes256GcmSiv;
+use notebackend_types::log;
+use rand::RngCore;
+use scrypt::ScryptParams;
+use std::convert::TryInto;
+use std::io;
+
+const SALT_LEN: usize = 32;
+const NONCE_LEN: usize = 12;
+pub struct Aes256BlobIo {
+    // salt + iv + data
+    data: Vec<u8>,
+    key: Box<Key>,
+}
+
+struct Key([u8; 32]);
+
+impl Drop for Key {
+    fn drop(&mut self) {
+        self.0 = rand::random();
+    }
+}
+
+impl Aes256BlobIo {
+    fn salt(&self) -> [u8; SALT_LEN] {
+        self.data[..SALT_LEN].try_into().unwrap()
+    }
+
+    fn nonce(&mut self) -> [u8; NONCE_LEN] {
+        let result = self.data[SALT_LEN..(SALT_LEN + NONCE_LEN)]
+            .try_into()
+            .unwrap();
+        log::trace!("nonce: {:?}", &result);
+        result
+    }
+
+    fn next_nonce(&mut self) -> [u8; NONCE_LEN] {
+        let mut i = SALT_LEN;
+        loop {
+            self.data[i] = self.data[i].wrapping_add(1);
+            if self.data[i] == 0 && i < SALT_LEN + NONCE_LEN {
+                i += 1;
+            } else {
+                break;
+            }
+        }
+        self.nonce()
+    }
+
+    fn cipher(&self) -> Aes256GcmSiv {
+        let key = GenericArray::from_slice(&self.key.0);
+        let cipher = Aes256GcmSiv::new(key);
+        cipher
+    }
+}
+
+impl BlobIo for Aes256BlobIo {
+    fn load(&mut self) -> io::Result<Box<dyn AsRef<[u8]>>> {
+        // Decrypt
+        let cipher = self.cipher();
+        let nonce = self.nonce();
+        let nonce = GenericArray::from_slice(&nonce);
+        let encrypted = self.data.get((SALT_LEN + NONCE_LEN)..).unwrap_or(b"");
+        let text = if encrypted.is_empty() {
+            Vec::<u8>::new()
+        } else {
+            cipher.decrypt(nonce, encrypted).map_err(|e| {
+                io::Error::new(
+                    io::ErrorKind::InvalidData,
+                    t!(cn = "解密失败: {}", en = "Cannot decrypt: {}", e),
+                )
+            })?
+        };
+        Ok(Box::new(text))
+    }
+
+    fn save(&mut self, data: Vec<u8>) -> io::Result<()> {
+        // Encrypt (to inline_data())
+        let nonce = self.next_nonce();
+        let mut result = self.salt().to_vec();
+        result.extend_from_slice(&nonce);
+        let nonce = GenericArray::from_slice(&nonce);
+        let cipher = self.cipher();
+        let encrypted = cipher.encrypt(nonce, &data[..]).expect("encrypt failure");
+        log::debug!("encrypted {} into {} bytes", data.len(), encrypted.len());
+        result.extend(encrypted);
+        self.data = result;
+        Ok(())
+    }
+
+    fn inline_data(&self) -> Option<&[u8]> {
+        Some(&self.data)
+    }
+
+    fn format() -> BlobFormat {
+        BlobFormat::CBOR
+    }
+}
+
+impl BlobBackend<Aes256BlobIo> {
+    /// Load from a given path.
+    pub fn from_encrypted_bytes(mut data: Vec<u8>, password: &str) -> io::Result<Self> {
+        // Add salt if data is empty.
+        if data.is_empty() {
+            let mut salt: [u8; SALT_LEN + NONCE_LEN] = [0u8; SALT_LEN + NONCE_LEN];
+            let mut rng = rand::thread_rng();
+            rng.fill_bytes(&mut salt);
+            log::debug!("new random salt + nonce: {}", base64::encode(&salt));
+            data.extend(&salt);
+        }
+        let salt = match data.get(..SALT_LEN) {
+            None => return Err(io::ErrorKind::InvalidData.into()),
+            Some(salt) => salt,
+        };
+        log::trace!("salt: {}", base64::encode(&salt));
+
+        // Produce key.
+        let key = password_derive_key(&salt, password);
+        let blob_io = Aes256BlobIo { data, key };
+        Self::from_blob_io(blob_io)
+    }
+}
+
+/// Derive key from password.
+fn password_derive_key(salt: &[u8], password: &str) -> Box<Key> {
+    let params = ScryptParams::new(15, 8, 1).unwrap();
+    let mut output = [0u8; 32];
+    scrypt::scrypt(password.as_bytes(), salt, &params, &mut output).unwrap();
+    Box::new(Key(output))
+}

@@ -8,6 +8,9 @@ pub(crate) mod meta;
 mod multiplex;
 pub(crate) mod null;
 
+#[cfg(feature = "encrypt")]
+mod crypt;
+
 pub use dylib::DylibBackend;
 pub use git::GitBackend;
 pub use multiplex::FullId;
@@ -16,6 +19,9 @@ pub use multiplex::MultiplexBackend;
 pub type SingleFileBackend = BlobBackend<file::FileBlobIo>;
 pub type MemBackend = BlobBackend<mem::MemBlobIo>;
 pub type NamedMemBackend = BlobBackend<mem::NamedMemBlobIo>;
+
+#[cfg(feature = "encrypt")]
+pub type Aes256Backend = BlobBackend<crypt::Aes256BlobIo>;
 
 #[cfg(test)]
 pub(crate) mod tests {
