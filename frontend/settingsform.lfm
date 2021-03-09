@@ -3,7 +3,7 @@ object FormFooNoteSettings: TFormFooNoteSettings
   Height = 184
   Top = 275
   Width = 237
-  BorderIcons = [biSystemMenu]
+  BorderIcons = []
   BorderStyle = bsDialog
   Caption = 'FooNote Settings'
   ClientHeight = 184
@@ -30,7 +30,6 @@ object FormFooNoteSettings: TFormFooNoteSettings
     Constraints.MinWidth = 80
     Default = True
     ModalResult = 1
-    OnClick = ButtonOkClick
     TabOrder = 0
   end
   object GroupBoxInterfaceSettings: TGroupBox

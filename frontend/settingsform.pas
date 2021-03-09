@@ -19,7 +19,6 @@ type
     FontDialog1: TFontDialog;
     GroupBoxInterfaceSettings: TGroupBox;
     procedure ButtonSelFontClick(Sender: TObject);
-    procedure ButtonOkClick(Sender: TObject);
     procedure CheckBoxOnTopChange(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure FormShow(Sender: TObject);
@@ -50,11 +49,6 @@ begin
   LinkedFont.Assign(Font);
   //LinkedFont.Name := Font.Name;
   //LinkedFont.Size := Font.Size;
-end;
-
-procedure TFormFooNoteSettings.ButtonOkClick(Sender: TObject);
-begin
-  Close;
 end;
 
 procedure TFormFooNoteSettings.CheckBoxOnTopChange(Sender: TObject);

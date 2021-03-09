@@ -1841,7 +1841,6 @@ object FormFooNoteMain: TFormFooNoteMain
     end
     object MenuItem20: TMenuItem
       Caption = '-'
-      Visible = False
     end
     object MenuItem21: TMenuItem
       Action = ActionAppSettingPreferences

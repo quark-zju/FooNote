@@ -152,6 +152,9 @@ function UrlType(Url: string): string;
 var
   S: string;
 begin
+  if Url.IsEmpty then begin
+    exit;
+  end;
   StackClear();
   StackPushString(Url);
   if LogResultErrorMessage(notebackend_type_of_url(), S) = OK then begin

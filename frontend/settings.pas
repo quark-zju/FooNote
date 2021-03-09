@@ -6,7 +6,7 @@ unit Settings;
 interface
 
 uses
-  Classes, SysUtils, fpjsonrtti, Graphics, NoteTypes, FpJson, StdCtrls;
+  Classes, SysUtils, fpjsonrtti, Graphics, NoteTypes, FpJson, StdCtrls, LogFFI;
 
 type
   TDockSide = (dsNone = 0, dsLeft = 1, dsRight = 2);
@@ -173,6 +173,9 @@ end;
 procedure TAppConfig.SetStayOnTop(Value: boolean);
 begin
   FStayOnTop := Value;
+  if LogHasDebug then begin
+    LogDebug(Format('StayOnTop = %d', [FStayOnTop.ToInteger]));
+  end;
   RunCallbacks('StayOnTop');
 end;
 

@@ -355,10 +355,16 @@ begin
   if (Name = AnyConfigName) or (Name = 'StayOnTop') then begin
     if Config.StayOnTop and (not AppConfig.ForceNotTop) then begin
       if This.FormStyle <> fsSystemStayOnTop then begin
+        if LogHasDebug then begin
+          LogDebug('Set FormStyle to fsSystemStayOnTop');
+        end;
         This.FormStyle := fsSystemStayOnTop;
       end;
     end else begin
       if This.FormStyle <> fsNormal then begin
+        if LogHasDebug then begin
+          LogDebug('Set FormStyle to fsNormal');
+        end;
         This.FormStyle := fsNormal;
       end;
     end;
@@ -1926,8 +1932,7 @@ begin
   if FormFooNoteSettings = nil then begin
     Application.CreateForm(TFormFooNoteSettings, FormFooNoteSettings);
   end;
-  FormFooNoteSettings.Show;
-  FormFooNoteSettings.SetFocus;
+  FormFooNoteSettings.ShowModal;
 end;
 
 initialization
