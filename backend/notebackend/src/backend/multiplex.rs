@@ -149,7 +149,7 @@ impl MultiplexBackend {
     /// Mount `id` on demand. Return the mounted id.
     /// If `auto_mount` is false, then avoid mounting new backends.
     fn follow_mount(&self, id: FullId, auto_mount: bool) -> io::Result<FullId> {
-        let (url, key, encrypted, inline) = match self.mount_url_key_encrypted_inline(id)? {
+        let (url, key, encrypted, mut inline) = match self.mount_url_key_encrypted_inline(id)? {
             Some(v) => v,
             None => return Ok(id),
         };
@@ -188,8 +188,11 @@ impl MultiplexBackend {
             match password {
                 Some(password) => crate::url::open_aes256(password, inline_data.unwrap()),
                 None => Err(io::Error::new(
-                    io::ErrorKind::InvalidInput,
-                    t!(cn = "需要密码", en = "Password Required"),
+                    io::ErrorKind::PermissionDenied,
+                    t!(
+                        cn = "需要密码\n\n双击加密项输入密码。",
+                        en = "Password Required\n\nDouble click the encrypted item to provide a password."
+                    ),
                 )),
             }
         } else {
@@ -200,6 +203,7 @@ impl MultiplexBackend {
             Err(e) => {
                 log::warn!("Failed to mount {}: {:?}", &url, e);
                 error_message = Some(e.to_string());
+                inline = false;
                 warning_backend(e.to_string())
             }
         };
@@ -397,7 +401,7 @@ impl MultiplexBackend {
 
         // Save all inlined backends first.
         for mount in table.mounts.iter_mut() {
-            if !mount.inline {
+            if !mount.inline || mount.error_message.is_some() {
                 continue;
             }
             mount.backend.persist()?;
@@ -588,7 +592,9 @@ impl TreeBackend for MultiplexBackend {
         self.touch(id)?;
         if !self.is_ancestor(self.get_root_id(), id)? {
             log::trace!("{:?} is no longer reachable from root", id);
-            self.umount_recursive(id)?;
+            if self.is_mounted(id)? {
+                self.umount_recursive(id)?;
+            }
         }
         Ok(())
     }
@@ -645,6 +651,7 @@ impl TreeBackend for MultiplexBackend {
     fn persist_async(&mut self, callback: PersistCallbackFunc) {
         // Save all inlined backends first.
         if let Err(e) = self.save_inlined_backends() {
+            log::warn!("Failed to save inlined backends: {}", &e);
             callback(Err(e));
             return;
         }
@@ -659,7 +666,12 @@ impl TreeBackend for MultiplexBackend {
             callback: Some(callback),
             result: Default::default(),
             // Must match the call count of "process" below.
-            waiting_count: 1 + table.mounts.iter().filter(|m| m.url.is_some()).count(),
+            waiting_count: 1 + table
+                .mounts
+                .iter()
+                // The filter condition MUST match the "for" loop below.
+                .filter(|m| m.url.is_some() && !m.inline)
+                .count(),
         }));
 
         let process = |mount: &mut Mount| {
@@ -705,6 +717,7 @@ impl TreeBackend for MultiplexBackend {
         };
 
         for mount in table.mounts.iter_mut().rev() {
+            // The if condition MUST match the filter condition above.
             if mount.url.is_some() && !mount.inline {
                 process(mount)
             }
@@ -777,17 +790,20 @@ impl TreeBackend for MultiplexBackend {
 
 /// Dummy backend for warning purpose
 fn warning_backend(message: String) -> BoxBackend {
+    let len = message.len();
     let mut backend = crate::backend::MemBackend::empty();
-    let title = t!(cn = "加载失败", en = "Failed to load",);
-    let text = format!("{}\n\n{}", title, message);
-    backend
+    let id = backend
         .insert(
             backend.get_root_id(),
             InsertPos::Append,
-            text,
+            message,
             "type=warn\nreadonly=true\ncopyable=false\nmovable=false\n".into(),
         )
         .expect("insert to MemBackend should succeed");
+    // HACK: Try to update the mtime of backend text.
+    for _ in 0..(len % 32) {
+        let _ = backend.touch(id);
+    }
     Box::new(backend.freeze())
 }
 
@@ -1059,20 +1075,25 @@ base64:omF0ogpjZm9vC2NiYXJhbaNhY6EAggoLYW2hAGp0eXBlPXJvb3QKYW4M"#
             r#"
                 root
                 \_ 1 ("Encrypted Node")
-                   \_ 2 ("Failed to load") (type=warn)"#
+                   \_ 2 ("Password Required") (type=warn)"#
         );
+        // Should not crash persisting with the error.
+        root.persist().unwrap();
 
         // Provide a password. Now insertion is supported.
         root.update_meta(id, "password=", "abc").unwrap();
         assert!(root.is_mounted(id).unwrap());
         root.quick_insert(id, "foo");
+        let bar_id = root.quick_insert(id, "bar");
+        root.set_text(bar_id, "bar2".to_string()).unwrap();
         root.persist().unwrap();
         assert_eq!(
             root.draw_ascii(&root.all_ids()),
             r#"
                 root
                 \_ 1 ("Encrypted Node")
-                   \_ 2 ("foo")"#
+                   \_ 3 ("foo")
+                   \_ 2 ("bar2")"#
         );
 
         // Reload.
@@ -1085,7 +1106,7 @@ base64:omF0ogpjZm9vC2NiYXJhbaNhY6EAggoLYW2hAGp0eXBlPXJvb3QKYW4M"#
             r#"
                 root
                 \_ 1 ("Encrypted Node")
-                   \_ 2 ("Failed to load") (type=warn)"#
+                   \_ 2 ("Password Required") (type=warn)"#
         );
 
         // Wrong password.
@@ -1096,7 +1117,7 @@ base64:omF0ogpjZm9vC2NiYXJhbaNhY6EAggoLYW2hAGp0eXBlPXJvb3QKYW4M"#
             r#"
                 root
                 \_ 1 ("Encrypted Node")
-                   \_ 2 ("Failed to load") (type=warn)"#
+                   \_ 2 ("Cannot decrypt: aead::Error") (type=warn)"#
         );
 
         // Right password.
@@ -1107,7 +1128,8 @@ base64:omF0ogpjZm9vC2NiYXJhbaNhY6EAggoLYW2hAGp0eXBlPXJvb3QKYW4M"#
             r#"
                 root
                 \_ 1 ("Encrypted Node")
-                   \_ 2 ("foo")"#
+                   \_ 3 ("foo")
+                   \_ 2 ("bar2")"#
         );
     }
 }
