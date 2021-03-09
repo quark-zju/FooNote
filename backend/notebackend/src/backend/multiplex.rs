@@ -393,7 +393,8 @@ impl MultiplexBackend {
     }
 
     fn is_encrytped_mount(&self, id: FullId) -> io::Result<bool> {
-        Ok(self.extract_url(id)? == "aes256")
+        let url = self.extract_url(id)?;
+        Ok(crate::url::backend_type_from_url(&url)? == BackendType::Aes256)
     }
 
     fn get_children_follow_mounts(&self, id: FullId, auto_mount: bool) -> Result<Vec<FullId>> {

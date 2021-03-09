@@ -103,7 +103,7 @@ pub fn backend_type_from_url(url: &str) -> io::Result<BackendType> {
 }
 
 /// Type of a backend.
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Eq, PartialEq)]
 pub enum BackendType {
     Git,
     Local,
