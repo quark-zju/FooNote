@@ -128,7 +128,11 @@ impl BlobBackend<Aes256BlobIo> {
 
 /// Derive key from password.
 fn password_derive_key(salt: &[u8], password: &str) -> Box<Key> {
-    let params = ScryptParams::new(15, 8, 1).unwrap();
+    let params = if cfg!(test) {
+        ScryptParams::new(1, 1, 1).unwrap()
+    } else {
+        ScryptParams::new(15, 8, 1).unwrap()
+    };
     let mut output = [0u8; 32];
     scrypt::scrypt(password.as_bytes(), salt, &params, &mut output).unwrap();
     Box::new(Key(output))
