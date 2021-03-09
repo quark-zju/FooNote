@@ -247,8 +247,9 @@ impl MultiplexBackend {
     }
 
     /// Unmount descendants of `id`.
-    fn umount_recursive(&mut self, id: FullId) -> io::Result<()> {
-        log::debug!("umount_recursive {:?}", id);
+    /// If `all` is true, all nodes of the same url will be umounted.
+    fn umount_recursive(&mut self, id: FullId, all: bool) -> io::Result<()> {
+        log::debug!("umount_recursive {:?} (all={})", id, all);
         let table = self.table.upgradable_read();
 
         // Find out what to persist, and what source_ids to update.
@@ -259,11 +260,14 @@ impl MultiplexBackend {
             .map(|m| m.source_id.clone())
             .collect::<Vec<_>>();
         for (i, source_ids) in source_ids_vec.iter_mut().enumerate() {
-            // self.is_ancestors might take read lock too!
-            *source_ids = source_ids
-                .drain(..)
-                .filter(|&src_id| self.is_ancestor(id, src_id).ok() != Some(true))
-                .collect();
+            if all && source_ids.contains(&id) {
+                source_ids.clear();
+            } else {
+                *source_ids = source_ids
+                    .drain(..)
+                    .filter(|&src_id| self.is_ancestor(id, src_id).ok() != Some(true))
+                    .collect();
+            }
             if source_ids.is_empty() {
                 to_umount_index.push(i);
             }
@@ -600,7 +604,7 @@ impl TreeBackend for MultiplexBackend {
         if !self.is_ancestor(self.get_root_id(), id)? {
             log::trace!("{:?} is no longer reachable from root", id);
             if self.is_mounted(id)? {
-                self.umount_recursive(id)?;
+                self.umount_recursive(id, false)?;
             }
         }
         Ok(())
@@ -770,7 +774,7 @@ impl TreeBackend for MultiplexBackend {
             // Attempt to re-mount.
             let url = self.extract_url(id)?.to_string();
             if self.is_encrytped_mount(id)? && !url.is_empty() {
-                self.umount_recursive(id)?;
+                self.umount_recursive(id, true)?;
                 if value.is_empty() {
                     // Umount. Forget password.
                     self.passwords.remove(&url);
@@ -814,7 +818,9 @@ fn warning_backend(message: String) -> BoxBackend {
         )
         .expect("insert to MemBackend should succeed");
     // HACK: Try to update the mtime of backend text.
-    for _ in 0..(len % 32) {
+    // So reusing a backend (ex. switching from warning to aes) can trigger
+    // refreshing correctly.
+    for _ in 3..(len % 32) {
         let _ = backend.touch(id);
     }
     Box::new(backend.freeze())
