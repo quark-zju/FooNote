@@ -212,7 +212,7 @@ impl MultiplexBackend {
         };
         let root_id = backend.get_root_id();
 
-        // Find an umount entry.
+        // Find a free entry (url is empty, meaning umount-ed).
         let backend_index = table
             .mounts
             .iter()
@@ -250,6 +250,8 @@ impl MultiplexBackend {
     fn umount_recursive(&mut self, id: FullId) -> io::Result<()> {
         log::debug!("umount_recursive {:?}", id);
         let table = self.table.upgradable_read();
+
+        // Find out what to persist, and what source_ids to update.
         let mut to_umount_index = Vec::new();
         let mut source_ids_vec = table
             .mounts
@@ -269,20 +271,7 @@ impl MultiplexBackend {
 
         let mut table = RwLockUpgradableReadGuard::upgrade(table);
 
-        // Update source_ids
-        for (i, source_ids) in source_ids_vec.into_iter().enumerate() {
-            let mount = &mut table.mounts[i];
-            if mount.source_id != source_ids {
-                log::trace!(
-                    " backend {} source {:?} => {:?}",
-                    i + 1,
-                    &mount.source_id,
-                    &source_ids
-                );
-                table.mounts[i].source_id = source_ids;
-            }
-        }
-
+        // Persist backend to avoid data loss.
         for i in to_umount_index.into_iter().rev() {
             let mount = &mut table.mounts[i];
             let url = match mount.url.as_ref() {
@@ -302,6 +291,21 @@ impl MultiplexBackend {
             table.key_to_id.remove(&key);
             log::info!("umounted backend {} ({})", i + 1, &url);
         }
+
+        // Update source_ids after persist().
+        for (i, source_ids) in source_ids_vec.into_iter().enumerate() {
+            let mount = &mut table.mounts[i];
+            if mount.source_id != source_ids {
+                log::trace!(
+                    " backend {} source {:?} => {:?}",
+                    i + 1,
+                    &mount.source_id,
+                    &source_ids
+                );
+                table.mounts[i].source_id = source_ids;
+            }
+        }
+
         log::trace!("umount_recursive {:?} done", id);
 
         Ok(())
