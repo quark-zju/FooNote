@@ -33,7 +33,7 @@ pub struct MultiplexBackend {
     table: RwLock<MountTable>,
 
     // Passwords used for mounting encrypted nodes.
-    passwords: HashMap<FullId, String>,
+    passwords: HashMap<String, String>,
 }
 
 #[derive(Default)]
@@ -122,12 +122,15 @@ impl MultiplexBackend {
             assert!(inline, "encrypted = true should indicate inline = true")
         }
 
+        #[cfg(any())]
         let key = if inline {
+            // Make "key" unique per node (not a good idea?)
             format!("i:{:?}:{}", id, url)
         } else {
             format!("u:{}", url)
         };
 
+        let key = url.to_string();
         Ok(Some((url, key, encrypted, inline)))
     }
 
@@ -184,7 +187,7 @@ impl MultiplexBackend {
         };
         let backend = if encrypted {
             // Set via "update_meta".
-            let password = self.passwords.get(&id);
+            let password = self.passwords.get(&url.to_string());
             match password {
                 Some(password) => crate::url::open_aes256(password, inline_data.unwrap()),
                 None => Err(io::Error::new(
@@ -408,8 +411,8 @@ impl MultiplexBackend {
 
             let data = mount.backend.inline_data().unwrap_or(b"");
             log::trace!(
-                "write inline data {:?} to {:?}",
-                &data[..64],
+                "write inline data ({:?} bytes) to {:?}",
+                &data.len(),
                 &mount.source_id
             );
             to_write.push((data.to_vec(), mount.source_id.clone()));
@@ -761,12 +764,15 @@ impl TreeBackend for MultiplexBackend {
     fn update_meta(&mut self, id: Self::Id, prefix: &str, value: &str) -> Result<bool> {
         if prefix == "password=" {
             // Attempt to re-mount.
-            if self.is_encrytped_mount(id)? {
+            let url = self.extract_url(id)?.to_string();
+            if self.is_encrytped_mount(id)? && !url.is_empty() {
                 self.umount_recursive(id)?;
-                self.passwords.insert(id, value.to_string());
-                // Remount.
-                let _ = self.follow_mount(id, true);
-                self.passwords.clear();
+                self.passwords.insert(url, value.to_string());
+                // Remount if password is not empty.
+                if !value.is_empty() {
+                    self.touch(id)?;
+                    let _ = self.follow_mount(id, true);
+                }
             }
             Ok(true)
         } else {

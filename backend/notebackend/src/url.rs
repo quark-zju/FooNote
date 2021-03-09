@@ -81,7 +81,7 @@ pub fn backend_type_from_url(url: &str) -> io::Result<BackendType> {
         BackendType::Git
     } else if url.ends_with(".foonote") {
         BackendType::Local
-    } else if url == "aes256" {
+    } else if url == "aes256" || url.starts_with("aes256:") {
         BackendType::Aes256
     } else if url == "memory" || url.starts_with("memory:") {
         BackendType::Memory
