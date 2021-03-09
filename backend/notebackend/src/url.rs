@@ -45,12 +45,20 @@ pub fn open(url: &str, inline_data: Option<&[u8]>) -> Result<Box<dyn TreeBackend
             url,
             inline_data,
         )?),
+        BackendType::Aes256 => {
+            // Wrong API usage.
+            return Err(io::Error::new(
+                io::ErrorKind::AddrNotAvailable,
+                t!(cn = "AES256 需提供密码", en = "AES256 requires password"),
+            ));
+        }
     };
 
     Ok(backend)
 }
 
 pub fn open_aes256(password: &str, data: Vec<u8>) -> io::Result<Box<dyn TreeBackend<Id = Id>>> {
+    log::info!("open aes256: {}", str::repeat("*", password.len()));
     #[cfg(feature = "encrypt")]
     {
         let backend = crate::backend::Aes256Backend::from_encrypted_bytes(data, password)?;
@@ -73,6 +81,8 @@ pub fn backend_type_from_url(url: &str) -> io::Result<BackendType> {
         BackendType::Git
     } else if url.ends_with(".foonote") {
         BackendType::Local
+    } else if url == "aes256" {
+        BackendType::Aes256
     } else if url == "memory" || url.starts_with("memory:") {
         BackendType::Memory
     } else if url.ends_with(".py")
@@ -99,6 +109,7 @@ pub enum BackendType {
     Local,
     Memory,
     Python,
+    Aes256,
 }
 
 impl fmt::Display for BackendType {
@@ -108,6 +119,7 @@ impl fmt::Display for BackendType {
             BackendType::Local => "foonote",
             BackendType::Memory => "memory",
             BackendType::Python => "python",
+            BackendType::Aes256 => "aes256",
         };
         f.write_str(name)
     }
