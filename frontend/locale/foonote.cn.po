@@ -12,6 +12,20 @@ msgstr ""
 "Plural-Forms: nplurals=1; plural=0;\n"
 "Language: zh_CN\n"
 
+#: mainform.rscancel
+msgid "Cancel"
+msgstr "取消"
+
+#: mainform.rsencryptedtextprefix
+msgid ""
+"Encrypted\n"
+"\n"
+"Do not edit lines below:\n"
+msgstr ""
+"加密文件夹\n"
+"\n"
+"以下为加密内容，请勿手动编辑：\n"
+
 #: mainform.rsexit
 msgctxt "mainform.rsexit"
 msgid "Exit"
@@ -31,6 +45,18 @@ msgctxt "mainform.rsfailsavestillexit"
 msgid "Failed to save changes. Still exit?"
 msgstr "无法保存更改，仍然退出吗？"
 
+#: mainform.rsinputgiturl
+msgid "Input Git Url"
+msgstr "输入 Git 地址"
+
+#: mainform.rsmemoryroottitle
+msgid "Temporary Folder"
+msgstr "临时文件夹"
+
+#: mainform.rsnewgittitle
+msgid "New Git Folder"
+msgstr "添加 Git 文件夹"
+
 #: mainform.rsnoexit
 msgctxt "mainform.rsnoexit"
 msgid "Do not exit"
@@ -39,6 +65,10 @@ msgstr "不退出"
 #: mainform.rsnoreload
 msgid "Do not reload"
 msgstr "不重新加载"
+
+#: mainform.rsnotgiturl
+msgid "%s is not a Git url"
+msgstr "%s 不是有效的 Git 地址"
 
 #: mainform.rsok
 msgid "OK"
@@ -190,6 +220,18 @@ msgctxt "tformfoonotemain.actioneditsave.hint"
 msgid "Save"
 msgstr "保存"
 
+#: tformfoonotemain.actionencryptlock.caption
+msgid "&Lock"
+msgstr "锁定(&L)"
+
+#: tformfoonotemain.actionencryptunlock.caption
+msgid "&Unlock"
+msgstr "解锁(&U)"
+
+#: tformfoonotemain.actionnewaes256.caption
+msgid "New &Encrypted Folder"
+msgstr "新加密文件夹(&E)"
+
 #: tformfoonotemain.actionnewfolder.caption
 msgctxt "tformfoonotemain.actionnewfolder.caption"
 msgid "New &Folder"
@@ -199,6 +241,14 @@ msgstr "新文件夹(&F)"
 msgctxt "tformfoonotemain.actionnewfolder.hint"
 msgid "New Folder"
 msgstr "添加一个文件夹"
+
+#: tformfoonotemain.actionnewgit.caption
+msgid "New &Git Folder"
+msgstr "新 &Git 文件夹"
+
+#: tformfoonotemain.actionnewmemory.caption
+msgid "New &Temporary Folder"
+msgstr "新临时文件夹(&T)"
 
 #: tformfoonotemain.actionnewmounturl.caption
 msgid "New &Mount ..."
@@ -300,6 +350,7 @@ msgid "Interface"
 msgstr "界面"
 
 #: tformopenurl.buttoncancel.caption
+msgctxt "tformopenurl.buttoncancel.caption"
 msgid "&Cancel"
 msgstr "取消(&C)"
 
@@ -342,6 +393,28 @@ msgstr "本地 FooNote 文件"
 #: tformopenurl.radiomemory.caption
 msgid "Memory"
 msgstr "内存"
+
+#: tformpassword.buttoncancel.caption
+msgctxt "tformpassword.buttoncancel.caption"
+msgid "&Cancel"
+msgstr "取消(&C)"
+
+#: tformpassword.buttonok.caption
+msgctxt "tformpassword.buttonok.caption"
+msgid "&OK"
+msgstr "确定(&O)"
+
+#: tformpassword.caption
+msgid "Password"
+msgstr "密码"
+
+#: tformpassword.label1.caption
+msgid "Password:"
+msgstr "密码："
+
+#: tformpassword.label2.caption
+msgid "Retype Password:"
+msgstr "再输入密码："
 
 #: tformsavefailure.buttonclose.caption
 msgid "&Close"

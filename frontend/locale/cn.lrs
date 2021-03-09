@@ -4,197 +4,233 @@ LazarusResources.Add('foonote.cn','PO',[
   +'vision-Date: \n"'#13#10'"Last-Translator: \n"'#13#10'"Language-Team: \n"'#13
   +#10'"MIME-Version: 1.0\n"'#13#10'"Content-Transfer-Encoding: 8bit\n"'#13#10
   +'"X-Generator: Poedit 2.2.3\n"'#13#10'"Plural-Forms: nplurals=1; plural=0;\n'
-  +'"'#13#10'"Language: zh_CN\n"'#13#10#13#10'#: mainform.rsexit'#13#10'msgctxt'
-  +' "mainform.rsexit"'#13#10'msgid "Exit"'#13#10'msgstr "'#233#128#128#229#135
-  +#186'"'#13#10#13#10'#: mainform.rsexitnosave'#13#10'msgctxt "mainform.rsexit'
-  +'nosave"'#13#10'msgid "Exit without saving"'#13#10'msgstr "'#233#128#128#229
-  +#135#186#232#128#140#228#184#141#228#191#157#229#173#152'"'#13#10#13#10'#: m'
-  +'ainform.rsfailopenurl'#13#10'msgid "Failed to open [%s]: %s"'#13#10'msgstr '
-  +'"'#230#151#160#230#179#149#230#137#147#229#188#128' [%s]: %s"'#13#10#13#10
-  +'#: mainform.rsfailsavestillexit'#13#10'msgctxt "mainform.rsfailsavestillexi'
-  +'t"'#13#10'msgid "Failed to save changes. Still exit?"'#13#10'msgstr "'#230
-  +#151#160#230#179#149#228#191#157#229#173#152#230#155#180#230#148#185#239#188
-  +#140#228#187#141#231#132#182#233#128#128#229#135#186#229#144#151#239#188#159
+  +'"'#13#10'"Language: zh_CN\n"'#13#10#13#10'#: mainform.rscancel'#13#10'msgid'
+  +' "Cancel"'#13#10'msgstr "'#229#143#150#230#182#136'"'#13#10#13#10'#: mainfo'
+  +'rm.rsencryptedtextprefix'#13#10'msgid ""'#13#10'"Encrypted\n"'#13#10'"\n"'
+  +#13#10'"Do not edit lines below:\n"'#13#10'msgstr ""'#13#10'"'#229#138#160
+  +#229#175#134#230#150#135#228#187#182#229#164#185'\n"'#13#10'"\n"'#13#10'"'
+  +#228#187#165#228#184#139#228#184#186#229#138#160#229#175#134#229#134#133#229
+  +#174#185#239#188#140#232#175#183#229#139#191#230#137#139#229#138#168#231#188
+  +#150#232#190#145#239#188#154'\n"'#13#10#13#10'#: mainform.rsexit'#13#10'msgc'
+  +'txt "mainform.rsexit"'#13#10'msgid "Exit"'#13#10'msgstr "'#233#128#128#229
+  +#135#186'"'#13#10#13#10'#: mainform.rsexitnosave'#13#10'msgctxt "mainform.rs'
+  +'exitnosave"'#13#10'msgid "Exit without saving"'#13#10'msgstr "'#233#128#128
+  +#229#135#186#232#128#140#228#184#141#228#191#157#229#173#152'"'#13#10#13#10
+  +'#: mainform.rsfailopenurl'#13#10'msgid "Failed to open [%s]: %s"'#13#10'msg'
+  +'str "'#230#151#160#230#179#149#230#137#147#229#188#128' [%s]: %s"'#13#10#13
+  +#10'#: mainform.rsfailsavestillexit'#13#10'msgctxt "mainform.rsfailsavestill'
+  +'exit"'#13#10'msgid "Failed to save changes. Still exit?"'#13#10'msgstr "'
+  +#230#151#160#230#179#149#228#191#157#229#173#152#230#155#180#230#148#185#239
+  +#188#140#228#187#141#231#132#182#233#128#128#229#135#186#229#144#151#239#188
+  +#159'"'#13#10#13#10'#: mainform.rsinputgiturl'#13#10'msgid "Input Git Url"'
+  +#13#10'msgstr "'#232#190#147#229#133#165' Git '#229#156#176#229#157#128'"'#13
+  +#10#13#10'#: mainform.rsmemoryroottitle'#13#10'msgid "Temporary Folder"'#13
+  +#10'msgstr "'#228#184#180#230#151#182#230#150#135#228#187#182#229#164#185'"'
+  +#13#10#13#10'#: mainform.rsnewgittitle'#13#10'msgid "New Git Folder"'#13#10
+  +'msgstr "'#230#183#187#229#138#160' Git '#230#150#135#228#187#182#229#164#185
   +'"'#13#10#13#10'#: mainform.rsnoexit'#13#10'msgctxt "mainform.rsnoexit"'#13
   +#10'msgid "Do not exit"'#13#10'msgstr "'#228#184#141#233#128#128#229#135#186
   +'"'#13#10#13#10'#: mainform.rsnoreload'#13#10'msgid "Do not reload"'#13#10'm'
   +'sgstr "'#228#184#141#233#135#141#230#150#176#229#138#160#232#189#189'"'#13
-  +#10#13#10'#: mainform.rsok'#13#10'msgid "OK"'#13#10'msgstr "'#231#161#174#229
-  +#174#154'"'#13#10#13#10'#: mainform.rsreloadconfirm'#13#10'msgid "Reload wil'
-  +'l discard unsaved changes. Still reload?"'#13#10'msgstr "'#233#135#141#230
-  +#150#176#229#138#160#232#189#189#229#176#134#228#188#154#228#184#162#229#188
-  +#131#230#156#170#228#191#157#229#173#152#231#154#132#230#155#180#230#148#185
-  +#239#188#140#231#161#174#232#174#164#229#144#151#239#188#159'"'#13#10#13#10
-  +'#: mainform.rsyesreload'#13#10'msgid "Reload"'#13#10'msgstr "'#233#135#141
-  +#230#150#176#229#138#160#232#189#189'"'#13#10#13#10'#: platformwindows.rsdoc'
-  +'kleft'#13#10'msgctxt "platformwindows.rsdockleft"'#13#10'msgid "Dock &Left"'
-  +#13#10'msgstr "'#229#183#166#228#190#167#229#129#156#233#157#160'(&L)"'#13#10
-  +#13#10'#: platformwindows.rsdockright'#13#10'msgctxt "platformwindows.rsdock'
-  +'right"'#13#10'msgid "Dock R&ight"'#13#10'msgstr "'#229#143#179#228#190#167
-  +#229#129#156#233#157#160'(&I)"'#13#10#13#10'#: platformwindows.rsstayontop'
-  +#13#10'msgctxt "platformwindows.rsstayontop"'#13#10'msgid "Stay On &Top"'#13
-  +#10'msgstr "'#231#189#174#233#161#182'(&T)"'#13#10#13#10'#: settingsform.rsd'
-  +'ebugtab'#13#10'msgid "Debug"'#13#10'msgstr "'#232#176#131#232#175#149'"'#13
-  +#10#13#10'#: settingsform.rsstayontop'#13#10'msgid "Stay on top of other win'
-  +'dows."'#13#10'msgstr "'#231#189#174#228#186#142#229#133#182#228#187#150#231
-  +#170#151#229#143#163#229#137#141#233#157#162#227#128#130'"'#13#10#13#10'#: t'
-  +'aboutfoonoteform.buttonok.caption'#13#10'msgctxt "taboutfoonoteform.buttono'
-  +'k.caption"'#13#10'msgid "&OK"'#13#10'msgstr "'#231#161#174#229#174#154'(&O)'
-  +'"'#13#10#13#10'#: taboutfoonoteform.caption'#13#10'msgid "About FooNote"'#13
-  +#10'msgstr "'#229#133#179#228#186#142' FooNote"'#13#10#13#10'#: taboutfoonot'
-  +'eform.labelbuilddate.caption'#13#10'msgid "Build Date"'#13#10'msgstr "'#230
-  +#158#132#229#187#186#228#186#142'"'#13#10#13#10'#: taboutfoonoteform.labelbu'
-  +'ilddatevalue.caption'#13#10'msgctxt "taboutfoonoteform.labelbuilddatevalue.'
-  +'caption"'#13#10'msgid "1"'#13#10'msgstr "1"'#13#10#13#10'#: taboutfoonotefo'
-  +'rm.labelconfigpath.caption'#13#10'msgid "Config File Path"'#13#10'msgstr "'
-  +#233#133#141#231#189#174#230#150#135#228#187#182'"'#13#10#13#10'#: taboutfoo'
-  +'noteform.labeldesc.caption'#13#10'msgid "Lightweight tree-structured note-t'
-  +'aking companion."'#13#10'msgstr "'#230#160#145#229#189#162#231#172#148#232
-  +#174#176#228#188#180#228#190#163#227#128#130'"'#13#10#13#10'#: taboutfoonote'
-  +'form.labellink.caption'#13#10'msgid "https://github.com/quark-zju/foonote"'
-  +#13#10'msgstr "https://github.com/quark-zju/foonote"'#13#10#13#10'#: taboutf'
-  +'oonoteform.labelroottreeurl.caption'#13#10'msgid "Root Tree Path"'#13#10'ms'
-  +'gstr "'#230#160#185#232#138#130#231#130#185#229#156#176#229#157#128'"'#13#10
-  +#13#10'#: taboutfoonoteform.labelversion.caption'#13#10'msgid "Version"'#13
-  +#10'msgstr "'#231#137#136#230#156#172'"'#13#10#13#10'#: taboutfoonoteform.la'
-  +'belversionnumber.caption'#13#10'msgctxt "taboutfoonoteform.labelversionnumb'
-  +'er.caption"'#13#10'msgid "1"'#13#10'msgstr "1"'#13#10#13#10'#: taboutfoonot'
-  +'eform.tabsheet1.caption'#13#10'msgid "About"'#13#10'msgstr "'#229#133#179
-  +#228#186#142'"'#13#10#13#10'#: taboutfoonoteform.tabsheet2.caption'#13#10'ms'
-  +'gid "Licenses"'#13#10'msgstr "'#232#174#184#229#143#175#229#141#143#232#174
-  +#174'"'#13#10#13#10'#: tformfoonotemain.actionappabout.caption'#13#10'msgctx'
-  ,'t "tformfoonotemain.actionappabout.caption"'#13#10'msgid "&About"'#13#10'ms'
-  +'gstr "'#229#133#179#228#186#142'(&A)"'#13#10#13#10'#: tformfoonotemain.acti'
-  +'onappquit.caption'#13#10'msgctxt "tformfoonotemain.actionappquit.caption"'
-  +#13#10'msgid "&Exit"'#13#10'msgstr "'#233#128#128#229#135#186'(&E)"'#13#10#13
-  +#10'#: tformfoonotemain.actionappquit.hint'#13#10'msgctxt "tformfoonotemain.'
-  +'actionappquit.hint"'#13#10'msgid "Exit"'#13#10'msgstr "'#233#128#128#229#135
-  +#186'"'#13#10#13#10'#: tformfoonotemain.actionappsettingpreferences.caption'
-  +#13#10'msgctxt "tformfoonotemain.actionappsettingpreferences.caption"'#13#10
-  +'msgid "&Preferences ..."'#13#10'msgstr "'#233#128#137#233#161#185'(&P) ..."'
-  +#13#10#13#10'#: tformfoonotemain.actioneditcopy.caption'#13#10'msgctxt "tfor'
-  +'mfoonotemain.actioneditcopy.caption"'#13#10'msgid "&Copy"'#13#10'msgstr "'
-  +#229#164#141#229#136#182'(&C)"'#13#10#13#10'#: tformfoonotemain.actioneditco'
-  +'py.hint'#13#10'msgctxt "tformfoonotemain.actioneditcopy.hint"'#13#10'msgid '
-  +'"Copy"'#13#10'msgstr "'#229#164#141#229#136#182'"'#13#10#13#10'#: tformfoon'
-  +'otemain.actioneditdelete.caption'#13#10'msgctxt "tformfoonotemain.actionedi'
-  +'tdelete.caption"'#13#10'msgid "&Delete"'#13#10'msgstr "'#229#136#160#233#153
-  +#164'(&D)"'#13#10#13#10'#: tformfoonotemain.actioneditdelete.hint'#13#10'msg'
-  +'ctxt "tformfoonotemain.actioneditdelete.hint"'#13#10'msgid "Delete"'#13#10
-  +'msgstr "'#229#136#160#233#153#164'"'#13#10#13#10'#: tformfoonotemain.action'
-  +'editpaste.caption'#13#10'msgctxt "tformfoonotemain.actioneditpaste.caption"'
-  +#13#10'msgid "&Paste"'#13#10'msgstr "'#231#178#152#232#180#180'(&P)"'#13#10
-  +#13#10'#: tformfoonotemain.actioneditpaste.hint'#13#10'msgctxt "tformfoonote'
-  +'main.actioneditpaste.hint"'#13#10'msgid "Paste"'#13#10'msgstr "'#231#178#152
-  +#232#180#180'"'#13#10#13#10'#: tformfoonotemain.actioneditreload.caption'#13
-  +#10'msgid "&Reload"'#13#10'msgstr "'#233#135#141#230#150#176#229#138#160#232
-  +#189#189'(&R)"'#13#10#13#10'#: tformfoonotemain.actioneditsave.caption'#13#10
-  +'msgctxt "tformfoonotemain.actioneditsave.caption"'#13#10'msgid "&Save"'#13
-  +#10'msgstr "'#228#191#157#229#173#152'(&S)"'#13#10#13#10'#: tformfoonotemain'
-  +'.actioneditsave.hint'#13#10'msgctxt "tformfoonotemain.actioneditsave.hint"'
-  +#13#10'msgid "Save"'#13#10'msgstr "'#228#191#157#229#173#152'"'#13#10#13#10
-  +'#: tformfoonotemain.actionnewfolder.caption'#13#10'msgctxt "tformfoonotemai'
-  +'n.actionnewfolder.caption"'#13#10'msgid "New &Folder"'#13#10'msgstr "'#230
-  +#150#176#230#150#135#228#187#182#229#164#185'(&F)"'#13#10#13#10'#: tformfoon'
-  +'otemain.actionnewfolder.hint'#13#10'msgctxt "tformfoonotemain.actionnewfold'
-  +'er.hint"'#13#10'msgid "New Folder"'#13#10'msgstr "'#230#183#187#229#138#160
-  +#228#184#128#228#184#170#230#150#135#228#187#182#229#164#185'"'#13#10#13#10
-  +'#: tformfoonotemain.actionnewmounturl.caption'#13#10'msgid "New &Mount ..."'
-  +#13#10'msgstr "'#230#150#176#230#140#130#232#189#189#231#130#185'(&M) ..."'
-  +#13#10#13#10'#: tformfoonotemain.actionnewnote.caption'#13#10'msgctxt "tform'
-  +'foonotemain.actionnewnote.caption"'#13#10'msgid "New &Note"'#13#10'msgstr "'
-  +#230#150#176#231#172#148#232#174#176'(&N)"'#13#10#13#10'#: tformfoonotemain.'
-  +'actionnewnote.hint'#13#10'msgctxt "tformfoonotemain.actionnewnote.hint"'#13
-  +#10'msgid "New Note"'#13#10'msgstr "'#230#183#187#229#138#160#228#184#128#230
-  +#157#161#231#172#148#232#174#176'"'#13#10#13#10'#: tformfoonotemain.actionne'
-  +'wseparator.caption'#13#10'msgctxt "tformfoonotemain.actionnewseparator.capt'
-  +'ion"'#13#10'msgid "New &Separator"'#13#10'msgstr "'#230#150#176#229#136#134
-  +#233#154#148#230#160#143'(&S)"'#13#10#13#10'#: tformfoonotemain.actionnewsep'
-  +'arator.hint'#13#10'msgctxt "tformfoonotemain.actionnewseparator.hint"'#13#10
-  +'msgid "New Separator"'#13#10'msgstr "'#230#183#187#229#138#160#228#184#128
-  +#230#157#161#229#136#134#233#154#148#230#160#143'"'#13#10#13#10'#: tformfoon'
-  +'otemain.actiontogglefolder.caption'#13#10'msgid "Toggle Folder"'#13#10'msgs'
-  +'tr "'#229#136#135#230#141#162#230#150#135#228#187#182#229#164#185'"'#13#10
-  +#13#10'#: tformfoonotemain.actionviewdockleft.caption'#13#10'msgctxt "tformf'
-  +'oonotemain.actionviewdockleft.caption"'#13#10'msgid "Dock &Left"'#13#10'msg'
-  +'str "'#229#183#166#228#190#167#229#129#156#233#157#160'(&L)"'#13#10#13#10'#'
-  +': tformfoonotemain.actionviewdockright.caption'#13#10'msgctxt "tformfoonote'
-  +'main.actionviewdockright.caption"'#13#10'msgid "Dock R&ight"'#13#10'msgstr '
-  +'"'#229#143#179#228#190#167#229#129#156#233#157#160'(&I)"'#13#10#13#10'#: tf'
-  +'ormfoonotemain.actionviewstayontop.caption'#13#10'msgctxt "tformfoonotemain'
-  +'.actionviewstayontop.caption"'#13#10'msgid "Stay On &Top"'#13#10'msgstr "'
-  +#231#189#174#233#161#182'(&T)"'#13#10#13#10'#: tformfoonotemain.actionviewto'
-  +'gglezenmode.caption'#13#10'msgctxt "tformfoonotemain.actionviewtogglezenmod'
-  +'e.caption"'#13#10'msgid "&Zen Mode"'#13#10'msgstr "'#230#184#133#231#136#189
-  +#230#168#161#229#188#143'(&Z)"'#13#10#13#10'#: tformfoonotemain.actionviewun'
-  ,'dock.caption'#13#10'msgctxt "tformfoonotemain.actionviewundock.caption"'#13
-  +#10'msgid "&Undock"'#13#10'msgstr "'#229#143#150#230#182#136#229#129#156#233
-  +#157#160'(&U)"'#13#10#13#10'#: tformfoonotemain.actionviewundock.hint'#13#10
-  +'msgctxt "tformfoonotemain.actionviewundock.hint"'#13#10'msgid "Undock"'#13
-  +#10'msgstr "'#228#184#141#229#134#141#229#129#156#233#157#160#228#186#142#230
-  +#161#140#233#157#162'"'#13#10#13#10'#: tformfoonotemain.actionviewwarnunsave'
-  +'d.hint'#13#10'msgctxt "tformfoonotemain.actionviewwarnunsaved.hint"'#13#10
-  +'msgid "Failed to save"'#13#10'msgstr "'#230#151#160#230#179#149#228#191#157
-  +#229#173#152'"'#13#10#13#10'#: tformfoonotemain.caption'#13#10'msgctxt "tfor'
-  +'mfoonotemain.caption"'#13#10'msgid "FooNote"'#13#10'msgstr "FooNote"'#13#10
-  +#13#10'#: tformfoonotemain.editnotesearch.texthint'#13#10'msgctxt "tformfoon'
-  +'otemain.editnotesearch.texthint"'#13#10'msgid "Search"'#13#10'msgstr "'#230
-  +#144#156#231#180#162'"'#13#10#13#10'#: tformfoonotemain.toolbuttondockedmenu'
-  +'.caption'#13#10'msgctxt "tformfoonotemain.toolbuttondockedmenu.caption"'#13
-  +#10'msgid "FooNote"'#13#10'msgstr "FooNote"'#13#10#13#10'#: tformfoonotesett'
-  +'ings.buttonok.caption'#13#10'msgctxt "tformfoonotesettings.buttonok.caption'
-  +'"'#13#10'msgid "&OK"'#13#10'msgstr "'#231#161#174#229#174#154'(&O)"'#13#10
-  +#13#10'#: tformfoonotesettings.buttonselfont.caption'#13#10'msgid "Select &F'
-  +'ont"'#13#10'msgstr "'#229#173#151#228#189#147'(&F)"'#13#10#13#10'#: tformfo'
-  +'onotesettings.caption'#13#10'msgid "FooNote Settings"'#13#10'msgstr "FooNot'
-  +'e '#232#174#190#231#189#174'"'#13#10#13#10'#: tformfoonotesettings.checkbox'
-  +'ontop.caption'#13#10'msgid "Stay on &Top"'#13#10'msgstr "'#231#189#174#233
-  +#161#182'(&T)"'#13#10#13#10'#: tformfoonotesettings.groupboxinterfacesetting'
-  +'s.caption'#13#10'msgid "Interface"'#13#10'msgstr "'#231#149#140#233#157#162
-  +'"'#13#10#13#10'#: tformopenurl.buttoncancel.caption'#13#10'msgid "&Cancel"'
-  +#13#10'msgstr "'#229#143#150#230#182#136'(&C)"'#13#10#13#10'#: tformopenurl.'
-  +'buttonopen.caption'#13#10'msgid "&Open"'#13#10'msgstr "'#230#137#147#229#188
-  +#128'(&O)"'#13#10#13#10'#: tformopenurl.caption'#13#10'msgid "Open FooNote"'
-  +#13#10'msgstr "'#230#137#147#229#188#128' FooNote"'#13#10#13#10'#: tformopen'
-  +'url.label1.caption'#13#10'msgid "Location of FooNote to open:"'#13#10'msgst'
-  +'r "FooNote '#229#156#176#229#157#128#239#188#154'"'#13#10#13#10'#: tformope'
-  +'nurl.label2.caption'#13#10'msgid "Example: git@host.com:repo/notes.git"'#13
-  +#10'msgstr "'#228#190#139#229#166#130#239#188#154'git@host.com:repo/notes.gi'
-  +'t"'#13#10#13#10'#: tformopenurl.label3.caption'#13#10'msgid "Example: filen'
-  +'ame.foonote"'#13#10'msgstr "'#228#190#139#229#166#130#239#188#154#230#150
-  +#135#228#187#182#229#144#141'.foonote"'#13#10#13#10'#: tformopenurl.label4.c'
-  +'aption'#13#10'msgid "Example: memory:123"'#13#10'msgstr "'#228#190#139#229
-  +#166#130#239#188#154'memory:123"'#13#10#13#10'#: tformopenurl.radiocustom.ca'
-  +'ption'#13#10'msgid "Custom"'#13#10'msgstr "'#232#135#170#229#174#154#228#185
-  +#137'"'#13#10#13#10'#: tformopenurl.radiogit.caption'#13#10'msgid "Git"'#13
-  +#10'msgstr "Git '#231#137#136#230#156#172#230#142#167#229#136#182'"'#13#10#13
-  +#10'#: tformopenurl.radiolocalfile.caption'#13#10'msgid "Local FooNote File"'
-  +#13#10'msgstr "'#230#156#172#229#156#176' FooNote '#230#150#135#228#187#182
-  +'"'#13#10#13#10'#: tformopenurl.radiomemory.caption'#13#10'msgid "Memory"'#13
-  +#10'msgstr "'#229#134#133#229#173#152'"'#13#10#13#10'#: tformsavefailure.but'
-  +'tonclose.caption'#13#10'msgid "&Close"'#13#10'msgstr "'#229#133#179#233#151
-  +#173'(&C)"'#13#10#13#10'#: tformsavefailure.buttonnewinstance.caption'#13#10
-  +'msgid "&Start FooNote"'#13#10'msgstr "'#229#144#175#229#138#168' FooNote (&'
-  +'S)"'#13#10#13#10'#: tformsavefailure.caption'#13#10'msgctxt "tformsavefailu'
-  +'re.caption"'#13#10'msgid "Failed to save"'#13#10'msgstr "'#230#151#160#230
-  +#179#149#228#191#157#229#173#152'"'#13#10#13#10'#: tformsavefailure.editnewu'
-  +'rl.text'#13#10'msgid "A.foonote"'#13#10'msgstr "A.foonote"'#13#10#13#10'#: '
-  +'tformsavefailure.label1.caption'#13#10'msgid "The last attempt to save has '
-  +'failed with error message:"'#13#10'msgstr "'#230#156#128#232#191#145#231#154
-  +#132#228#191#157#229#173#152#229#164#177#232#180#165#228#186#134#239#188#140
-  +#233#148#153#232#175#175#228#191#161#230#129#175#229#166#130#228#184#139#239
-  +#188#154'"'#13#10#13#10'#: tformsavefailure.label2.caption'#13#10'msgid "If '
-  +'this is caused by unrecoverable network issues, you can start a new FooNote'
-  +' instance and copy-paste changes there."'#13#10'msgstr "'#229#166#130#230
-  +#158#156#232#191#153#230#152#175#231#148#177#228#186#142#228#184#141#229#143
-  +#175#230#129#162#229#164#141#231#154#132#231#189#145#231#187#156#233#151#174
-  +#233#162#152#239#188#140#230#130#168#229#143#175#228#187#165#229#144#175#229
-  +#138#168#228#184#128#228#184#170#230#150#176#231#154#132' FooNote'#239#188
-  +#140#229#164#141#229#136#182#230#156#170#228#191#157#229#173#152#231#154#132
-  ,#230#148#185#229#138#168#239#188#140#231#178#152#232#180#180#229#136#176#230
-  +#150#176#231#154#132' FooNote '#229#134#133#227#128#130'"'#13#10#13#10'#: tr'
-  +'eenodedata.rstrash'#13#10'msgid "Trash"'#13#10'msgstr "'#229#155#158#230#148
-  +#182#231#171#153'"'#13#10#13#10'#: tsolidcolorpreviewform.caption'#13#10'msg'
-  +'id "FooNoteOverlay"'#13#10'msgstr "FooNote '#229#143#160#229#138#160#229#177
-  +#130'"'#13#10
+  +#10#13#10'#: mainform.rsnotgiturl'#13#10'msgid "%s is not a Git url"'#13#10
+  +'msgstr "%s '#228#184#141#230#152#175#230#156#137#230#149#136#231#154#132' G'
+  +'it '#229#156#176#229#157#128'"'#13#10#13#10'#: mainform.rsok'#13#10'msgid "'
+  +'OK"'#13#10'msgstr "'#231#161#174#229#174#154'"'#13#10#13#10'#: mainform.rsr'
+  +'eloadconfirm'#13#10'msgid "Reload will discard unsaved changes. Still reloa'
+  +'d?"'#13#10'msgstr "'#233#135#141#230#150#176#229#138#160#232#189#189#229#176
+  +#134#228#188#154#228#184#162#229#188#131#230#156#170#228#191#157#229#173#152
+  +#231#154#132#230#155#180#230#148#185#239#188#140#231#161#174#232#174#164#229
+  +#144#151#239#188#159'"'#13#10#13#10'#: mainform.rsyesreload'#13#10'msgid "Re'
+  +'load"'#13#10'msgstr "'#233#135#141#230#150#176#229#138#160#232#189#189'"'#13
+  +#10#13#10'#: platformwindows.rsdockleft'#13#10'msgctxt "platformwindows.rsdo'
+  +'ckleft"'#13#10'msgid "Dock &Left"'#13#10'msgstr "'#229#183#166#228#190#167
+  +#229#129#156#233#157#160'(&L)"'#13#10#13#10'#: platformwindows.rsdockright'
+  +#13#10'msgctxt "platformwindows.rsdockright"'#13#10'msgid "Dock R&ight"'#13
+  +#10'msgstr "'#229#143#179#228#190#167#229#129#156#233#157#160'(&I)"'#13#10#13
+  +#10'#: platformwindows.rsstayontop'#13#10'msgctxt "platformwindows.rsstayont'
+  +'op"'#13#10'msgid "Stay On &Top"'#13#10'msgstr "'#231#189#174#233#161#182'(&'
+  +'T)"'#13#10#13#10'#: settingsform.rsdebugtab'#13#10'msgid "Debug"'#13#10'msg'
+  +'str "'#232#176#131#232#175#149'"'#13#10#13#10'#: settingsform.rsstayontop'
+  +#13#10'msgid "Stay on top of other windows."'#13#10'msgstr "'#231#189#174#228
+  +#186#142#229#133#182#228#187#150#231#170#151#229#143#163#229#137#141#233#157
+  +#162#227#128#130'"'#13#10#13#10'#: taboutfoonoteform.buttonok.caption'#13#10
+  +'msgctxt "taboutfoonoteform.buttonok.caption"'#13#10'msgid "&OK"'#13#10'msgs'
+  +'tr "'#231#161#174#229#174#154'(&O)"'#13#10#13#10'#: taboutfoonoteform.capti'
+  +'on'#13#10'msgid "About FooNote"'#13#10'msgstr "'#229#133#179#228#186#142' F'
+  +'ooNote"'#13#10#13#10'#: taboutfoonoteform.labelbuilddate.caption'#13#10'msg'
+  +'id "Build Date"'#13#10'msgstr "'#230#158#132#229#187#186#228#186#142'"'#13
+  +#10#13#10'#: taboutfoonoteform.labelbuilddatevalue.caption'#13#10'msgctxt "t'
+  +'aboutfoonoteform.labelbuilddatevalue.caption"'#13#10'msgid "1"'#13#10'msgst'
+  +'r "1"'#13#10#13#10'#: taboutfoonoteform.labelconfigpath.caption'#13#10'msgi'
+  +'d "Config File Path"'#13#10'msgstr "'#233#133#141#231#189#174#230#150#135
+  ,#228#187#182'"'#13#10#13#10'#: taboutfoonoteform.labeldesc.caption'#13#10'ms'
+  +'gid "Lightweight tree-structured note-taking companion."'#13#10'msgstr "'
+  +#230#160#145#229#189#162#231#172#148#232#174#176#228#188#180#228#190#163#227
+  +#128#130'"'#13#10#13#10'#: taboutfoonoteform.labellink.caption'#13#10'msgid '
+  +'"https://github.com/quark-zju/foonote"'#13#10'msgstr "https://github.com/qu'
+  +'ark-zju/foonote"'#13#10#13#10'#: taboutfoonoteform.labelroottreeurl.caption'
+  +#13#10'msgid "Root Tree Path"'#13#10'msgstr "'#230#160#185#232#138#130#231
+  +#130#185#229#156#176#229#157#128'"'#13#10#13#10'#: taboutfoonoteform.labelve'
+  +'rsion.caption'#13#10'msgid "Version"'#13#10'msgstr "'#231#137#136#230#156
+  +#172'"'#13#10#13#10'#: taboutfoonoteform.labelversionnumber.caption'#13#10'm'
+  +'sgctxt "taboutfoonoteform.labelversionnumber.caption"'#13#10'msgid "1"'#13
+  +#10'msgstr "1"'#13#10#13#10'#: taboutfoonoteform.tabsheet1.caption'#13#10'ms'
+  +'gid "About"'#13#10'msgstr "'#229#133#179#228#186#142'"'#13#10#13#10'#: tabo'
+  +'utfoonoteform.tabsheet2.caption'#13#10'msgid "Licenses"'#13#10'msgstr "'#232
+  +#174#184#229#143#175#229#141#143#232#174#174'"'#13#10#13#10'#: tformfoonotem'
+  +'ain.actionappabout.caption'#13#10'msgctxt "tformfoonotemain.actionappabout.'
+  +'caption"'#13#10'msgid "&About"'#13#10'msgstr "'#229#133#179#228#186#142'(&A'
+  +')"'#13#10#13#10'#: tformfoonotemain.actionappquit.caption'#13#10'msgctxt "t'
+  +'formfoonotemain.actionappquit.caption"'#13#10'msgid "&Exit"'#13#10'msgstr "'
+  +#233#128#128#229#135#186'(&E)"'#13#10#13#10'#: tformfoonotemain.actionappqui'
+  +'t.hint'#13#10'msgctxt "tformfoonotemain.actionappquit.hint"'#13#10'msgid "E'
+  +'xit"'#13#10'msgstr "'#233#128#128#229#135#186'"'#13#10#13#10'#: tformfoonot'
+  +'emain.actionappsettingpreferences.caption'#13#10'msgctxt "tformfoonotemain.'
+  +'actionappsettingpreferences.caption"'#13#10'msgid "&Preferences ..."'#13#10
+  +'msgstr "'#233#128#137#233#161#185'(&P) ..."'#13#10#13#10'#: tformfoonotemai'
+  +'n.actioneditcopy.caption'#13#10'msgctxt "tformfoonotemain.actioneditcopy.ca'
+  +'ption"'#13#10'msgid "&Copy"'#13#10'msgstr "'#229#164#141#229#136#182'(&C)"'
+  +#13#10#13#10'#: tformfoonotemain.actioneditcopy.hint'#13#10'msgctxt "tformfo'
+  +'onotemain.actioneditcopy.hint"'#13#10'msgid "Copy"'#13#10'msgstr "'#229#164
+  +#141#229#136#182'"'#13#10#13#10'#: tformfoonotemain.actioneditdelete.caption'
+  +#13#10'msgctxt "tformfoonotemain.actioneditdelete.caption"'#13#10'msgid "&De'
+  +'lete"'#13#10'msgstr "'#229#136#160#233#153#164'(&D)"'#13#10#13#10'#: tformf'
+  +'oonotemain.actioneditdelete.hint'#13#10'msgctxt "tformfoonotemain.actionedi'
+  +'tdelete.hint"'#13#10'msgid "Delete"'#13#10'msgstr "'#229#136#160#233#153#164
+  +'"'#13#10#13#10'#: tformfoonotemain.actioneditpaste.caption'#13#10'msgctxt "'
+  +'tformfoonotemain.actioneditpaste.caption"'#13#10'msgid "&Paste"'#13#10'msgs'
+  +'tr "'#231#178#152#232#180#180'(&P)"'#13#10#13#10'#: tformfoonotemain.action'
+  +'editpaste.hint'#13#10'msgctxt "tformfoonotemain.actioneditpaste.hint"'#13#10
+  +'msgid "Paste"'#13#10'msgstr "'#231#178#152#232#180#180'"'#13#10#13#10'#: tf'
+  +'ormfoonotemain.actioneditreload.caption'#13#10'msgid "&Reload"'#13#10'msgst'
+  +'r "'#233#135#141#230#150#176#229#138#160#232#189#189'(&R)"'#13#10#13#10'#: '
+  +'tformfoonotemain.actioneditsave.caption'#13#10'msgctxt "tformfoonotemain.ac'
+  +'tioneditsave.caption"'#13#10'msgid "&Save"'#13#10'msgstr "'#228#191#157#229
+  +#173#152'(&S)"'#13#10#13#10'#: tformfoonotemain.actioneditsave.hint'#13#10'm'
+  +'sgctxt "tformfoonotemain.actioneditsave.hint"'#13#10'msgid "Save"'#13#10'ms'
+  +'gstr "'#228#191#157#229#173#152'"'#13#10#13#10'#: tformfoonotemain.actionen'
+  +'cryptlock.caption'#13#10'msgid "&Lock"'#13#10'msgstr "'#233#148#129#229#174
+  +#154'(&L)"'#13#10#13#10'#: tformfoonotemain.actionencryptunlock.caption'#13
+  +#10'msgid "&Unlock"'#13#10'msgstr "'#232#167#163#233#148#129'(&U)"'#13#10#13
+  +#10'#: tformfoonotemain.actionnewaes256.caption'#13#10'msgid "New &Encrypted'
+  +' Folder"'#13#10'msgstr "'#230#150#176#229#138#160#229#175#134#230#150#135
+  +#228#187#182#229#164#185'(&E)"'#13#10#13#10'#: tformfoonotemain.actionnewfol'
+  +'der.caption'#13#10'msgctxt "tformfoonotemain.actionnewfolder.caption"'#13#10
+  +'msgid "New &Folder"'#13#10'msgstr "'#230#150#176#230#150#135#228#187#182#229
+  +#164#185'(&F)"'#13#10#13#10'#: tformfoonotemain.actionnewfolder.hint'#13#10
+  +'msgctxt "tformfoonotemain.actionnewfolder.hint"'#13#10'msgid "New Folder"'
+  +#13#10'msgstr "'#230#183#187#229#138#160#228#184#128#228#184#170#230#150#135
+  +#228#187#182#229#164#185'"'#13#10#13#10'#: tformfoonotemain.actionnewgit.cap'
+  +'tion'#13#10'msgid "New &Git Folder"'#13#10'msgstr "'#230#150#176' &Git '#230
+  +#150#135#228#187#182#229#164#185'"'#13#10#13#10'#: tformfoonotemain.actionne'
+  +'wmemory.caption'#13#10'msgid "New &Temporary Folder"'#13#10'msgstr "'#230
+  +#150#176#228#184#180#230#151#182#230#150#135#228#187#182#229#164#185'(&T)"'
+  +#13#10#13#10'#: tformfoonotemain.actionnewmounturl.caption'#13#10'msgid "New'
+  +' &Mount ..."'#13#10'msgstr "'#230#150#176#230#140#130#232#189#189#231#130
+  ,#185'(&M) ..."'#13#10#13#10'#: tformfoonotemain.actionnewnote.caption'#13#10
+  +'msgctxt "tformfoonotemain.actionnewnote.caption"'#13#10'msgid "New &Note"'
+  +#13#10'msgstr "'#230#150#176#231#172#148#232#174#176'(&N)"'#13#10#13#10'#: t'
+  +'formfoonotemain.actionnewnote.hint'#13#10'msgctxt "tformfoonotemain.actionn'
+  +'ewnote.hint"'#13#10'msgid "New Note"'#13#10'msgstr "'#230#183#187#229#138
+  +#160#228#184#128#230#157#161#231#172#148#232#174#176'"'#13#10#13#10'#: tform'
+  +'foonotemain.actionnewseparator.caption'#13#10'msgctxt "tformfoonotemain.act'
+  +'ionnewseparator.caption"'#13#10'msgid "New &Separator"'#13#10'msgstr "'#230
+  +#150#176#229#136#134#233#154#148#230#160#143'(&S)"'#13#10#13#10'#: tformfoon'
+  +'otemain.actionnewseparator.hint'#13#10'msgctxt "tformfoonotemain.actionnews'
+  +'eparator.hint"'#13#10'msgid "New Separator"'#13#10'msgstr "'#230#183#187#229
+  +#138#160#228#184#128#230#157#161#229#136#134#233#154#148#230#160#143'"'#13#10
+  +#13#10'#: tformfoonotemain.actiontogglefolder.caption'#13#10'msgid "Toggle F'
+  +'older"'#13#10'msgstr "'#229#136#135#230#141#162#230#150#135#228#187#182#229
+  +#164#185'"'#13#10#13#10'#: tformfoonotemain.actionviewdockleft.caption'#13#10
+  +'msgctxt "tformfoonotemain.actionviewdockleft.caption"'#13#10'msgid "Dock &L'
+  +'eft"'#13#10'msgstr "'#229#183#166#228#190#167#229#129#156#233#157#160'(&L)"'
+  +#13#10#13#10'#: tformfoonotemain.actionviewdockright.caption'#13#10'msgctxt '
+  +'"tformfoonotemain.actionviewdockright.caption"'#13#10'msgid "Dock R&ight"'
+  +#13#10'msgstr "'#229#143#179#228#190#167#229#129#156#233#157#160'(&I)"'#13#10
+  +#13#10'#: tformfoonotemain.actionviewstayontop.caption'#13#10'msgctxt "tform'
+  +'foonotemain.actionviewstayontop.caption"'#13#10'msgid "Stay On &Top"'#13#10
+  +'msgstr "'#231#189#174#233#161#182'(&T)"'#13#10#13#10'#: tformfoonotemain.ac'
+  +'tionviewtogglezenmode.caption'#13#10'msgctxt "tformfoonotemain.actionviewto'
+  +'gglezenmode.caption"'#13#10'msgid "&Zen Mode"'#13#10'msgstr "'#230#184#133
+  +#231#136#189#230#168#161#229#188#143'(&Z)"'#13#10#13#10'#: tformfoonotemain.'
+  +'actionviewundock.caption'#13#10'msgctxt "tformfoonotemain.actionviewundock.'
+  +'caption"'#13#10'msgid "&Undock"'#13#10'msgstr "'#229#143#150#230#182#136#229
+  +#129#156#233#157#160'(&U)"'#13#10#13#10'#: tformfoonotemain.actionviewundock'
+  +'.hint'#13#10'msgctxt "tformfoonotemain.actionviewundock.hint"'#13#10'msgid '
+  +'"Undock"'#13#10'msgstr "'#228#184#141#229#134#141#229#129#156#233#157#160
+  +#228#186#142#230#161#140#233#157#162'"'#13#10#13#10'#: tformfoonotemain.acti'
+  +'onviewwarnunsaved.hint'#13#10'msgctxt "tformfoonotemain.actionviewwarnunsav'
+  +'ed.hint"'#13#10'msgid "Failed to save"'#13#10'msgstr "'#230#151#160#230#179
+  +#149#228#191#157#229#173#152'"'#13#10#13#10'#: tformfoonotemain.caption'#13
+  +#10'msgctxt "tformfoonotemain.caption"'#13#10'msgid "FooNote"'#13#10'msgstr '
+  +'"FooNote"'#13#10#13#10'#: tformfoonotemain.editnotesearch.texthint'#13#10'm'
+  +'sgctxt "tformfoonotemain.editnotesearch.texthint"'#13#10'msgid "Search"'#13
+  +#10'msgstr "'#230#144#156#231#180#162'"'#13#10#13#10'#: tformfoonotemain.too'
+  +'lbuttondockedmenu.caption'#13#10'msgctxt "tformfoonotemain.toolbuttondocked'
+  +'menu.caption"'#13#10'msgid "FooNote"'#13#10'msgstr "FooNote"'#13#10#13#10'#'
+  +': tformfoonotesettings.buttonok.caption'#13#10'msgctxt "tformfoonotesetting'
+  +'s.buttonok.caption"'#13#10'msgid "&OK"'#13#10'msgstr "'#231#161#174#229#174
+  +#154'(&O)"'#13#10#13#10'#: tformfoonotesettings.buttonselfont.caption'#13#10
+  +'msgid "Select &Font"'#13#10'msgstr "'#229#173#151#228#189#147'(&F)"'#13#10
+  +#13#10'#: tformfoonotesettings.caption'#13#10'msgid "FooNote Settings"'#13#10
+  +'msgstr "FooNote '#232#174#190#231#189#174'"'#13#10#13#10'#: tformfoonoteset'
+  +'tings.checkboxontop.caption'#13#10'msgid "Stay on &Top"'#13#10'msgstr "'#231
+  +#189#174#233#161#182'(&T)"'#13#10#13#10'#: tformfoonotesettings.groupboxinte'
+  +'rfacesettings.caption'#13#10'msgid "Interface"'#13#10'msgstr "'#231#149#140
+  +#233#157#162'"'#13#10#13#10'#: tformopenurl.buttoncancel.caption'#13#10'msgc'
+  +'txt "tformopenurl.buttoncancel.caption"'#13#10'msgid "&Cancel"'#13#10'msgst'
+  +'r "'#229#143#150#230#182#136'(&C)"'#13#10#13#10'#: tformopenurl.buttonopen.'
+  +'caption'#13#10'msgid "&Open"'#13#10'msgstr "'#230#137#147#229#188#128'(&O)"'
+  +#13#10#13#10'#: tformopenurl.caption'#13#10'msgid "Open FooNote"'#13#10'msgs'
+  +'tr "'#230#137#147#229#188#128' FooNote"'#13#10#13#10'#: tformopenurl.label1'
+  +'.caption'#13#10'msgid "Location of FooNote to open:"'#13#10'msgstr "FooNote'
+  +' '#229#156#176#229#157#128#239#188#154'"'#13#10#13#10'#: tformopenurl.label'
+  +'2.caption'#13#10'msgid "Example: git@host.com:repo/notes.git"'#13#10'msgstr'
+  +' "'#228#190#139#229#166#130#239#188#154'git@host.com:repo/notes.git"'#13#10
+  +#13#10'#: tformopenurl.label3.caption'#13#10'msgid "Example: filename.foonot'
+  +'e"'#13#10'msgstr "'#228#190#139#229#166#130#239#188#154#230#150#135#228#187
+  +#182#229#144#141'.foonote"'#13#10#13#10'#: tformopenurl.label4.caption'#13#10
+  +'msgid "Example: memory:123"'#13#10'msgstr "'#228#190#139#229#166#130#239#188
+  ,#154'memory:123"'#13#10#13#10'#: tformopenurl.radiocustom.caption'#13#10'msg'
+  +'id "Custom"'#13#10'msgstr "'#232#135#170#229#174#154#228#185#137'"'#13#10#13
+  +#10'#: tformopenurl.radiogit.caption'#13#10'msgid "Git"'#13#10'msgstr "Git '
+  +#231#137#136#230#156#172#230#142#167#229#136#182'"'#13#10#13#10'#: tformopen'
+  +'url.radiolocalfile.caption'#13#10'msgid "Local FooNote File"'#13#10'msgstr '
+  +'"'#230#156#172#229#156#176' FooNote '#230#150#135#228#187#182'"'#13#10#13#10
+  +'#: tformopenurl.radiomemory.caption'#13#10'msgid "Memory"'#13#10'msgstr "'
+  +#229#134#133#229#173#152'"'#13#10#13#10'#: tformpassword.buttoncancel.captio'
+  +'n'#13#10'msgctxt "tformpassword.buttoncancel.caption"'#13#10'msgid "&Cancel'
+  +'"'#13#10'msgstr "'#229#143#150#230#182#136'(&C)"'#13#10#13#10'#: tformpassw'
+  +'ord.buttonok.caption'#13#10'msgctxt "tformpassword.buttonok.caption"'#13#10
+  +'msgid "&OK"'#13#10'msgstr "'#231#161#174#229#174#154'(&O)"'#13#10#13#10'#: '
+  +'tformpassword.caption'#13#10'msgid "Password"'#13#10'msgstr "'#229#175#134
+  +#231#160#129'"'#13#10#13#10'#: tformpassword.label1.caption'#13#10'msgid "Pa'
+  +'ssword:"'#13#10'msgstr "'#229#175#134#231#160#129#239#188#154'"'#13#10#13#10
+  +'#: tformpassword.label2.caption'#13#10'msgid "Retype Password:"'#13#10'msgs'
+  +'tr "'#229#134#141#232#190#147#229#133#165#229#175#134#231#160#129#239#188
+  +#154'"'#13#10#13#10'#: tformsavefailure.buttonclose.caption'#13#10'msgid "&C'
+  +'lose"'#13#10'msgstr "'#229#133#179#233#151#173'(&C)"'#13#10#13#10'#: tforms'
+  +'avefailure.buttonnewinstance.caption'#13#10'msgid "&Start FooNote"'#13#10'm'
+  +'sgstr "'#229#144#175#229#138#168' FooNote (&S)"'#13#10#13#10'#: tformsavefa'
+  +'ilure.caption'#13#10'msgctxt "tformsavefailure.caption"'#13#10'msgid "Faile'
+  +'d to save"'#13#10'msgstr "'#230#151#160#230#179#149#228#191#157#229#173#152
+  +'"'#13#10#13#10'#: tformsavefailure.editnewurl.text'#13#10'msgid "A.foonote"'
+  +#13#10'msgstr "A.foonote"'#13#10#13#10'#: tformsavefailure.label1.caption'#13
+  +#10'msgid "The last attempt to save has failed with error message:"'#13#10'm'
+  +'sgstr "'#230#156#128#232#191#145#231#154#132#228#191#157#229#173#152#229#164
+  +#177#232#180#165#228#186#134#239#188#140#233#148#153#232#175#175#228#191#161
+  +#230#129#175#229#166#130#228#184#139#239#188#154'"'#13#10#13#10'#: tformsave'
+  +'failure.label2.caption'#13#10'msgid "If this is caused by unrecoverable net'
+  +'work issues, you can start a new FooNote instance and copy-paste changes th'
+  +'ere."'#13#10'msgstr "'#229#166#130#230#158#156#232#191#153#230#152#175#231
+  +#148#177#228#186#142#228#184#141#229#143#175#230#129#162#229#164#141#231#154
+  +#132#231#189#145#231#187#156#233#151#174#233#162#152#239#188#140#230#130#168
+  +#229#143#175#228#187#165#229#144#175#229#138#168#228#184#128#228#184#170#230
+  +#150#176#231#154#132' FooNote'#239#188#140#229#164#141#229#136#182#230#156
+  +#170#228#191#157#229#173#152#231#154#132#230#148#185#229#138#168#239#188#140
+  +#231#178#152#232#180#180#229#136#176#230#150#176#231#154#132' FooNote '#229
+  +#134#133#227#128#130'"'#13#10#13#10'#: treenodedata.rstrash'#13#10'msgid "Tr'
+  +'ash"'#13#10'msgstr "'#229#155#158#230#148#182#231#171#153'"'#13#10#13#10'#:'
+  +' tsolidcolorpreviewform.caption'#13#10'msgid "FooNoteOverlay"'#13#10'msgstr'
+  +' "FooNote '#229#143#160#229#138#160#229#177#130'"'#13#10
 ]);

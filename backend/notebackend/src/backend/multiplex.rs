@@ -3,6 +3,7 @@
 use super::null::NullBackend;
 use crate::clipboard;
 use crate::t;
+use crate::url::BackendType;
 use notebackend_types::log;
 use notebackend_types::meta::TreeMeta;
 use notebackend_types::BackendId;
@@ -192,10 +193,7 @@ impl MultiplexBackend {
                 Some(password) => crate::url::open_aes256(password, inline_data.unwrap()),
                 None => Err(io::Error::new(
                     io::ErrorKind::PermissionDenied,
-                    t!(
-                        cn = "需要密码\n\n双击加密项输入密码。",
-                        en = "Password Required\n\nDouble click the encrypted item to provide a password."
-                    ),
+                    t!(cn = "需要密码", en = "Password Required"),
                 )),
             }
         } else {
