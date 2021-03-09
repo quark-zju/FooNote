@@ -450,7 +450,7 @@ var
   S: string;
 begin
   S := ExtractMeta(Id, 'mount=');
-  Result := (S = 'aes256');
+  Result := (UrlType(S) = 'aes256');
 end;
 
 function IsMounted(Id: FullId): boolean;

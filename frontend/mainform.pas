@@ -20,6 +20,8 @@ type
   { TFormFooNoteMain }
 
   TFormFooNoteMain = class(TForm)
+    ActionNewGit: TAction;
+    ActionNewMemory: TAction;
     ActionEncryptLock: TAction;
     ActionEncryptUnlock: TAction;
     ActionNewAes256: TAction;
@@ -31,6 +33,9 @@ type
     MenuItem28: TMenuItem;
     MenuItem29: TMenuItem;
     MenuItem30: TMenuItem;
+    MenuItem31: TMenuItem;
+    MenuItem32: TMenuItem;
+    MenuItem33: TMenuItem;
     MenuItemLockUnlockSep: TMenuItem;
     MenuItemRootPath: TMenuItem;
     MenuItem3: TMenuItem;
@@ -112,6 +117,8 @@ type
     procedure ActionEncryptLockExecute(Sender: TObject);
     procedure ActionEncryptUnlockExecute(Sender: TObject);
     procedure ActionNewAes256Execute(Sender: TObject);
+    procedure ActionNewGitExecute(Sender: TObject);
+    procedure ActionNewMemoryExecute(Sender: TObject);
     procedure ActionToggleFolderExecute(Sender: TObject);
     procedure ActionViewWarnUnsavedExecute(Sender: TObject);
     procedure EditNoteSearchKeyUp(Sender: TObject; var Key: word; Shift: TShiftState);
@@ -252,6 +259,11 @@ resourcestring
   RSExit = 'Exit';
   RSOk = 'OK';
   RSEncryptedTextPrefix = 'Encrypted' + #10 + #10 + 'Do not edit lines below:' + #10;
+  RSMemoryRootTitle = 'Temporary Folder';
+  RSInputGitUrl = 'Input Git Url';
+  RSNewGitTitle = 'New Git Folder';
+  RSNotGitUrl = '%s is not a Git url';
+  RSCancel = 'Cancel';
 
 implementation
 
@@ -974,6 +986,53 @@ begin
       end;
     end;
   end;
+end;
+
+procedure TFormFooNoteMain.ActionNewGitExecute(Sender: TObject);
+var
+  Id: FullId;
+  Url: string;
+begin
+  Url := InputBox(RSNewGitTitle, RSInputGitUrl, '');
+  if Url.IsEmpty then begin
+    exit;
+  end;
+  if UrlType(Url) <> 'git' then begin
+    if UrlType(Url + '.git') = 'git' then begin
+      Url := Url + '.git';
+    end else begin
+      ErrorDlg(Format(RSNotGitUrl, [Url]));
+    end;
+  end;
+
+  try
+    Id := NewNode(Url, 'type=mount' + #10, 1);
+    TryUpdateMeta(Id, 'mount=', url);
+  except
+    on e: EExternal do begin
+      ErrorDlg(e.Message);
+      exit;
+    end;
+  end;
+  RefreshFullTree;
+  SelectExpandNode(Id);
+end;
+
+procedure TFormFooNoteMain.ActionNewMemoryExecute(Sender: TObject);
+var
+  Id: FullId;
+begin
+  try
+    Id := NewNode(RSMemoryRootTitle, 'type=mount' + #10, 1);
+    TryUpdateMeta(Id, 'mount=', Format('memory:%d-%d', [Id.BackendId, Id.Id]));
+  except
+    on e: EExternal do begin
+      ErrorDlg(e.Message);
+      exit;
+    end;
+  end;
+  RefreshFullTree;
+  SelectExpandNode(Id);
 end;
 
 procedure TFormFooNoteMain.ActionToggleFolderExecute(Sender: TObject);

@@ -1,7 +1,7 @@
 object FormFooNoteMain: TFormFooNoteMain
-  Left = 1032
+  Left = 1022
   Height = 510
-  Top = 116
+  Top = 111
   Width = 257
   BorderIcons = [biSystemMenu, biMinimize]
   Caption = 'FooNote'
@@ -340,8 +340,17 @@ object FormFooNoteMain: TFormFooNoteMain
     object MenuSepMount: TMenuItem
       Caption = '-'
     end
+    object MenuItem33: TMenuItem
+      Action = ActionNewGit
+    end
     object MenuItem29: TMenuItem
       Action = ActionNewAes256
+    end
+    object MenuItem31: TMenuItem
+      Action = ActionNewMemory
+    end
+    object MenuItem32: TMenuItem
+      Caption = '-'
     end
     object MenuItemMount: TMenuItem
       Action = ActionNewMountUrl
@@ -498,6 +507,18 @@ object FormFooNoteMain: TFormFooNoteMain
       ImageIndex = 9
       OnExecute = ActionEncryptLockExecute
       Visible = False
+    end
+    object ActionNewMemory: TAction
+      Category = 'New'
+      Caption = 'New &Temporary Folder'
+      ImageIndex = 12
+      OnExecute = ActionNewMemoryExecute
+    end
+    object ActionNewGit: TAction
+      Category = 'New'
+      Caption = 'New &Git Folder'
+      ImageIndex = 2
+      OnExecute = ActionNewGitExecute
     end
   end
   object PopupMenuEdit: TPopupMenu
