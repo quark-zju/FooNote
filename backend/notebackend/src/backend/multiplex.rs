@@ -771,12 +771,15 @@ impl TreeBackend for MultiplexBackend {
             let url = self.extract_url(id)?.to_string();
             if self.is_encrytped_mount(id)? && !url.is_empty() {
                 self.umount_recursive(id)?;
-                self.passwords.insert(url, value.to_string());
-                // Remount if password is not empty.
-                if !value.is_empty() {
-                    self.touch(id)?;
+                if value.is_empty() {
+                    // Umount. Forget password.
+                    self.passwords.remove(&url);
+                } else {
+                    self.passwords.insert(url, value.to_string());
+                    // Remount with the new password.
                     let _ = self.follow_mount(id, true);
                 }
+                self.touch(id)?;
             }
             Ok(true)
         } else {
@@ -1130,7 +1133,7 @@ base64:omF0ogpjZm9vC2NiYXJhbaNhY6EAggoLYW2hAGp0eXBlPXJvb3QKYW4M"#
                    \_ 2 ("Cannot decrypt: aead::Error") (type=warn)"#
         );
 
-        // Right password.
+        // Correct password.
         root.update_meta(id, "password=", "abc").unwrap();
         assert!(root.is_mounted(id).unwrap());
         assert_eq!(
@@ -1140,6 +1143,17 @@ base64:omF0ogpjZm9vC2NiYXJhbaNhY6EAggoLYW2hAGp0eXBlPXJvb3QKYW4M"#
                 \_ 1 ("Encrypted Node")
                    \_ 3 ("foo")
                    \_ 2 ("bar2")"#
+        );
+
+        // "Lock" / "Close"
+        root.update_meta(id, "password=", "").unwrap();
+        assert!(!root.is_mounted(id).unwrap());
+        assert_eq!(
+            root.draw_ascii(&root.all_ids()),
+            r#"
+                root
+                \_ 1 ("Encrypted Node")
+                   \_ 2 ("Password Required") (type=warn)"#
         );
     }
 }
