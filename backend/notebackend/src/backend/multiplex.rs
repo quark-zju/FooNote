@@ -99,17 +99,20 @@ impl MultiplexBackend {
         }
     }
 
-    /// Mount `id` on demand. Return the mounted id.
-    /// If `auto_mount` is false, then avoid mounting new backends.
-    fn follow_mount(&self, id: FullId, auto_mount: bool) -> io::Result<FullId> {
+    /// Obtain information about mount URL, key, encrypted, inline.
+    fn mount_url_key_encrypted_inline(
+        &self,
+        id: FullId,
+    ) -> Result<Option<(Cow<str>, String, bool, bool)>> {
         // Root id cannot be mounted.
         if id == self.get_root_id() {
-            return Ok(id);
+            return Ok(None);
         }
+
         let url = self.extract_url(id)?;
         if url.is_empty() {
             // No URL to mount.
-            return Ok(id);
+            return Ok(None);
         }
 
         // The aes256 backend is the only one that is inlined.
@@ -123,6 +126,32 @@ impl MultiplexBackend {
             format!("i:{:?}:{}", id, url)
         } else {
             format!("u:{}", url)
+        };
+
+        Ok(Some((url, key, encrypted, inline)))
+    }
+
+    /// Test if a node is mounted without errors.
+    fn is_mounted(&self, id: FullId) -> Result<bool> {
+        let (url, key, encrypted, inline) = match self.mount_url_key_encrypted_inline(id)? {
+            Some(v) => v,
+            None => return Ok(false),
+        };
+        let table = self.table.read();
+        if let Some(&backend_index) = table.key_to_id.get(&key) {
+            let mount = &table.mounts[backend_index];
+            Ok(mount.error_message.is_none() && mount.source_id.contains(&id))
+        } else {
+            Ok(false)
+        }
+    }
+
+    /// Mount `id` on demand. Return the mounted id.
+    /// If `auto_mount` is false, then avoid mounting new backends.
+    fn follow_mount(&self, id: FullId, auto_mount: bool) -> io::Result<FullId> {
+        let (url, key, encrypted, inline) = match self.mount_url_key_encrypted_inline(id)? {
+            Some(v) => v,
+            None => return Ok(id),
         };
 
         let mut table = self.table.write();
@@ -731,6 +760,19 @@ impl TreeBackend for MultiplexBackend {
             notebackend_types::tree::update_meta(self, id, prefix, value)
         }
     }
+
+    fn extract_meta<'a>(&'a self, id: Self::Id, prefix: &str) -> Result<Cow<'a, str>> {
+        if prefix == "mounted=" {
+            // Special case: test if a node is mounted.
+            if self.is_mounted(id)? {
+                Ok("true".into())
+            } else {
+                Ok("".into())
+            }
+        } else {
+            notebackend_types::tree::extract_meta(self, id, prefix)
+        }
+    }
 }
 
 /// Dummy backend for warning purpose
@@ -803,6 +845,10 @@ mod tests {
                    \_ 2 ("B")
                       \_ 3 ("C")"#
         );
+        assert!(!root.is_mounted(root.get_root_id()).unwrap());
+        assert!(!root.is_mounted(root.find("A")).unwrap());
+        assert!(!root.is_mounted(root.find("B")).unwrap());
+        assert!(!root.is_mounted(root.find("C")).unwrap());
 
         root.update_meta(root.find("B"), "mount=", "memory:ascii=X--Y")
             .unwrap();
@@ -815,6 +861,12 @@ mod tests {
                       \_ 3 ("X")
                          \_ 4 ("Y")"#
         );
+        assert!(root.is_mounted(root.find("B")).unwrap());
+        assert_eq!(
+            root.extract_meta(root.find("B"), "mounted=").unwrap(),
+            "true"
+        );
+        assert_eq!(root.extract_meta(root.find("A"), "mounted=").unwrap(), "");
 
         root.check_mtime_changed(root.find("A"), |b| {
             b.touch(b.find("Y")).unwrap();
@@ -1001,6 +1053,7 @@ base64:omF0ogpjZm9vC2NiYXJhbaNhY6EAggoLYW2hAGp0eXBlPXJvb3QKYW4M"#
                 "mount=aes256\n".into(),
             )
             .unwrap();
+        assert!(!root.is_mounted(id).unwrap());
         assert_eq!(
             root.draw_ascii(&root.all_ids()),
             r#"
@@ -1011,6 +1064,7 @@ base64:omF0ogpjZm9vC2NiYXJhbaNhY6EAggoLYW2hAGp0eXBlPXJvb3QKYW4M"#
 
         // Provide a password. Now insertion is supported.
         root.update_meta(id, "password=", "abc").unwrap();
+        assert!(root.is_mounted(id).unwrap());
         root.quick_insert(id, "foo");
         root.persist().unwrap();
         assert_eq!(
@@ -1025,7 +1079,7 @@ base64:omF0ogpjZm9vC2NiYXJhbaNhY6EAggoLYW2hAGp0eXBlPXJvb3QKYW4M"#
         drop(root);
         let backend = crate::backend::SingleFileBackend::from_path(&path).unwrap();
         let mut root = MultiplexBackend::from_root_backend(Box::new(backend));
-
+        assert!(!root.is_mounted(id).unwrap());
         assert_eq!(
             root.draw_ascii(&root.all_ids()),
             r#"
@@ -1036,6 +1090,7 @@ base64:omF0ogpjZm9vC2NiYXJhbaNhY6EAggoLYW2hAGp0eXBlPXJvb3QKYW4M"#
 
         // Wrong password.
         root.update_meta(id, "password=", "def").unwrap();
+        assert!(!root.is_mounted(id).unwrap());
         assert_eq!(
             root.draw_ascii(&root.all_ids()),
             r#"
@@ -1046,6 +1101,7 @@ base64:omF0ogpjZm9vC2NiYXJhbaNhY6EAggoLYW2hAGp0eXBlPXJvb3QKYW4M"#
 
         // Right password.
         root.update_meta(id, "password=", "abc").unwrap();
+        assert!(root.is_mounted(id).unwrap());
         assert_eq!(
             root.draw_ascii(&root.all_ids()),
             r#"

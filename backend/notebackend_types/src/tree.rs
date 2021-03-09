@@ -99,11 +99,7 @@ pub trait TreeBackend: Send + Sync + 'static {
 
     /// Extract value from the metadata.
     fn extract_meta<'a>(&'a self, id: Self::Id, prefix: &str) -> Result<Cow<'a, str>> {
-        let meta = self.get_raw_meta(id)?;
-        match meta {
-            Cow::Borrowed(meta) => Ok(Cow::Borrowed(extract_meta_text(meta, prefix))),
-            Cow::Owned(meta) => Ok(extract_meta_text(&meta, prefix).to_string().into()),
-        }
+        extract_meta(self, id, prefix)
     }
 
     /// Update a meta value with the given key.
@@ -400,4 +396,16 @@ pub fn update_meta<T: TreeBackend + ?Sized>(
         new_meta.push('\n');
     }
     tree.set_raw_meta(id, new_meta)
+}
+
+pub fn extract_meta<'a, T: TreeBackend + ?Sized>(
+    tree: &'a T,
+    id: T::Id,
+    prefix: &str,
+) -> Result<Cow<'a, str>> {
+    let meta = tree.get_raw_meta(id)?;
+    match meta {
+        Cow::Borrowed(meta) => Ok(Cow::Borrowed(extract_meta_text(meta, prefix))),
+        Cow::Owned(meta) => Ok(extract_meta_text(&meta, prefix).to_string().into()),
+    }
 }
