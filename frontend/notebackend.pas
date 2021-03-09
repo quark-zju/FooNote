@@ -29,6 +29,8 @@ function CopyToBytes(Ids: VecFullId): TBytes;
 function PasteFromBytes(DestId: FullId; Pos: Int32; Bytes: TBytes): VecFullId;
 
 function IsFolder(Id: FullId): boolean;
+function IsEncryptedFolder(Id: FullId): boolean;
+function IsMounted(Id: FullId): boolean;
 
 procedure StartSearch(Ids: VecFullId; Text: string);
 procedure StopSearch();
@@ -442,6 +444,23 @@ begin
   S := ExtractMeta(Id, 'type=');
   Result := (S = 'folder') or (S = 'trash') or (S = 'mount');
 end;
+
+function IsEncryptedFolder(Id: FullId): boolean;
+var
+  S: string;
+begin
+  S := ExtractMeta(Id, 'mount=');
+  Result := (S = 'aes256');
+end;
+
+function IsMounted(Id: FullId): boolean;
+var
+  S: string;
+begin
+  S := ExtractMeta(Id, 'mounted=');
+  Result := (S = 'true');
+end;
+
 
 procedure StartSearch(Ids: VecFullId; Text: string);
 begin

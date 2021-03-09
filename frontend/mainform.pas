@@ -13,19 +13,25 @@ uses
   LazUtf8, FGL, LogFFI, Math, NoteBackend, NoteTypes, MemoUtil,
   LCLTranslator, Buttons, JSONPropStorage, TreeNodeData, StackFFI,
   TreeViewSync, Settings, PreviewForm, AboutForm, FileUtil, md5,
-  savemsgform, selecturlform, LocaleUtils, SettingsForm;
+  savemsgform, selecturlform, LocaleUtils, SettingsForm, PasswordForm, Types;
 
 type
 
   { TFormFooNoteMain }
 
   TFormFooNoteMain = class(TForm)
+    ActionEncryptLock: TAction;
+    ActionEncryptUnlock: TAction;
+    ActionNewAes256: TAction;
     ActionToggleFolder: TAction;
     ActionViewWarnUnsaved: TAction;
     ActionEditReload: TAction;
     MenuItem10: TMenuItem;
     MenuItem27: TMenuItem;
     MenuItem28: TMenuItem;
+    MenuItem29: TMenuItem;
+    MenuItem30: TMenuItem;
+    MenuItemLockUnlockSep: TMenuItem;
     MenuItemRootPath: TMenuItem;
     MenuItem3: TMenuItem;
     MenuItem6: TMenuItem;
@@ -103,6 +109,9 @@ type
 
     procedure ActionAppAboutExecute(Sender: TObject);
     procedure ActionEditReloadExecute(Sender: TObject);
+    procedure ActionEncryptLockExecute(Sender: TObject);
+    procedure ActionEncryptUnlockExecute(Sender: TObject);
+    procedure ActionNewAes256Execute(Sender: TObject);
     procedure ActionToggleFolderExecute(Sender: TObject);
     procedure ActionViewWarnUnsavedExecute(Sender: TObject);
     procedure EditNoteSearchKeyUp(Sender: TObject; var Key: word; Shift: TShiftState);
@@ -120,6 +129,7 @@ type
     procedure TimerCheckSaveResultTimer(Sender: TObject);
     procedure TreeViewNoteTreeAdvancedCustomDrawItem(Sender: TCustomTreeView; Node: TTreeNode;
       State: TCustomDrawState; Stage: TCustomDrawStage; var PaintImages, DefaultDraw: boolean);
+    procedure TreeViewNoteTreeContextPopup(Sender: TObject; MousePos: TPoint; var Handled: boolean);
     procedure TreeViewNoteTreeDblClick(Sender: TObject);
     procedure TreeViewNoteTreeDragDrop(Sender, Source: TObject; X, Y: integer);
     procedure TreeViewNoteTreeDragOver(Sender, Source: TObject; X, Y: integer; State: TDragState; var Accept: boolean);
@@ -241,6 +251,7 @@ resourcestring
   RSFailOpenUrl = 'Failed to open [%s]: %s';
   RSExit = 'Exit';
   RSOk = 'OK';
+  RSEncryptedTextPrefix = 'Encrypted' + #10 + #10 + 'Do not edit lines below:' + #10;
 
 implementation
 
@@ -906,6 +917,65 @@ begin
   end;
 end;
 
+procedure TFormFooNoteMain.ActionEncryptLockExecute(Sender: TObject);
+var
+  Id: FullId;
+begin
+  if Assigned(TreeViewNoteTree.Selected) then begin
+    Id := SelectedId;
+    if IsEncryptedFolder(Id) then begin
+      if IsMounted(Id) then begin
+        // Encrypt - Reset password to empty.
+        TryUpdateMeta(Id, 'password=', '');
+        RefreshFullTree;
+      end;
+    end;
+  end;
+end;
+
+procedure TFormFooNoteMain.ActionEncryptUnlockExecute(Sender: TObject);
+var
+  Id: FullId;
+  S: string;
+begin
+  if Assigned(TreeViewNoteTree.Selected) then begin
+    Id := SelectedId;
+    if IsEncryptedFolder(Id) then begin
+      if not IsMounted(Id) then begin
+        // Decrypt - Ask for password.
+        PasswordForm.PrepareForm(False);
+        if PasswordForm.FormPassword.ShowModal = mrOk then begin
+          S := PasswordForm.PasswordResult;
+          TryUpdateMeta(Id, 'password=', S);
+          RefreshFullTree;
+        end;
+      end;
+    end;
+  end;
+end;
+
+procedure TFormFooNoteMain.ActionNewAes256Execute(Sender: TObject);
+var
+  S: string;
+  Id: FullId;
+begin
+  PasswordForm.PrepareForm(True);
+  if PasswordForm.FormPassword.ShowModal = mrOk then begin
+    S := PasswordForm.PasswordResult;
+    try
+      Id := NewNode(RSEncryptedTextPrefix, 'type=mount' + #10, 1);
+      TryUpdateMeta(Id, 'mount=', Format('aes256:%d-%d', [Id.BackendId, Id.Id]));
+      TryUpdateMeta(Id, 'password=', S);
+      SelectExpandNode(Id);
+    except
+      on e: EExternal do begin
+        ErrorDlg(e.Message);
+        exit;
+      end;
+    end;
+  end;
+end;
+
 procedure TFormFooNoteMain.ActionToggleFolderExecute(Sender: TObject);
 var
   S: string;
@@ -1356,10 +1426,46 @@ begin
   end;
 end;
 
-procedure TFormFooNoteMain.TreeViewNoteTreeDblClick(Sender: TObject);
+procedure TFormFooNoteMain.TreeViewNoteTreeContextPopup(Sender: TObject; MousePos: TPoint; var Handled: boolean);
+var
+  LockEnabled, UnlockEnabled: boolean;
+  Id: FullId;
 begin
-  if Assigned(TreeViewNoteTree.Selected) and not IsFolder(NodeData(TreeViewNoteTree.Selected).Id) then begin
-    FocusEditorEnd;
+  LockEnabled := False;
+  UnlockEnabled := False;
+
+  if Assigned(TreeViewNoteTree.Selected) then begin
+    Id := SelectedId;
+    if IsEncryptedFolder(Id) then begin
+      if IsMounted(Id) then begin
+        LockEnabled := True;
+      end else begin
+        UnlockEnabled := True;
+      end;
+    end;
+  end;
+  ActionEncryptLock.Enabled := LockEnabled;
+  ActionEncryptLock.Visible := LockEnabled;
+  ActionEncryptUnlock.Enabled := UnlockEnabled;
+  ActionEncryptUnlock.Visible := UnlockEnabled;
+  MenuItemLockUnlockSep.Visible := UnlockEnabled or LockEnabled;
+end;
+
+procedure TFormFooNoteMain.TreeViewNoteTreeDblClick(Sender: TObject);
+var
+  Id: FullId;
+begin
+  if Assigned(TreeViewNoteTree.Selected) then begin
+    Id := SelectedId;
+    if IsEncryptedFolder(Id) then begin
+      if not IsMounted(Id) then begin
+        ActionEncryptUnlockExecute(Sender);
+      end;
+    end;
+    // Focus note.
+    if not IsFolder(Id) then begin
+      FocusEditorEnd;
+    end;
   end;
 end;
 
@@ -1503,7 +1609,7 @@ begin
   end else if (key = '.') then begin
     TreeViewNoteTree.PopupMenu.PopUp;
   end else if (Key = #10) or (Key = #13) then begin
-    FocusEditorEnd;
+    TreeViewNoteTreeDblClick(Sender);
   end;
 end;
 

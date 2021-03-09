@@ -58,7 +58,6 @@ end;
 function TTreeNodeData.SyncFromBackend(): boolean;
 var
   NewMtime: NodeMtime;
-  url: string;
 begin
   NewMtime := NoteBackend.GetMtime(Id);
   if NewMtime = Mtime then begin
@@ -100,6 +99,8 @@ begin
       Result := ImageIndex.IMG_ROOT_LOCAL;
     end else if S = 'memory' then begin
       Result := ImageIndex.IMG_ROOT_MEMORY;
+    end else if S = 'aes256' then begin
+      Result := ImageIndex.IMG_ROOT_AES;
     end else begin
       Result := ImageIndex.IMG_ROOT_LOCAL;
     end;
@@ -109,8 +110,6 @@ begin
 end;
 
 function TTreeNodeData.GetTitle(): string;
-var
-  S: string;
 begin
   Result := FirstLine;
 end;

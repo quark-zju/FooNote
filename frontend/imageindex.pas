@@ -15,6 +15,7 @@ const
   IMG_SETTINGS = 4;
   IMG_TEXT = 5;
   IMG_TRASH = 6;
+  IMG_ROOT_AES = 9;
   IMG_WARN = 10;
   IMG_ROOT_MEMORY = 12;
   IMG_ROOT_HOME = 13;

@@ -307,6 +307,7 @@ object FormFooNoteMain: TFormFooNoteMain
       ShowLines = False
       TabOrder = 1
       OnAdvancedCustomDrawItem = TreeViewNoteTreeAdvancedCustomDrawItem
+      OnContextPopup = TreeViewNoteTreeContextPopup
       OnDblClick = TreeViewNoteTreeDblClick
       OnDeletion = TreeViewNoteTreeDeletion
       OnDragDrop = TreeViewNoteTreeDragDrop
@@ -339,6 +340,9 @@ object FormFooNoteMain: TFormFooNoteMain
     object MenuSepMount: TMenuItem
       Caption = '-'
     end
+    object MenuItem29: TMenuItem
+      Action = ActionNewAes256
+    end
     object MenuItemMount: TMenuItem
       Action = ActionNewMountUrl
     end
@@ -367,7 +371,7 @@ object FormFooNoteMain: TFormFooNoteMain
       Category = 'New'
       Caption = 'New &Folder'
       Hint = 'New Folder'
-      ImageIndex = 3
+      ImageIndex = 0
       OnExecute = ActionNewFolderExecute
       ShortCut = 24654
     end
@@ -473,11 +477,43 @@ object FormFooNoteMain: TFormFooNoteMain
       OnExecute = ActionToggleFolderExecute
       ShortCut = 16575
     end
+    object ActionNewAes256: TAction
+      Category = 'New'
+      Caption = 'New &Encrypted Folder'
+      ImageIndex = 9
+      OnExecute = ActionNewAes256Execute
+    end
+    object ActionEncryptUnlock: TAction
+      Category = 'Edit'
+      Caption = '&Unlock'
+      Enabled = False
+      ImageIndex = 9
+      OnExecute = ActionEncryptUnlockExecute
+      Visible = False
+    end
+    object ActionEncryptLock: TAction
+      Category = 'Edit'
+      Caption = '&Lock'
+      Enabled = False
+      ImageIndex = 9
+      OnExecute = ActionEncryptLockExecute
+      Visible = False
+    end
   end
   object PopupMenuEdit: TPopupMenu
     Images = ImageListElementaryIcons
     Left = 64
     Top = 240
+    object MenuItem28: TMenuItem
+      Action = ActionEncryptUnlock
+    end
+    object MenuItem30: TMenuItem
+      Action = ActionEncryptLock
+    end
+    object MenuItemLockUnlockSep: TMenuItem
+      Caption = '-'
+      Visible = False
+    end
     object MenuItem14: TMenuItem
       Action = ActionNewNote
     end
@@ -486,9 +522,6 @@ object FormFooNoteMain: TFormFooNoteMain
     end
     object MenuItem17: TMenuItem
       Action = ActionNewSeparator
-    end
-    object MenuItem28: TMenuItem
-      Action = ActionNewMountUrl
     end
     object MenuItem11: TMenuItem
       Caption = '-'

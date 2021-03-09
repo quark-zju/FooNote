@@ -30,7 +30,7 @@
       <AutoIncrementBuild Value="True"/>
       <MajorVersionNr Value="1"/>
       <MinorVersionNr Value="2"/>
-      <BuildNr Value="57"/>
+      <BuildNr Value="58"/>
     </VersionInfo>
     <BuildModes Count="3">
       <Item1 Name="Default" Default="True"/>
@@ -119,7 +119,7 @@
         <PackageName Value="LCL"/>
       </Item1>
     </RequiredPackages>
-    <Units Count="19">
+    <Units Count="20">
       <Unit0>
         <Filename Value="foonote.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -229,6 +229,12 @@
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
       </Unit18>
+      <Unit19>
+        <Filename Value="passwordform.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="FormPassword"/>
+        <ResourceBaseClass Value="Form"/>
+      </Unit19>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
