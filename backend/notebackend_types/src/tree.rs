@@ -108,35 +108,7 @@ pub trait TreeBackend: Send + Sync + 'static {
 
     /// Update a meta value with the given key.
     fn update_meta(&mut self, id: Self::Id, prefix: &str, value: &str) -> Result<bool> {
-        if value.contains('\n') {
-            return super::error::invalid_input("meta value cannot have multiple lines");
-        }
-        let meta = self.get_raw_meta(id)?;
-        let mut new_meta = String::with_capacity(meta.len());
-        let mut updated = false;
-        for line in meta.lines() {
-            if line.starts_with(prefix) {
-                updated = true;
-                if &line[prefix.len()..] == value {
-                    // No need to update.
-                    return Ok(false);
-                }
-                if !value.is_empty() {
-                    new_meta.push_str(prefix);
-                    new_meta.push_str(value);
-                    new_meta.push('\n');
-                }
-            } else {
-                new_meta.push_str(line);
-                new_meta.push('\n');
-            }
-        }
-        if !updated && !value.is_empty() {
-            new_meta.push_str(prefix);
-            new_meta.push_str(value);
-            new_meta.push('\n');
-        }
-        self.set_raw_meta(id, new_meta)
+        update_meta(self, id, prefix, value)
     }
 
     /// First (non-blank) line of the actual content. Usually used as title.
@@ -391,4 +363,41 @@ fn extract_meta_text<'a>(meta: &'a str, prefix: &str) -> &'a str {
         }
     }
     ""
+}
+
+pub fn update_meta<T: TreeBackend + ?Sized>(
+    tree: &mut T,
+    id: T::Id,
+    prefix: &str,
+    value: &str,
+) -> Result<bool> {
+    if value.contains('\n') {
+        return super::error::invalid_input("meta value cannot have multiple lines");
+    }
+    let meta = tree.get_raw_meta(id)?;
+    let mut new_meta = String::with_capacity(meta.len());
+    let mut updated = false;
+    for line in meta.lines() {
+        if line.starts_with(prefix) {
+            updated = true;
+            if &line[prefix.len()..] == value {
+                // No need to update.
+                return Ok(false);
+            }
+            if !value.is_empty() {
+                new_meta.push_str(prefix);
+                new_meta.push_str(value);
+                new_meta.push('\n');
+            }
+        } else {
+            new_meta.push_str(line);
+            new_meta.push('\n');
+        }
+    }
+    if !updated && !value.is_empty() {
+        new_meta.push_str(prefix);
+        new_meta.push_str(value);
+        new_meta.push('\n');
+    }
+    tree.set_raw_meta(id, new_meta)
 }
