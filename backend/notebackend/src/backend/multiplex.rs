@@ -31,6 +31,9 @@ const ROOT_BACKEND_ID: BackendId = 0;
 pub struct MultiplexBackend {
     root: Mount,
     table: RwLock<MountTable>,
+
+    // Passwords used for mounting encrypted nodes.
+    passwords: HashMap<FullId, String>,
 }
 
 #[derive(Default)]
@@ -76,6 +79,7 @@ impl MultiplexBackend {
                 inline: false,
             },
             table: Default::default(),
+            passwords: Default::default(),
         };
         Ok(result)
     }
@@ -91,6 +95,7 @@ impl MultiplexBackend {
                 inline: false,
             },
             table: Default::default(),
+            passwords: Default::default(),
         }
     }
 
@@ -107,7 +112,13 @@ impl MultiplexBackend {
             return Ok(id);
         }
 
-        let inline = self.extract_inline(id)?;
+        // The aes256 backend is the only one that is inlined.
+        let encrypted = self.is_encrytped_mount(id)?;
+        let inline = self.is_inlined_mount(id)?;
+        if encrypted {
+            assert!(inline, "encrypted = true should indicate inline = true")
+        }
+
         let key = if inline {
             format!("i:{:?}:{}", id, url)
         } else {
@@ -142,7 +153,20 @@ impl MultiplexBackend {
         } else {
             None
         };
-        let backend = match crate::url::open(url.as_ref(), inline_data.as_deref()) {
+        let backend = if encrypted {
+            // Set via "update_meta".
+            let password = self.passwords.get(&id);
+            match password {
+                Some(password) => crate::url::open_aes256(password, inline_data.unwrap()),
+                None => Err(io::Error::new(
+                    io::ErrorKind::InvalidInput,
+                    t!(cn = "需要密码", en = "Password Required"),
+                )),
+            }
+        } else {
+            crate::url::open(url.as_ref(), inline_data.as_deref())
+        };
+        let backend = match backend {
             Ok(backend) => backend,
             Err(e) => {
                 log::warn!("Failed to mount {}: {:?}", &url, e);
@@ -320,8 +344,12 @@ impl MultiplexBackend {
         self.extract_meta(id, "mount=")
     }
 
-    fn extract_inline(&self, id: FullId) -> io::Result<bool> {
-        Ok(!self.extract_meta(id, "inline=")?.is_empty())
+    fn is_inlined_mount(&self, id: FullId) -> io::Result<bool> {
+        Ok(self.is_encrytped_mount(id)? || !self.extract_meta(id, "inline=")?.is_empty())
+    }
+
+    fn is_encrytped_mount(&self, id: FullId) -> io::Result<bool> {
+        Ok(self.extract_url(id)? == "aes256")
     }
 
     fn get_children_follow_mounts(&self, id: FullId, auto_mount: bool) -> Result<Vec<FullId>> {
@@ -687,6 +715,22 @@ impl TreeBackend for MultiplexBackend {
     fn inline_data(&self) -> Option<&[u8]> {
         None
     }
+
+    fn update_meta(&mut self, id: Self::Id, prefix: &str, value: &str) -> Result<bool> {
+        if prefix == "password=" {
+            // Attempt to re-mount.
+            if self.is_encrytped_mount(id)? {
+                self.umount_recursive(id)?;
+                self.passwords.insert(id, value.to_string());
+                // Remount.
+                let _ = self.follow_mount(id, true);
+                self.passwords.clear();
+            }
+            Ok(true)
+        } else {
+            notebackend_types::tree::update_meta(self, id, prefix, value)
+        }
+    }
 }
 
 /// Dummy backend for warning purpose
@@ -940,6 +984,74 @@ base64:omF0ogpjZm9vC2NiYXJhbaNhY6EAggoLYW2hAGp0eXBlPXJvb3QKYW4M"#
                 \_ 1 ("Inlined memory")
                    \_ 3 ("foo")
                    \_ 2 ("bar")"#
+        );
+    }
+
+    #[test]
+    fn test_aes256() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("a.foonote");
+        let backend = crate::backend::SingleFileBackend::from_path(&path).unwrap();
+        let mut root = MultiplexBackend::from_root_backend(Box::new(backend));
+        let id = root
+            .insert(
+                root.get_root_id(),
+                InsertPos::Append,
+                "Encrypted Node\n".to_string(),
+                "mount=aes256\n".into(),
+            )
+            .unwrap();
+        assert_eq!(
+            root.draw_ascii(&root.all_ids()),
+            r#"
+                root
+                \_ 1 ("Encrypted Node")
+                   \_ 2 ("Failed to load") (type=warn)"#
+        );
+
+        // Provide a password. Now insertion is supported.
+        root.update_meta(id, "password=", "abc").unwrap();
+        root.quick_insert(id, "foo");
+        root.persist().unwrap();
+        assert_eq!(
+            root.draw_ascii(&root.all_ids()),
+            r#"
+                root
+                \_ 1 ("Encrypted Node")
+                   \_ 2 ("foo")"#
+        );
+
+        // Reload.
+        drop(root);
+        let backend = crate::backend::SingleFileBackend::from_path(&path).unwrap();
+        let mut root = MultiplexBackend::from_root_backend(Box::new(backend));
+
+        assert_eq!(
+            root.draw_ascii(&root.all_ids()),
+            r#"
+                root
+                \_ 1 ("Encrypted Node")
+                   \_ 2 ("Failed to load") (type=warn)"#
+        );
+
+        // Wrong password.
+        root.update_meta(id, "password=", "def").unwrap();
+        assert_eq!(
+            root.draw_ascii(&root.all_ids()),
+            r#"
+                root
+                \_ 1 ("Encrypted Node")
+                   \_ 2 ("Failed to load") (type=warn)"#
+        );
+
+        // Right password.
+        root.update_meta(id, "password=", "abc").unwrap();
+        assert_eq!(
+            root.draw_ascii(&root.all_ids()),
+            r#"
+                root
+                \_ 1 ("Encrypted Node")
+                   \_ 2 ("foo")"#
         );
     }
 }
