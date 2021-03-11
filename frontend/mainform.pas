@@ -223,6 +223,7 @@ type
 
     procedure UpdateTitle;
     procedure RefreshFullTree;
+    procedure RefreshSelectedText;
     function InsertLocation(Id: FullId; NParent: integer; out Pos: integer): FullId;
     function NewNode(AText, AMeta: string; NParent: integer = 0): FullId;
     procedure SelectExpandNode(Id: FullId);
@@ -298,6 +299,19 @@ begin
     if LogHasTrace then begin
       LogTrace('Root Note Not changed');
     end;
+  end;
+end;
+
+procedure TFormFooNoteMain.RefreshSelectedText;
+var
+  S: string;
+begin
+  if not Assigned(TreeViewNoteTree.Selected) then begin
+    exit;
+  end;
+  S := NoteBackend.GetText(SelectedId);
+  if MemoNote.Text <> S then begin
+    MemoNote.Text := S;
   end;
 end;
 
@@ -946,6 +960,7 @@ begin
         // Encrypt - Reset password to empty.
         TryUpdateMeta(Id, 'password=', '');
         RefreshFullTree;
+        RefreshSelectedText;
       end;
     end;
   end;
@@ -966,6 +981,7 @@ begin
           S := PasswordForm.PasswordResult;
           TryUpdateMeta(Id, 'password=', S);
           RefreshFullTree;
+          RefreshSelectedText;
         end;
       end;
     end;
