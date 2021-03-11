@@ -81,9 +81,9 @@ object FormFooNoteSettings: TFormFooNoteSettings
       Left = 10
       Height = 21
       Top = 41
-      Width = 187
+      Width = 201
       BorderSpacing.Around = 10
-      Caption = 'Note Tree &Horizon Scrollbar'
+      Caption = 'Note Tree &Horizontal Scrollbar'
       OnChange = CheckBoxTreeHorizonScrollbarChange
       TabOrder = 1
     end
@@ -94,9 +94,9 @@ object FormFooNoteSettings: TFormFooNoteSettings
       Left = 10
       Height = 21
       Top = 72
-      Width = 196
+      Width = 210
       BorderSpacing.Around = 10
-      Caption = 'Note Editor H&orizon Scrollbar'
+      Caption = 'Note Editor H&orizontal Scrollbar'
       OnChange = CheckBoxNoteHorizonScrollbarChange
       TabOrder = 2
     end

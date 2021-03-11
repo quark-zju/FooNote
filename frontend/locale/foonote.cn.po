@@ -22,7 +22,7 @@ msgid ""
 "\n"
 "Do not edit lines below:\n"
 msgstr ""
-"加密文件夹\n"
+"加密区\n"
 "\n"
 "以下为加密内容，请勿手动编辑：\n"
 
@@ -46,16 +46,22 @@ msgid "Failed to save changes. Still exit?"
 msgstr "无法保存更改，仍然退出吗？"
 
 #: mainform.rsinputgiturl
-msgid "Input Git Url"
-msgstr "输入 Git 地址"
+msgid ""
+"Input Git Repository Url: \n"
+"\n"
+"Note: The repository cannot be empty. Git binary installed in the system is used to access the repo.\n"
+msgstr ""
+"输入 Git 仓库地址：\n"
+"\n"
+"注意：仓库不能为空。FooNote 将使用系统中安装的 Git 程序来访问该仓库。\n"
 
 #: mainform.rsmemoryroottitle
-msgid "Temporary Folder"
-msgstr "临时文件夹"
+msgid "Temporary (Clear on Exit)"
+msgstr "临时笔记（退出时清空）"
 
 #: mainform.rsnewgittitle
-msgid "New Git Folder"
-msgstr "添加 Git 文件夹"
+msgid "New Git Mountpoint"
+msgstr "新 Git 挂载点"
 
 #: mainform.rsnoexit
 msgctxt "mainform.rsnoexit"
@@ -229,8 +235,8 @@ msgid "&Unlock"
 msgstr "解锁(&U)"
 
 #: tformfoonotemain.actionnewaes256.caption
-msgid "New &Encrypted Folder"
-msgstr "新加密文件夹(&E)"
+msgid "New A&ES256 Mountpoint"
+msgstr "新 A&ES256 加密挂载点"
 
 #: tformfoonotemain.actionnewfolder.caption
 msgctxt "tformfoonotemain.actionnewfolder.caption"
@@ -243,15 +249,19 @@ msgid "New Folder"
 msgstr "添加一个文件夹"
 
 #: tformfoonotemain.actionnewgit.caption
-msgid "New &Git Folder"
-msgstr "新 &Git 文件夹"
+msgid "New &Git Mountpoint"
+msgstr "新 &Git 挂载点"
+
+#: tformfoonotemain.actionnewlocalfile.caption
+msgid "New Local &File Mountpoint"
+msgstr "新本地文件挂载点(&F)"
 
 #: tformfoonotemain.actionnewmemory.caption
-msgid "New &Temporary Folder"
-msgstr "新临时文件夹(&T)"
+msgid "New &Temporary Mountpoint"
+msgstr "新临时笔记挂载点(&T)"
 
 #: tformfoonotemain.actionnewmounturl.caption
-msgid "New &Mount ..."
+msgid "New &Mountpoint..."
 msgstr "新挂载点(&M) ..."
 
 #: tformfoonotemain.actionnewnote.caption
@@ -296,7 +306,7 @@ msgstr "置顶(&T)"
 #: tformfoonotemain.actionviewtogglezenmode.caption
 msgctxt "tformfoonotemain.actionviewtogglezenmode.caption"
 msgid "&Zen Mode"
-msgstr "清爽模式(&Z)"
+msgstr "专注模式(&Z)"
 
 #: tformfoonotemain.actionviewundock.caption
 msgctxt "tformfoonotemain.actionviewundock.caption"
@@ -323,6 +333,14 @@ msgctxt "tformfoonotemain.editnotesearch.texthint"
 msgid "Search"
 msgstr "搜索"
 
+#: tformfoonotemain.menuitem34.caption
+msgid "New &Mountpoint"
+msgstr "新挂载点(&M)"
+
+#: tformfoonotemain.savedialogfoonote.title
+msgid "Select Local FooNote File"
+msgstr "选择本地 FooNote 文件"
+
 #: tformfoonotemain.toolbuttondockedmenu.caption
 msgctxt "tformfoonotemain.toolbuttondockedmenu.caption"
 msgid "FooNote"
@@ -341,13 +359,29 @@ msgstr "字体(&F)"
 msgid "FooNote Settings"
 msgstr "FooNote 设置"
 
+#: tformfoonotesettings.checkboxnotehorizonscrollbar.caption
+msgid "Note Editor H&orizontal Scrollbar"
+msgstr "笔记编辑区水平滚动条(&O)"
+
 #: tformfoonotesettings.checkboxontop.caption
 msgid "Stay on &Top"
 msgstr "置顶(&T)"
 
+#: tformfoonotesettings.checkboxtreehorizonscrollbar.caption
+msgid "Note Tree &Horizontal Scrollbar"
+msgstr "笔记树水平滚动条(&H)"
+
 #: tformfoonotesettings.groupboxinterfacesettings.caption
 msgid "Interface"
 msgstr "界面"
+
+#: tformfoonotesettings.groupboxother.caption
+msgid "Other"
+msgstr "其他"
+
+#: tformfoonotesettings.labelautosaveinterval.caption
+msgid "Auto Save Interval (Seconds)"
+msgstr "自动保存间隔（秒）"
 
 #: tformopenurl.buttoncancel.caption
 msgctxt "tformopenurl.buttoncancel.caption"

@@ -23,7 +23,6 @@ var
   I: integer;
   PO: TPOFile;
   LocalTranslator: TUpdateTranslator;
-  SS: TStringStream;
 begin
   Result := False;
   Res := LazarusResources.Find(POFileName, 'PO');
