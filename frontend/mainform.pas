@@ -1525,12 +1525,11 @@ begin
     if IsEncryptedFolder(Id) then begin
       if not IsMounted(Id) then begin
         ActionEncryptUnlockExecute(Sender);
+        Exit;
       end;
     end;
-    // Focus note.
-    if not IsFolder(Id) then begin
-      FocusEditorEnd;
-    end;
+    // Focus note (including folders).
+    FocusEditorEnd;
   end;
 end;
 
