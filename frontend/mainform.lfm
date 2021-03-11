@@ -340,20 +340,23 @@ object FormFooNoteMain: TFormFooNoteMain
     object MenuSepMount: TMenuItem
       Caption = '-'
     end
-    object MenuItem33: TMenuItem
-      Action = ActionNewGit
-    end
-    object MenuItem29: TMenuItem
-      Action = ActionNewAes256
-    end
-    object MenuItem31: TMenuItem
-      Action = ActionNewMemory
-    end
-    object MenuItem32: TMenuItem
-      Caption = '-'
-    end
-    object MenuItemMount: TMenuItem
-      Action = ActionNewMountUrl
+    object MenuItem34: TMenuItem
+      Caption = 'New &Mountpoint'
+      object MenuItem35: TMenuItem
+        Action = ActionNewGit
+      end
+      object MenuItem36: TMenuItem
+        Action = ActionNewAes256
+      end
+      object MenuItem37: TMenuItem
+        Action = ActionNewMemory
+      end
+      object MenuItem39: TMenuItem
+        Caption = '-'
+      end
+      object MenuItem38: TMenuItem
+        Action = ActionNewMountUrl
+      end
     end
   end
   object ActionListMain: TActionList
@@ -393,7 +396,7 @@ object FormFooNoteMain: TFormFooNoteMain
     end
     object ActionNewMountUrl: TAction
       Category = 'New'
-      Caption = 'New &Mount ...'
+      Caption = 'New &Mountpoint...'
       OnExecute = ActionNewMountUrlExecute
     end
     object ActionAppSettingPreferences: TAction
@@ -488,7 +491,7 @@ object FormFooNoteMain: TFormFooNoteMain
     end
     object ActionNewAes256: TAction
       Category = 'New'
-      Caption = 'New &Encrypted Folder'
+      Caption = 'New A&ES256 Mountpoint'
       ImageIndex = 9
       OnExecute = ActionNewAes256Execute
     end
@@ -510,13 +513,13 @@ object FormFooNoteMain: TFormFooNoteMain
     end
     object ActionNewMemory: TAction
       Category = 'New'
-      Caption = 'New &Temporary Folder'
+      Caption = 'New &Temporary Mountpoint'
       ImageIndex = 12
       OnExecute = ActionNewMemoryExecute
     end
     object ActionNewGit: TAction
       Category = 'New'
-      Caption = 'New &Git Folder'
+      Caption = 'New &Git Mountpoint'
       ImageIndex = 2
       OnExecute = ActionNewGitExecute
     end
@@ -1823,7 +1826,7 @@ object FormFooNoteMain: TFormFooNoteMain
   object PopupMenuDockMenu: TPopupMenu
     Images = ImageListElementaryIcons
     Left = 64
-    Top = 88
+    Top = 104
     object MenuItem18: TMenuItem
       Action = ActionViewUndock
     end

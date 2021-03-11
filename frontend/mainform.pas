@@ -31,11 +31,13 @@ type
     MenuItem10: TMenuItem;
     MenuItem27: TMenuItem;
     MenuItem28: TMenuItem;
-    MenuItem29: TMenuItem;
     MenuItem30: TMenuItem;
-    MenuItem31: TMenuItem;
-    MenuItem32: TMenuItem;
-    MenuItem33: TMenuItem;
+    MenuItem34: TMenuItem;
+    MenuItem35: TMenuItem;
+    MenuItem36: TMenuItem;
+    MenuItem37: TMenuItem;
+    MenuItem38: TMenuItem;
+    MenuItem39: TMenuItem;
     MenuItemLockUnlockSep: TMenuItem;
     MenuItemRootPath: TMenuItem;
     MenuItem3: TMenuItem;
@@ -88,7 +90,6 @@ type
     MenuItem19: TMenuItem;
     MenuSepMount: TMenuItem;
     MenuItem11: TMenuItem;
-    MenuItemMount: TMenuItem;
     MenuItem4: TMenuItem;
     MenuItem5: TMenuItem;
     MenuItem7: TMenuItem;
@@ -261,9 +262,10 @@ resourcestring
   RSExit = 'Exit';
   RSOk = 'OK';
   RSEncryptedTextPrefix = 'Encrypted' + #10 + #10 + 'Do not edit lines below:' + #10;
-  RSMemoryRootTitle = 'Temporary Folder';
-  RSInputGitUrl = 'Input Git Url';
-  RSNewGitTitle = 'New Git Folder';
+  RSMemoryRootTitle = 'Temporary (Clear on Exit)';
+  RSInputGitUrl = 'Input Git Repository Url: ' + #10 + #10 +
+    'Note: The repository cannot be empty. Git binary installed in the system is used to access the repo.';
+  RSNewGitTitle = 'New Git Mountpoint';
   RSNotGitUrl = '%s is not a Git url';
   RSCancel = 'Cancel';
 
