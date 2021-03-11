@@ -223,6 +223,7 @@ type
 
     procedure UpdateTitle;
     procedure RefreshFullTree;
+    procedure UpdatePopupMenu;
     procedure RefreshSelectedText;
     function InsertLocation(Id: FullId; NParent: integer; out Pos: integer): FullId;
     function NewNode(AText, AMeta: string; NParent: integer = 0): FullId;
@@ -1508,6 +1509,11 @@ begin
 end;
 
 procedure TFormFooNoteMain.TreeViewNoteTreeContextPopup(Sender: TObject; MousePos: TPoint; var Handled: boolean);
+begin
+  UpdatePopupMenu;
+end;
+
+procedure TFormFooNoteMain.UpdatePopupMenu();
 var
   LockEnabled, UnlockEnabled: boolean;
   Id: FullId;
@@ -1687,6 +1693,7 @@ begin
     EditNoteSearch.SetFocus;
     Key := #0; // Marked as already handled.
   end else if (key = '.') then begin
+    UpdatePopupMenu;
     TreeViewNoteTree.PopupMenu.PopUp;
   end else if (Key = #10) or (Key = #13) then begin
     TreeViewNoteTreeDblClick(Sender);
