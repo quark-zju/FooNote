@@ -247,6 +247,11 @@ impl MultiplexBackend {
     /// Unmount descendants of `id`.
     /// If `all` is true, all nodes of the same url will be umounted.
     fn umount_recursive(&mut self, id: FullId, all: bool) -> io::Result<()> {
+        // Persist inline changes to avoid data loss.
+        // XXX: This probably needs to be recursive? And if inlined backends
+        // are recursive then what to do?
+        self.save_inlined_backends(Some(id))?;
+
         log::debug!("umount_recursive {:?} (all={})", id, all);
         let table = self.table.upgradable_read();
 
@@ -405,7 +410,9 @@ impl MultiplexBackend {
         Ok(children)
     }
 
-    fn save_inlined_backends(&mut self) -> Result<()> {
+    /// Save inlined backends. If `source_id` is None, save all to text.
+    /// Otherwise only save backends with the given `source_id`.
+    fn save_inlined_backends(&mut self, source_id: Option<FullId>) -> Result<()> {
         let mut table = self.table.write();
         let mut to_write = Vec::new();
 
@@ -414,6 +421,12 @@ impl MultiplexBackend {
             if !mount.inline || mount.error_message.is_some() {
                 continue;
             }
+            if let Some(id) = source_id {
+                if !mount.source_id.contains(&id) {
+                    continue;
+                }
+            }
+
             mount.backend.persist()?;
 
             let data = mount.backend.inline_data().unwrap_or(b"");
@@ -649,7 +662,7 @@ impl TreeBackend for MultiplexBackend {
     }
 
     fn persist(&mut self) -> Result<()> {
-        self.save_inlined_backends()?;
+        self.save_inlined_backends(None)?;
         let mut table = self.table.write();
         for mount in table.mounts.iter_mut().rev() {
             mount.backend.persist()?;
@@ -660,7 +673,7 @@ impl TreeBackend for MultiplexBackend {
 
     fn persist_async(&mut self, callback: PersistCallbackFunc) {
         // Save all inlined backends first.
-        if let Err(e) = self.save_inlined_backends() {
+        if let Err(e) = self.save_inlined_backends(None) {
             log::warn!("Failed to save inlined backends: {}", &e);
             callback(Err(e));
             return;
