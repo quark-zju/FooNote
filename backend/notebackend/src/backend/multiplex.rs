@@ -158,17 +158,19 @@ impl MultiplexBackend {
             None => return Ok(id),
         };
 
-        let mut table = self.table.write();
-        if let Some(&backend_index) = table.key_to_id.get(&key) {
-            // Already mounted.
-            log::trace!("Reuse backend {} for URL {}", backend_index, &url,);
-            let mount = &mut table.mounts[backend_index];
-            let root_id = mount.backend.get_root_id();
-            if !mount.source_id.contains(&id) {
-                mount.source_id.push(id)
+        {
+            let mut table = self.table.write();
+            if let Some(&backend_index) = table.key_to_id.get(&key) {
+                // Already mounted.
+                log::trace!("Reuse backend {} for URL {}", backend_index, &url,);
+                let mount = &mut table.mounts[backend_index];
+                let root_id = mount.backend.get_root_id();
+                if !mount.source_id.contains(&id) {
+                    mount.source_id.push(id)
+                }
+                let backend_id = backend_index + 1;
+                return Ok((backend_id, root_id));
             }
-            let backend_id = backend_index + 1;
-            return Ok((backend_id, root_id));
         }
 
         if !auto_mount {
@@ -179,7 +181,7 @@ impl MultiplexBackend {
         log::debug!("Attempt to mount {} at {:?} (inline={})", &url, id, inline);
         let mut error_message = None;
         let inline_data = if inline {
-            // Pick the text.
+            // Pick the text. Note this might need read (lock) access on table.
             let text = self.get_text(id)?;
             let data = decode_inlined_last_line(&text)?;
             Some(data)
@@ -211,6 +213,7 @@ impl MultiplexBackend {
         let root_id = backend.get_root_id();
 
         // Find a free entry (url is empty, meaning umount-ed).
+        let mut table = self.table.write();
         let backend_index = table
             .mounts
             .iter()
@@ -430,7 +433,7 @@ impl MultiplexBackend {
             mount.backend.persist()?;
 
             let data = mount.backend.inline_data().unwrap_or(b"");
-            log::trace!(
+            log::debug!(
                 "write inline data ({:?} bytes) to {:?}",
                 &data.len(),
                 &mount.source_id
@@ -786,6 +789,7 @@ impl TreeBackend for MultiplexBackend {
             // Attempt to re-mount.
             let url = self.extract_url(id)?.to_string();
             if self.is_encrytped_mount(id)? && !url.is_empty() {
+                log::debug!("Update meta attempts to remount {:?}", id);
                 self.umount_recursive(id, true)?;
                 if value.is_empty() {
                     // Umount. Forget password.
@@ -1173,5 +1177,16 @@ base64:omF0ogpjZm9vC2NiYXJhbaNhY6EAggoLYW2hAGp0eXBlPXJvb3QKYW4M"#
                 \_ 1 ("Encrypted Node")
                    \_ 2 ("Password Required") (type=warn)"#
         );
+    }
+
+    #[test]
+    fn test_aes256_inside_other_mount() {
+        let mut root = MultiplexBackend::open_url("memory").unwrap();
+        let id = root.quick_insert(root.get_root_id(), "a");
+        root.update_meta(id, "mount=", "memory").unwrap();
+        let id2 = root.quick_insert(id, "a");
+        root.update_meta(id2, "mount=", "aes256").unwrap();
+        root.update_meta(id2, "password=", "a").unwrap();
+        assert!(root.get_children(id2).unwrap().is_empty());
     }
 }
