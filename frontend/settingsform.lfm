@@ -30,7 +30,7 @@ object FormFooNoteSettings: TFormFooNoteSettings
     Constraints.MinWidth = 80
     Default = True
     ModalResult = 1
-    TabOrder = 0
+    TabOrder = 2
   end
   object GroupBoxInterfaceSettings: TGroupBox
     AnchorSideLeft.Control = Owner
@@ -47,7 +47,7 @@ object FormFooNoteSettings: TFormFooNoteSettings
     Caption = 'Interface'
     ClientHeight = 140
     ClientWidth = 281
-    TabOrder = 1
+    TabOrder = 0
     object ButtonSelFont: TButton
       AnchorSideLeft.Control = GroupBoxInterfaceSettings
       AnchorSideTop.Control = CheckBoxNoteHorizonScrollbar
@@ -60,7 +60,7 @@ object FormFooNoteSettings: TFormFooNoteSettings
       BorderSpacing.Around = 10
       Caption = 'Select &Font'
       OnClick = ButtonSelFontClick
-      TabOrder = 0
+      TabOrder = 3
     end
     object CheckBoxOnTop: TCheckBox
       AnchorSideLeft.Control = GroupBoxInterfaceSettings
@@ -72,7 +72,7 @@ object FormFooNoteSettings: TFormFooNoteSettings
       BorderSpacing.Around = 10
       Caption = 'Stay on &Top'
       OnChange = CheckBoxOnTopChange
-      TabOrder = 1
+      TabOrder = 0
     end
     object CheckBoxTreeHorizonScrollbar: TCheckBox
       AnchorSideLeft.Control = GroupBoxInterfaceSettings
@@ -85,7 +85,7 @@ object FormFooNoteSettings: TFormFooNoteSettings
       BorderSpacing.Around = 10
       Caption = 'Note Tree &Horizon Scrollbar'
       OnChange = CheckBoxTreeHorizonScrollbarChange
-      TabOrder = 2
+      TabOrder = 1
     end
     object CheckBoxNoteHorizonScrollbar: TCheckBox
       AnchorSideLeft.Control = GroupBoxInterfaceSettings
@@ -98,7 +98,7 @@ object FormFooNoteSettings: TFormFooNoteSettings
       BorderSpacing.Around = 10
       Caption = 'Note Editor H&orizon Scrollbar'
       OnChange = CheckBoxNoteHorizonScrollbarChange
-      TabOrder = 3
+      TabOrder = 2
     end
   end
   object GroupBoxOther: TGroupBox
@@ -117,7 +117,7 @@ object FormFooNoteSettings: TFormFooNoteSettings
     Caption = 'Other'
     ClientHeight = 72
     ClientWidth = 281
-    TabOrder = 2
+    TabOrder = 1
     object LabelAutoSaveInterval: TLabel
       AnchorSideLeft.Control = GroupBoxOther
       AnchorSideTop.Control = GroupBoxOther
