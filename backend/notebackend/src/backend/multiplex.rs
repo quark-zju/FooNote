@@ -532,24 +532,35 @@ impl TreeBackend for MultiplexBackend {
         dest_id: Self::Id,
         pos: InsertPos,
     ) -> Result<Self::Id> {
-        let dest_id = self.follow_mount(dest_id, pos == InsertPos::Append)?;
-        if src_id.0 == dest_id.0 {
+        let dest_id = if pos == InsertPos::Append {
+            self.follow_mount(dest_id, pos == InsertPos::Append)?
+        } else {
+            // No need to follow the mount - not changing nodes inside thek mount.
+            dest_id
+        };
+        let parent_id = match pos {
+            InsertPos::Before | InsertPos::After => self
+                .get_parent(dest_id)?
+                .unwrap_or_else(|| self.get_root_id()),
+            InsertPos::Append => dest_id,
+        };
+        if src_id.0 == parent_id.0 && dest_id.0 == parent_id.0 {
             // Move within a single backend.
-            log::debug!("move {:?} to {:?} {:?}", src_id, pos, dest_id);
+            log::debug!(
+                "move {:?} to {:?} {:?} (parent {:?})",
+                src_id,
+                pos,
+                dest_id,
+                parent_id
+            );
             self.touch(src_id)?;
-            let moved_id = self.with_mount_mut(dest_id, |m, dest_id| {
-                m.backend.set_parent(src_id.1, dest_id, pos)
+            let moved_id = self.with_mount_mut(parent_id, |m, _parent_id| {
+                m.backend.set_parent(src_id.1, dest_id.1, pos)
             })?;
             self.touch(src_id)?;
             Ok((src_id.0, moved_id))
         } else {
             // Sanity check.
-            let parent_id = match pos {
-                InsertPos::Before | InsertPos::After => self
-                    .get_parent(dest_id)?
-                    .unwrap_or_else(|| self.get_root_id()),
-                InsertPos::Append => dest_id,
-            };
             if self.is_ancestor(src_id, parent_id)? {
                 return Err(io::Error::new(
                     io::ErrorKind::InvalidInput,
@@ -565,7 +576,7 @@ impl TreeBackend for MultiplexBackend {
             }
 
             // Do the move.
-            log::debug!("cross-move {:?} to {:?} {:?}", src_id, pos, dest_id);
+            log::debug!("cross-move {:?} to {:?} {:?}", src_id, pos, dest_id,);
             self.touch(src_id)?;
             let src = Box::new(NullBackend);
             let mut src = self.swap_backend(src_id.0, src);
@@ -1194,5 +1205,21 @@ base64:omF0ogpjZm9vC2NiYXJhbaNhY6EAggoLYW2hAGp0eXBlPXJvb3QKYW4M"#
         root.update_meta(id2, "mount=", "aes256").unwrap();
         root.update_meta(id2, "password=", "a").unwrap();
         assert!(root.get_children(id2).unwrap().is_empty());
+    }
+    #[test]
+    fn test_move_mount_outside_mount() {
+        let mut root = MultiplexBackend::open_url("memory").unwrap();
+        let id1 = root.quick_insert(root.get_root_id(), "a");
+        root.update_meta(id1, "mount=", "memory").unwrap();
+        let id2 = root.quick_insert(id1, "b");
+        // Attempt to move b to above a.
+        root.set_parent(id2, id1, InsertPos::Before).unwrap();
+        assert_eq!(
+            root.draw_ascii(&root.all_ids()),
+            r#"
+                root
+                \_ 2 ("b")
+                \_ 1 ("a")"#
+        );
     }
 }
