@@ -7,7 +7,7 @@ use aes_gcm_siv::aead::{generic_array::GenericArray, Aead, NewAead};
 use aes_gcm_siv::Aes256GcmSiv;
 use notebackend_types::log;
 use rand::RngCore;
-use scrypt::ScryptParams;
+use scrypt::Params as ScryptParams;
 use std::convert::TryInto;
 use std::io;
 
