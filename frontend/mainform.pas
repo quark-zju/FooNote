@@ -290,6 +290,14 @@ type
 
 { TFormFooNoteMain }
 
+function UniqueStringId: string;
+var
+  guid: TGUID;
+begin
+  CreateGUID(guid);
+  Result := guid.ToString(True);
+end;
+
 procedure ErrorDlg(Message: string);
 begin
   QuestionDlg('FooNote', Message, mtError, [mbOK, RSOk], 0);
@@ -1028,7 +1036,7 @@ begin
   if PasswordForm.FormPassword.ShowModal = mrOk then begin
     S := PasswordForm.PasswordResult;
     try
-      Id := NewMountNode(RSEncryptedTextPrefix, Format('aes256:%d-%d', [Id.BackendId, Id.Id]));
+      Id := NewMountNode(RSEncryptedTextPrefix, Format('aes256:%s', [UniqueStringId]));
       TryUpdateMeta(Id, 'password=', S);
       SelectExpandNode(Id);
     except
@@ -1100,7 +1108,7 @@ var
   Id: FullId;
 begin
   try
-    Id := NewMountNode(RSMemoryRootTitle, Format('memory:%d-%d', [Id.BackendId, Id.Id]));
+    Id := NewMountNode(RSMemoryRootTitle, Format('memory:%s', [UniqueStringId]));
   except
     on e: EExternal do begin
       ErrorDlg(e.Message);
