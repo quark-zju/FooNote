@@ -434,6 +434,24 @@ begin
     end;
     This.TimerAutoSave.Interval := I * 1000;
   end;
+  if (Name = AnyConfigName) or (Name = 'TreeHorizonScrollBar') then begin
+    B := Config.TreeHorizonScrollBar;
+    if B then begin
+      This.TreeViewNoteTree.ScrollBars := ssAutoBoth;
+    end else begin
+      This.TreeViewNoteTree.ScrollBars := ssAutoVertical;
+    end;
+  end;
+  if (Name = AnyConfigName) or (Name = 'NoteHorizonScrollBar') then begin
+    B := Config.NoteHorizonScrollBar;
+    if B then begin
+      This.MemoNote.WordWrap := False;
+      This.MemoNote.ScrollBars := ssAutoBoth;
+    end else begin
+      This.MemoNote.WordWrap := True;
+      This.MemoNote.ScrollBars := ssAutoVertical;
+    end;
+  end;
 end;
 
 procedure TFormFooNoteMain.InitOnConfigChange;
@@ -1108,6 +1126,7 @@ procedure TFormFooNoteMain.DrawTreeSelectionPreview;
 var
   PreviewCanvas: TCanvas;
   OrigSelectionColor, OrigBackColor: TColor;
+  OrigScrollBars: TScrollStyle;
 begin
   // ClientRect.Width does not include the scrollbar.
   PreviewCanvas := PreviewForm.PrepareCleanCanvas(TreeViewNoteTree.ClientRect.Width, TreeViewNoteTree.Height);
@@ -1116,11 +1135,13 @@ begin
   PaintingPreviewForSelectedTreeItems := True;
   OrigSelectionColor := TreeViewNoteTree.SelectionColor;
   OrigBackColor := TreeViewNoteTree.BackgroundColor;
+  OrigScrollBars := TreeViewNoteTree.ScrollBars;
 
   // Temporarily change background color to avoid drawing white blank area.
   TreeViewNoteTree.BackgroundColor := clFuchsia;
   // Temporarily ensure selection color is with focus.
   TreeViewNoteTree.SelectionColor := clHighlight;
+  TreeViewNoteTree.ScrollBars := ssAutoVertical;
   TreeViewNoteTree.EndUpdate;
   // Draw to preview canvas.
   TreeViewNoteTree.PaintTo(PreviewCanvas, 0, 0);
@@ -1129,6 +1150,7 @@ begin
   TreeViewNoteTree.BeginUpdate;
   TreeViewNoteTree.SelectionColor := OrigSelectionColor;
   TreeViewNoteTree.BackgroundColor := OrigBackColor;
+  TreeViewNoteTree.ScrollBars := OrigScrollBars;
   PaintingPreviewForSelectedTreeItems := False;
   TreeViewNoteTree.EndUpdate;
 end;

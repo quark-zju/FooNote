@@ -302,7 +302,7 @@ object FormFooNoteMain: TFormFooNoteMain
       ReadOnly = True
       RightClickSelect = True
       RowSelect = True
-      ScrollBars = ssAutoBoth
+      ScrollBars = ssAutoVertical
       SelectionFontColor = clHighlightText
       ShowLines = False
       TabOrder = 1

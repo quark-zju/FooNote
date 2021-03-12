@@ -32,6 +32,8 @@ type
     FFeatureLevel: TFeatureLevel;
     FZenMode: boolean;
     FAutoSaveInterval: integer;
+    FTreeHorizonScrollBar: boolean;
+    FNoteHorizonScrollBar: boolean;
 
     // Saved on disk. But changes do not trigger callbacks.
     FDockWidth: longint;
@@ -62,6 +64,8 @@ type
     procedure SetDockSide(Value: TDockSide);
     procedure SetZenMode(Value: boolean);
     procedure SetAutoSaveInterval(Value: integer);
+    procedure SetTreeHorizonScrollBar(Value: boolean);
+    procedure SetNoteHorizonScrollBar(Value: boolean);
   public
     // Not saved on disk. Do not trigger callbacks.
     ForceNotTop: boolean;
@@ -80,6 +84,8 @@ type
     property ZenMode: boolean read FZenMode write SetZenMode;
     property FeatureLevel: TFeatureLevel read FFeatureLevel write SetFeatureLevel;
     property AutoSaveInterval: integer read FAutoSaveInterval write SetAutoSaveInterval;
+    property TreeHorizonScrollBar: boolean read FTreeHorizonScrollBar write SetTreeHorizonScrollBar;
+    property NoteHorizonScrollBar: boolean read FNoteHorizonScrollBar write SetNoteHorizonScrollBar;
 
     // Do not trigger callbacks.
     property EditorFont: TFont read FEditorFont write FEditorFont;
@@ -177,6 +183,18 @@ begin
     LogDebug(Format('StayOnTop = %d', [FStayOnTop.ToInteger]));
   end;
   RunCallbacks('StayOnTop');
+end;
+
+procedure TAppConfig.SetTreeHorizonScrollBar(Value: boolean);
+begin
+  FTreeHorizonScrollBar := Value;
+  RunCallbacks('TreeHorizonScrollBar');
+end;
+
+procedure TAppConfig.SetNoteHorizonScrollBar(Value: boolean);
+begin
+  FNoteHorizonScrollBar := Value;
+  RunCallbacks('NoteHorizonScrollBar');
 end;
 
 procedure TAppConfig.SetFeatureLevel(Value: TFeatureLevel);

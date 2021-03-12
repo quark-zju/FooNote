@@ -1,13 +1,13 @@
 object FormFooNoteSettings: TFormFooNoteSettings
   Left = 108
-  Height = 184
+  Height = 230
   Top = 275
-  Width = 237
+  Width = 305
   BorderIcons = []
   BorderStyle = bsDialog
   Caption = 'FooNote Settings'
-  ClientHeight = 184
-  ClientWidth = 237
+  ClientHeight = 230
+  ClientWidth = 305
   OnCreate = FormCreate
   OnShow = FormShow
   Position = poWorkAreaCenter
@@ -17,9 +17,9 @@ object FormFooNoteSettings: TFormFooNoteSettings
     AnchorSideRight.Side = asrBottom
     AnchorSideBottom.Control = Owner
     AnchorSideBottom.Side = asrBottom
-    Left = 147
+    Left = 215
     Height = 27
-    Top = 147
+    Top = 193
     Width = 80
     Anchors = [akRight, akBottom]
     AutoSize = True
@@ -38,23 +38,23 @@ object FormFooNoteSettings: TFormFooNoteSettings
     AnchorSideRight.Control = Owner
     AnchorSideRight.Side = asrBottom
     Left = 10
-    Height = 100
+    Height = 162
     Top = 10
-    Width = 217
+    Width = 285
     Anchors = [akTop, akLeft, akRight]
     AutoSize = True
     BorderSpacing.Around = 10
     Caption = 'Interface'
-    ClientHeight = 78
-    ClientWidth = 213
+    ClientHeight = 140
+    ClientWidth = 281
     TabOrder = 1
     object ButtonSelFont: TButton
       AnchorSideLeft.Control = GroupBoxInterfaceSettings
-      AnchorSideTop.Control = CheckBoxOnTop
+      AnchorSideTop.Control = CheckBoxNoteHorizonScrollbar
       AnchorSideTop.Side = asrBottom
       Left = 10
       Height = 27
-      Top = 41
+      Top = 103
       Width = 89
       AutoSize = True
       BorderSpacing.Around = 10
@@ -74,12 +74,38 @@ object FormFooNoteSettings: TFormFooNoteSettings
       OnChange = CheckBoxOnTopChange
       TabOrder = 1
     end
+    object CheckBoxTreeHorizonScrollbar: TCheckBox
+      AnchorSideLeft.Control = GroupBoxInterfaceSettings
+      AnchorSideTop.Control = CheckBoxOnTop
+      AnchorSideTop.Side = asrBottom
+      Left = 10
+      Height = 21
+      Top = 41
+      Width = 187
+      BorderSpacing.Around = 10
+      Caption = 'Note Tree &Horizon Scrollbar'
+      OnChange = CheckBoxTreeHorizonScrollbarChange
+      TabOrder = 2
+    end
+    object CheckBoxNoteHorizonScrollbar: TCheckBox
+      AnchorSideLeft.Control = GroupBoxInterfaceSettings
+      AnchorSideTop.Control = CheckBoxTreeHorizonScrollbar
+      AnchorSideTop.Side = asrBottom
+      Left = 10
+      Height = 21
+      Top = 72
+      Width = 196
+      BorderSpacing.Around = 10
+      Caption = 'Note Editor H&orizon Scrollbar'
+      OnChange = CheckBoxNoteHorizonScrollbarChange
+      TabOrder = 3
+    end
   end
   object FontDialog1: TFontDialog
     MinFontSize = 0
     MaxFontSize = 0
     Options = [fdEffects, fdNoVectorFonts]
-    Left = 144
-    Top = 56
+    Left = 192
+    Top = 32
   end
 end

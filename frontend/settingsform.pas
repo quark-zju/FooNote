@@ -15,11 +15,15 @@ type
   TFormFooNoteSettings = class(TForm)
     ButtonOk: TButton;
     ButtonSelFont: TButton;
+    CheckBoxTreeHorizonScrollbar: TCheckBox;
     CheckBoxOnTop: TCheckBox;
+    CheckBoxNoteHorizonScrollbar: TCheckBox;
     FontDialog1: TFontDialog;
     GroupBoxInterfaceSettings: TGroupBox;
     procedure ButtonSelFontClick(Sender: TObject);
+    procedure CheckBoxNoteHorizonScrollbarChange(Sender: TObject);
     procedure CheckBoxOnTopChange(Sender: TObject);
+    procedure CheckBoxTreeHorizonScrollbarChange(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure FormShow(Sender: TObject);
   private
@@ -39,8 +43,14 @@ implementation
 
 procedure OnConfigChange(Name: string; Config: TAppConfig);
 begin
-  if (Name = 'StayOnTop') and (FormFooNoteSettings.CheckBoxOnTop.Checked <> Config.StayOnTop) then begin
+  if (FormFooNoteSettings.CheckBoxOnTop.Checked <> Config.StayOnTop) then begin
     FormFooNoteSettings.CheckBoxOnTop.Checked := Config.StayOnTop;
+  end;
+  if (FormFooNoteSettings.CheckBoxNoteHorizonScrollbar.Checked <> Config.NoteHorizonScrollBar) then begin
+    FormFooNoteSettings.CheckBoxNoteHorizonScrollbar.Checked := Config.NoteHorizonScrollBar;
+  end;
+  if (FormFooNoteSettings.CheckBoxTreeHorizonScrollbar.Checked <> Config.TreeHorizonScrollBar) then begin
+    FormFooNoteSettings.CheckBoxTreeHorizonScrollbar.Checked := Config.TreeHorizonScrollBar;
   end;
 end;
 
@@ -56,6 +66,11 @@ begin
   AppConfig.StayOnTop := CheckBoxOnTop.Checked;
 end;
 
+procedure TFormFooNoteSettings.CheckBoxTreeHorizonScrollbarChange(Sender: TObject);
+begin
+  AppConfig.TreeHorizonScrollBar := CheckBoxTreeHorizonScrollbar.Checked;
+end;
+
 procedure TFormFooNoteSettings.FormCreate(Sender: TObject);
 begin
   AppConfig.RegisterOnChangeCallback(@OnConfigChange);
@@ -63,7 +78,7 @@ end;
 
 procedure TFormFooNoteSettings.FormShow(Sender: TObject);
 begin
-  CheckBoxOnTop.Checked := AppConfig.StayOnTop;
+  OnConfigChange(AnyConfigName, AppConfig);
 end;
 
 procedure TFormFooNoteSettings.ButtonSelFontClick(Sender: TObject);
@@ -83,5 +98,12 @@ begin
   end;
 end;
 
+procedure TFormFooNoteSettings.CheckBoxNoteHorizonScrollbarChange(Sender: TObject);
+begin
+  AppConfig.NoteHorizonScrollBar := CheckBoxNoteHorizonScrollbar.Checked;
+end;
+
 end.
+
+
 
