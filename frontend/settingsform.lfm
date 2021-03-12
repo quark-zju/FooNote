@@ -1,12 +1,12 @@
 object FormFooNoteSettings: TFormFooNoteSettings
   Left = 108
-  Height = 230
+  Height = 341
   Top = 275
   Width = 305
   BorderIcons = []
   BorderStyle = bsDialog
   Caption = 'FooNote Settings'
-  ClientHeight = 230
+  ClientHeight = 341
   ClientWidth = 305
   OnCreate = FormCreate
   OnShow = FormShow
@@ -19,7 +19,7 @@ object FormFooNoteSettings: TFormFooNoteSettings
     AnchorSideBottom.Side = asrBottom
     Left = 215
     Height = 27
-    Top = 193
+    Top = 304
     Width = 80
     Anchors = [akRight, akBottom]
     AutoSize = True
@@ -99,6 +99,51 @@ object FormFooNoteSettings: TFormFooNoteSettings
       Caption = 'Note Editor H&orizon Scrollbar'
       OnChange = CheckBoxNoteHorizonScrollbarChange
       TabOrder = 3
+    end
+  end
+  object GroupBoxOther: TGroupBox
+    AnchorSideLeft.Control = Owner
+    AnchorSideTop.Control = GroupBoxInterfaceSettings
+    AnchorSideTop.Side = asrBottom
+    AnchorSideRight.Control = Owner
+    AnchorSideRight.Side = asrBottom
+    Left = 10
+    Height = 94
+    Top = 182
+    Width = 285
+    Anchors = [akTop, akLeft, akRight]
+    AutoSize = True
+    BorderSpacing.Around = 10
+    Caption = 'Other'
+    ClientHeight = 72
+    ClientWidth = 281
+    TabOrder = 2
+    object LabelAutoSaveInterval: TLabel
+      AnchorSideLeft.Control = GroupBoxOther
+      AnchorSideTop.Control = GroupBoxOther
+      Left = 10
+      Height = 17
+      Top = 10
+      Width = 166
+      BorderSpacing.Around = 10
+      Caption = 'Auto Save Interval (Seconds)'
+      ParentColor = False
+    end
+    object SpinEditAutoSave: TSpinEdit
+      AnchorSideLeft.Control = GroupBoxOther
+      AnchorSideTop.Control = LabelAutoSaveInterval
+      AnchorSideTop.Side = asrBottom
+      Left = 10
+      Height = 25
+      Top = 37
+      Width = 48
+      BorderSpacing.Around = 10
+      Increment = 30
+      MaxValue = 86400
+      MinValue = 30
+      OnChange = SpinEditAutoSaveChange
+      TabOrder = 0
+      Value = 30
     end
   end
   object FontDialog1: TFontDialog

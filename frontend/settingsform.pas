@@ -5,8 +5,8 @@ unit settingsform;
 interface
 
 uses
-  Classes, SysUtils, Forms, Controls, Graphics, Dialogs, StdCtrls,
-  Settings, LogFFI;
+  Classes, SysUtils, Forms, Controls, Graphics, Dialogs, StdCtrls, ExtCtrls,
+  Spin, Settings, LogFFI;
 
 type
 
@@ -19,13 +19,17 @@ type
     CheckBoxOnTop: TCheckBox;
     CheckBoxNoteHorizonScrollbar: TCheckBox;
     FontDialog1: TFontDialog;
+    GroupBoxOther: TGroupBox;
     GroupBoxInterfaceSettings: TGroupBox;
+    LabelAutoSaveInterval: TLabel;
+    SpinEditAutoSave: TSpinEdit;
     procedure ButtonSelFontClick(Sender: TObject);
     procedure CheckBoxNoteHorizonScrollbarChange(Sender: TObject);
     procedure CheckBoxOnTopChange(Sender: TObject);
     procedure CheckBoxTreeHorizonScrollbarChange(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure FormShow(Sender: TObject);
+    procedure SpinEditAutoSaveChange(Sender: TObject);
   private
 
   public
@@ -42,6 +46,8 @@ implementation
 { TFormFooNoteSettings }
 
 procedure OnConfigChange(Name: string; Config: TAppConfig);
+var
+  I: integer;
 begin
   if (FormFooNoteSettings.CheckBoxOnTop.Checked <> Config.StayOnTop) then begin
     FormFooNoteSettings.CheckBoxOnTop.Checked := Config.StayOnTop;
@@ -51,6 +57,10 @@ begin
   end;
   if (FormFooNoteSettings.CheckBoxTreeHorizonScrollbar.Checked <> Config.TreeHorizonScrollBar) then begin
     FormFooNoteSettings.CheckBoxTreeHorizonScrollbar.Checked := Config.TreeHorizonScrollBar;
+  end;
+  I := Config.AutoSaveInterval;
+  if I <> FormFooNoteSettings.SpinEditAutoSave.Value then begin
+    FormFooNoteSettings.SpinEditAutoSave.Value := I;
   end;
 end;
 
@@ -81,6 +91,11 @@ begin
   OnConfigChange(AnyConfigName, AppConfig);
 end;
 
+procedure TFormFooNoteSettings.SpinEditAutoSaveChange(Sender: TObject);
+begin
+  AppConfig.AutoSaveInterval := SpinEditAutoSave.Value;
+end;
+
 procedure TFormFooNoteSettings.ButtonSelFontClick(Sender: TObject);
 var
   F: TFont;
@@ -104,6 +119,5 @@ begin
 end;
 
 end.
-
 
 
