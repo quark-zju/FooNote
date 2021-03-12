@@ -1167,6 +1167,12 @@ base64:omF0ogpjZm9vC2NiYXJhbaNhY6EAggoLYW2hAGp0eXBlPXJvb3QKYW4M"#
                    \_ 2 ("bar2")"#
         );
 
+        // No change - do not re-encrypt.
+        let text1 = root.get_text(id).unwrap().to_string();
+        root.save_inlined_backends(None).unwrap();
+        let text2 = root.get_text(id).unwrap().to_string();
+        assert_eq!(text1, text2);
+
         // "Lock" / "Close"
         root.update_meta(id, "password=", "").unwrap();
         assert!(!root.is_mounted(id).unwrap());

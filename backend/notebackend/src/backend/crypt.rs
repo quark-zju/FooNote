@@ -2,6 +2,7 @@ use crate::backend::meta::blob::BlobBackend;
 use crate::backend::meta::blob::BlobFormat;
 use crate::backend::meta::blob::BlobIo;
 use crate::t;
+use ::sha1::{Digest, Sha1};
 use aes_gcm_siv::aead::{generic_array::GenericArray, Aead, NewAead};
 use aes_gcm_siv::Aes256GcmSiv;
 use notebackend_types::log;
@@ -12,10 +13,14 @@ use std::io;
 
 const SALT_LEN: usize = 32;
 const NONCE_LEN: usize = 12;
+const SHA1_LEN: usize = 20;
 pub struct Aes256BlobIo {
     // salt + iv + data
     data: Vec<u8>,
     key: Box<Key>,
+
+    // used to avoid re-encrypt same content
+    last_input_sha1: [u8; SHA1_LEN],
 }
 
 struct Key([u8; 32]);
@@ -76,10 +81,17 @@ impl BlobIo for Aes256BlobIo {
                 )
             })?
         };
+        self.last_input_sha1 = sha1(&text);
         Ok(Box::new(text))
     }
 
     fn save(&mut self, data: Vec<u8>) -> io::Result<()> {
+        let sha1 = sha1(&data);
+        if sha1 == self.last_input_sha1 {
+            log::debug!("no change - skip re-encryption");
+            return Ok(());
+        }
+
         // Encrypt (to inline_data())
         let nonce = self.next_nonce();
         let mut result = self.salt().to_vec();
@@ -90,6 +102,7 @@ impl BlobIo for Aes256BlobIo {
         log::debug!("encrypted {} into {} bytes", data.len(), encrypted.len());
         result.extend(encrypted);
         self.data = result;
+        self.last_input_sha1 = sha1;
         Ok(())
     }
 
@@ -121,9 +134,19 @@ impl BlobBackend<Aes256BlobIo> {
 
         // Produce key.
         let key = password_derive_key(&salt, password);
-        let blob_io = Aes256BlobIo { data, key };
+        let blob_io = Aes256BlobIo {
+            data,
+            key,
+            last_input_sha1: Default::default(),
+        };
         Self::from_blob_io(blob_io)
     }
+}
+
+fn sha1(data: &[u8]) -> [u8; SHA1_LEN] {
+    let mut hasher = Sha1::new();
+    hasher.update(data);
+    hasher.finalize().into()
 }
 
 /// Derive key from password.
