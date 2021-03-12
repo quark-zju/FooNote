@@ -20,6 +20,7 @@ type
   { TFormFooNoteMain }
 
   TFormFooNoteMain = class(TForm)
+    ActionNewLocalFile: TAction;
     ActionNewGit: TAction;
     ActionNewMemory: TAction;
     ActionEncryptLock: TAction;
@@ -31,6 +32,7 @@ type
     MenuItem10: TMenuItem;
     MenuItem27: TMenuItem;
     MenuItem28: TMenuItem;
+    MenuItem29: TMenuItem;
     MenuItem30: TMenuItem;
     MenuItem34: TMenuItem;
     MenuItem35: TMenuItem;
@@ -43,6 +45,7 @@ type
     MenuItem3: TMenuItem;
     MenuItem6: TMenuItem;
     PanelZen: TPanel;
+    SaveDialogFooNote: TSaveDialog;
     TimerAutoRefresh: TTimer;
     TimerAutoSave: TTimer;
     ActionViewToggleZenMode: TAction;
@@ -119,6 +122,7 @@ type
     procedure ActionEncryptUnlockExecute(Sender: TObject);
     procedure ActionNewAes256Execute(Sender: TObject);
     procedure ActionNewGitExecute(Sender: TObject);
+    procedure ActionNewLocalFileExecute(Sender: TObject);
     procedure ActionNewMemoryExecute(Sender: TObject);
     procedure ActionToggleFolderExecute(Sender: TObject);
     procedure ActionViewWarnUnsavedExecute(Sender: TObject);
@@ -228,6 +232,7 @@ type
     procedure RefreshSelectedText;
     function InsertLocation(Id: FullId; NParent: integer; out Pos: integer): FullId;
     function NewNode(AText, AMeta: string; NParent: integer = 0): FullId;
+    function NewMountNode(AText, Url: string; NParent: integer = 1): FullId;
     procedure SelectExpandNode(Id: FullId);
     procedure SetSelectedId(Id: FullId);
     function GetSelectedIds(): VecFullId;
@@ -804,6 +809,11 @@ begin
 {$endif}
 end;
 
+function TFormFooNoteMain.NewMountNode(AText, Url: string; NParent: integer = 1): FullId;
+begin
+  Result := NewNode(AText, 'type=mount' + #10 + 'mount=' + Url + #10, NParent);
+end;
+
 function TFormFooNoteMain.NewNode(AText, AMeta: string; NParent: integer = 0): FullId;
 var
   P, Id: FullId;
@@ -1018,8 +1028,7 @@ begin
   if PasswordForm.FormPassword.ShowModal = mrOk then begin
     S := PasswordForm.PasswordResult;
     try
-      Id := NewNode(RSEncryptedTextPrefix, 'type=mount' + #10, 1);
-      TryUpdateMeta(Id, 'mount=', Format('aes256:%d-%d', [Id.BackendId, Id.Id]));
+      Id := NewMountNode(RSEncryptedTextPrefix, Format('aes256:%d-%d', [Id.BackendId, Id.Id]));
       TryUpdateMeta(Id, 'password=', S);
       SelectExpandNode(Id);
     except
@@ -1049,8 +1058,33 @@ begin
   end;
 
   try
-    Id := NewNode(Url, 'type=mount' + #10, 1);
-    TryUpdateMeta(Id, 'mount=', url);
+    Id := NewMountNode(Url, Url);
+  except
+    on e: EExternal do begin
+      ErrorDlg(e.Message);
+      exit;
+    end;
+  end;
+  RefreshFullTree;
+  SelectExpandNode(Id);
+end;
+
+procedure TFormFooNoteMain.ActionNewLocalFileExecute(Sender: TObject);
+var
+  S: string;
+  Id: FullId;
+begin
+  if not SaveDialogFooNote.Execute then begin
+    exit;
+  end;
+
+  S := SaveDialogFooNote.FileName;
+  if S.IsEmpty or (UrlType(S) <> 'foonote') then begin
+    exit;
+  end;
+
+  try
+    Id := NewMountNode(ExtractFileName(S), S);
   except
     on e: EExternal do begin
       ErrorDlg(e.Message);
@@ -1066,8 +1100,7 @@ var
   Id: FullId;
 begin
   try
-    Id := NewNode(RSMemoryRootTitle, 'type=mount' + #10, 1);
-    TryUpdateMeta(Id, 'mount=', Format('memory:%d-%d', [Id.BackendId, Id.Id]));
+    Id := NewMountNode(RSMemoryRootTitle, Format('memory:%d-%d', [Id.BackendId, Id.Id]));
   except
     on e: EExternal do begin
       ErrorDlg(e.Message);

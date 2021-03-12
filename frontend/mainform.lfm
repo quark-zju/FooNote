@@ -348,6 +348,9 @@ object FormFooNoteMain: TFormFooNoteMain
       object MenuItem36: TMenuItem
         Action = ActionNewAes256
       end
+      object MenuItem29: TMenuItem
+        Action = ActionNewLocalFile
+      end
       object MenuItem37: TMenuItem
         Action = ActionNewMemory
       end
@@ -522,6 +525,12 @@ object FormFooNoteMain: TFormFooNoteMain
       Caption = 'New &Git Mountpoint'
       ImageIndex = 2
       OnExecute = ActionNewGitExecute
+    end
+    object ActionNewLocalFile: TAction
+      Category = 'New'
+      Caption = 'New Local &File Mountpoint'
+      ImageIndex = 1
+      OnExecute = ActionNewLocalFileExecute
     end
   end
   object PopupMenuEdit: TPopupMenu
@@ -1887,5 +1896,12 @@ object FormFooNoteMain: TFormFooNoteMain
     OnTimer = TimerAutoRefreshTimer
     Left = 176
     Top = 136
+  end
+  object SaveDialogFooNote: TSaveDialog
+    Title = 'Select Local FooNote File'
+    DefaultExt = '.foonote'
+    Filter = 'FooNote|*.foonote'
+    Left = 64
+    Top = 392
   end
 end
