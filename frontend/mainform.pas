@@ -1079,10 +1079,16 @@ end;
 
 procedure TFormFooNoteMain.ActionNewLocalFileExecute(Sender: TObject);
 var
+  B: boolean;
   S: string;
   Id: FullId;
 begin
-  if not SaveDialogFooNote.Execute then begin
+  // The save dialog might crash FooNote if WndProc is replaced.
+  // Disable it temporarily.
+  IdleTimerWndProc.Enabled := False;
+  B := SaveDialogFooNote.Execute;
+  IdleTimerWndProc.Enabled := True;
+  if not B then begin
     exit;
   end;
 
