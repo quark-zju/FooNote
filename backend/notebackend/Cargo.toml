@@ -11,7 +11,7 @@ crate-type = ["cdylib"]
 bitflags = "1"
 dirs = "3"
 dissimilar = "1"
-env_logger = { version = "0.8", default-features = false, features = ["termcolor", "atty"] }
+env_logger = { version = "0.8", default-features = false, features = ["termcolor", "humantime", "atty"] }
 fs2 = "0.4"
 libloading = "0.6"
 notebackend_types = { path = "../notebackend_types" }
