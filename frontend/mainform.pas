@@ -126,6 +126,7 @@ type
     procedure ActionNewMemoryExecute(Sender: TObject);
     procedure ActionToggleFolderExecute(Sender: TObject);
     procedure ActionViewWarnUnsavedExecute(Sender: TObject);
+    procedure EditNoteSearchKeyPress(Sender: TObject; var Key: char);
     procedure EditNoteSearchKeyUp(Sender: TObject; var Key: word; Shift: TShiftState);
     procedure PanelDockSplitterLeftMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: integer);
     procedure PanelDockSplitterLeftMouseMove(Sender: TObject; Shift: TShiftState; X, Y: integer);
@@ -1152,11 +1153,16 @@ begin
   FormSaveFailure.ShowModal;
 end;
 
+procedure TFormFooNoteMain.EditNoteSearchKeyPress(Sender: TObject; var Key: char);
+begin
+  if key = #27 then begin
+    EditNoteSearch.Clear;
+  end;
+end;
+
 procedure TFormFooNoteMain.EditNoteSearchKeyUp(Sender: TObject; var Key: word; Shift: TShiftState);
 begin
-  if key = 27 then begin
-    EditNoteSearch.Clear;
-  end else if (key = 10) or (key = 13) or (key = VK_DOWN) then begin
+  if (key = 10) or (key = 13) or (key = VK_DOWN) then begin
     if TreeViewSearchTree.Visible then begin
       if TreeViewSearchTree.CanSetFocus then begin
         TreeViewSearchTree.SetFocus;
@@ -1845,8 +1851,14 @@ end;
 
 procedure TFormFooNoteMain.TreeViewSearchTreeKeyPress(Sender: TObject; var Key: char);
 begin
-  if (key = #27) or (key = #10) or (key = #13) then begin
+  if (key = #27) then begin
+    Key := #0;
+    EditNoteSearch.SetFocus;
+    EditNoteSearch.SelStart := 32767;
+  end;
+  if (key = #10) or (key = #13) then begin
     TreeViewSearchTreeDblClick(Sender);
+    FocusEditorEnd;
   end;
 end;
 
