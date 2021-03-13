@@ -140,7 +140,7 @@ object FormFooNoteSettings: TFormFooNoteSettings
       BorderSpacing.Around = 10
       Increment = 30
       MaxValue = 86400
-      MinValue = 30
+      MinValue = 5
       OnChange = SpinEditAutoSaveChange
       TabOrder = 0
       Value = 30
