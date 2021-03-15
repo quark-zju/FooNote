@@ -22,3 +22,6 @@ a
 a.*
 .*
 .vscode
+*.obj
+*.pdb
+*.res
