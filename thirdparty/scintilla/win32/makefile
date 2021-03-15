@@ -51,9 +51,7 @@ INCLUDES=-I ../include -I ../src -I../lexlib
 
 BASE_FLAGS += $(WARNINGS)
 
-ifdef NO_CXX11_REGEX
 DEFINES += -DNO_CXX11_REGEX
-endif
 
 DEFINES += -D$(if $(DEBUG),DEBUG,NDEBUG)
 BASE_FLAGS += $(if $(DEBUG),-g,-Os)
