@@ -188,6 +188,7 @@ Editor::Editor() : durationWrapOneLine(0.00001, 0.000001, 0.0001) {
 
 	recordingMacro = false;
 	foldAutomatic = 0;
+	locale = 0;
 
 	convertPastes = true;
 
@@ -8390,6 +8391,10 @@ sptr_t Editor::WndProc(unsigned int iMessage, uptr_t wParam, sptr_t lParam) {
 
 	case SCI_COUNTCODEUNITS:
 		return pdoc->CountUTF16(static_cast<Sci::Position>(wParam), lParam);
+
+	case SCI_SETLOCALE:
+		locale = (int)wParam;
+		break;
 
 	default:
 		return DefWndProc(iMessage, wParam, lParam);

@@ -1293,4 +1293,8 @@ struct SCNotification {
 
 #endif
 
+#define SCI_SETLOCALE 3000
+#define SC_LOCALE_EN 0
+#define SC_LOCALE_CN 1
+
 #endif

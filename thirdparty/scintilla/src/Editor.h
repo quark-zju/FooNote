@@ -254,6 +254,8 @@ protected:	// ScintillaBase subclass needs access to much of Editor
 
 	int foldAutomatic;
 
+	int locale;
+
 	// Wrapping support
 	WrapPending wrapPending;
 	ActionDuration durationWrapOneLine;

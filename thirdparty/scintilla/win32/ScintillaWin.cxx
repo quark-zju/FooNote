@@ -2554,12 +2554,29 @@ void ScintillaWin::CreateCallTipWindow(PRectangle) {
 
 void ScintillaWin::AddToPopUp(const char *label, int cmd, bool enabled) {
 	HMENU hmenuPopup = static_cast<HMENU>(popup.GetID());
-	if (!label[0])
+	if (!label[0]) {
 		::AppendMenuA(hmenuPopup, MF_SEPARATOR, 0, "");
-	else if (enabled)
-		::AppendMenuA(hmenuPopup, MF_STRING, cmd, label);
-	else
-		::AppendMenuA(hmenuPopup, MF_STRING | MF_DISABLED | MF_GRAYED, cmd, label);
+		return;
+	}
+
+	// UTF-8 to wchar.
+	int len = MultiByteToWideChar(CP_UTF8, 0, label, -1, NULL, 0);
+	if (len == 0) {
+		return;
+	}
+	wchar_t *buf = (wchar_t *)alloca(len * sizeof(wchar_t));
+	if (buf == NULL) {
+		return;
+	}
+	int ret = MultiByteToWideChar(CP_UTF8, 0, label, -1, buf, len);
+	if (ret == NULL) {
+		return;
+	}
+	UINT flags = MF_STRING;
+	if (!enabled) {
+		flags |= MF_DISABLED | MF_GRAYED;
+	}
+	::AppendMenuW(hmenuPopup, flags, cmd, buf);
 }
 
 void ScintillaWin::ClaimSelection() {

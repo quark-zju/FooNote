@@ -503,15 +503,27 @@ void ScintillaBase::ContextMenu(Point pt) {
 	if (displayPopupMenu) {
 		const bool writable = !WndProc(SCI_GETREADONLY, 0, 0);
 		popup.CreatePopUp();
-		AddToPopUp("Undo", idcmdUndo, writable && pdoc->CanUndo());
-		AddToPopUp("Redo", idcmdRedo, writable && pdoc->CanRedo());
-		AddToPopUp("");
-		AddToPopUp("Cut", idcmdCut, writable && !sel.Empty());
-		AddToPopUp("Copy", idcmdCopy, !sel.Empty());
-		AddToPopUp("Paste", idcmdPaste, writable && WndProc(SCI_CANPASTE, 0, 0));
-		AddToPopUp("Delete", idcmdDelete, writable && !sel.Empty());
-		AddToPopUp("");
-		AddToPopUp("Select All", idcmdSelectAll);
+		if (locale == SC_LOCALE_CN) {
+			AddToPopUp("撤销(&U)", idcmdUndo, writable && pdoc->CanUndo());
+			AddToPopUp("重做(&R)", idcmdRedo, writable && pdoc->CanRedo());
+			AddToPopUp("");
+			AddToPopUp("剪切(&T)", idcmdCut, writable && !sel.Empty());
+			AddToPopUp("复制(&C)", idcmdCopy, !sel.Empty());
+			AddToPopUp("粘贴(&P)", idcmdPaste, writable && WndProc(SCI_CANPASTE, 0, 0));
+			AddToPopUp("删除(&D)", idcmdDelete, writable && !sel.Empty());
+			AddToPopUp("");
+			AddToPopUp("全选(&A)", idcmdSelectAll);
+		} else {
+			AddToPopUp("&Undo", idcmdUndo, writable && pdoc->CanUndo());
+			AddToPopUp("&Redo", idcmdRedo, writable && pdoc->CanRedo());
+			AddToPopUp("");
+			AddToPopUp("Cu&t", idcmdCut, writable && !sel.Empty());
+			AddToPopUp("&Copy", idcmdCopy, !sel.Empty());
+			AddToPopUp("&Paste", idcmdPaste, writable && WndProc(SCI_CANPASTE, 0, 0));
+			AddToPopUp("&Delete", idcmdDelete, writable && !sel.Empty());
+			AddToPopUp("");
+			AddToPopUp("Select &All", idcmdSelectAll);
+		}
 		popup.Show(pt, wMain);
 	}
 }
