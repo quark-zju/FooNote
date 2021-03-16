@@ -7,14 +7,14 @@ interface
 uses
   {$ifdef Windows}
   PlatformWindows,
-  SciEditWindows,
   {$endif}
   Classes, SysUtils, Forms, Controls, Graphics, Dialogs, StdCtrls, Menus,
   ExtCtrls, ComCtrls, ActnList, PairSplitter, StdActns, ClipBrd, LCLType,
   LazUtf8, FGL, LogFFI, Math, NoteBackend, NoteTypes, MemoUtil,
   LCLTranslator, Buttons, JSONPropStorage, TreeNodeData, StackFFI,
   TreeViewSync, Settings, PreviewForm, AboutForm, FileUtil, md5,
-  savemsgform, selecturlform, LocaleUtils, SettingsForm, PasswordForm, Types;
+  savemsgform, selecturlform, LocaleUtils, SettingsForm, PasswordForm, Types,
+  SciEdit;
 
 type
 
@@ -185,6 +185,12 @@ type
     procedure TreeViewNoteTreeExpanding(Sender: TObject; Node: TTreeNode; var AllowExpansion: boolean);
     procedure TreeViewNoteTreeSelectionChanged(Sender: TObject);
     procedure ActionAppSettingPreferencesExecute(Sender: TObject);
+  protected
+    // Alternative to MemoNote
+    SciEditNote: TSciEdit;
+    procedure SciEditNoteChange(Sender: TObject);
+    procedure SciEditNoteKeyDown(Sender: TObject; var Key: word; Shift: TShiftState);
+    procedure EditorSetFocus;
   private
     // NoteTreeView state.
     RootNodeData: TTreeNodeData;
@@ -328,8 +334,12 @@ begin
     exit;
   end;
   S := NoteBackend.GetText(SelectedId);
-  if MemoNote.Text <> S then begin
+  if MemoNote.Visible and (MemoNote.Text <> S) then begin
     MemoNote.Text := S;
+  end;
+  if Assigned(SciEditNote) and SciEditNote.Visible and (SciEditNote.Text <> S) then begin
+    SciEditNote.Text := S;
+    SciEditNote.SetSavepoint;
   end;
 end;
 
@@ -429,11 +439,27 @@ begin
     This.SplitterTreeNote.Visible := not B;
     if B then begin
       This.MemoNote.Parent := This.PanelZen;
+      if Assigned(This.SciEditNote) then begin
+        This.SciEditNote.Parent := This.PanelZen;
+        if This.SciEditNote.Visible then begin
+          This.RefreshSelectedText;
+        end;
+      end;
     end else begin
       This.MemoNote.Parent := This.PanelEdit;
+      if Assigned(This.SciEditNote) then begin
+        This.SciEditNote.Parent := This.PanelEdit;
+        if This.SciEditNote.Visible then begin
+          This.RefreshSelectedText;
+        end;
+      end;
     end;
-    if not This.MemoNote.Focused and This.MemoNote.CanSetFocus then begin
+    if This.MemoNote.Visible and not This.MemoNote.Focused and This.MemoNote.CanSetFocus then begin
       This.MemoNote.SetFocus;
+    end;
+    if Assigned(This.SciEditNote) and This.SciEditNote.Visible and not This.SciEditNote.Focused and
+      This.SciEditNote.CanSetFocus then begin
+      This.SciEditNote.SetFocus;
     end;
   end;
   if (Name = AnyConfigName) or (Name = 'AutoSaveInterval') then begin
@@ -462,9 +488,51 @@ begin
     if B then begin
       This.MemoNote.WordWrap := False;
       This.MemoNote.ScrollBars := ssAutoBoth;
+      if Assigned(This.SciEditNote) then begin
+        This.SciEditNote.WordWrap := False;
+      end;
     end else begin
       This.MemoNote.WordWrap := True;
       This.MemoNote.ScrollBars := ssAutoVertical;
+      if Assigned(This.SciEditNote) then begin
+        This.SciEditNote.WordWrap := True;
+      end;
+    end;
+  end;
+  if (Name = AnyConfigName) or (Name = 'UseSciEdit') then begin
+    B := Config.UseSciEdit;
+    if LogHasDebug then begin
+      LogDebug(Format('UseSciEdit = %d', [B.ToInteger]));
+    end;
+    if B and This.MemoNote.Visible then begin
+      // Switch to SciEdit
+      if not Assigned(This.SciEditNote) then begin
+        LogDebug('Creating SciEdit');
+        This.SciEditNote := TSciEdit.Create(This);
+        This.SciEditNote.Align := This.MemoNote.Align;
+        This.SciEditNote.OnChange := @This.SciEditNoteChange;
+        This.SciEditNote.OnKeyDown := @This.SciEditNoteKeyDown;
+        This.SciEditNote.Parent := This.MemoNote.Parent;
+        This.SciEditNote.HandleNeeded;
+        LogDebug(Format('Created SciEdit: %d', [This.SciEditNote.Handle]));
+        // Refresh other things.
+        OnConfigChange('NoteHorizonScrollBar', Config);
+      end;
+      This.MemoNote.Visible := False;
+      This.SciEditNote.Visible := False;
+      This.SciEditNote.Text := This.MemoNote.Text;
+      This.SciEditNote.SetSavepoint;
+      This.SciEditNote.Visible := True;
+    end;
+    if not B and not This.MemoNote.Visible then begin
+      // Switch to Memo
+      if Assigned(This.SciEditNote) then begin
+        This.SciEditNote.Visible := False;
+      end;
+      This.SciEditNote.Visible := False;
+      This.MemoNote.Visible := False;
+      This.MemoNote.Text := This.SciEditNote.Text;
+      This.MemoNote.Visible := True;
     end;
   end;
 end;
@@ -710,6 +778,9 @@ var
 begin
   if Id <> FSelectedId then begin
     MemoNote.ReadOnly := True; // Disable MemoNote.OnChange
+    if Assigned(SciEditNote) then begin
+      SciEditNote.ReadOnly := True;
+    end;
     // Special case: root node is not editable (see OnChange), and has empty text.
     if Id <> RootNodeData.Id then begin
       try
@@ -724,9 +795,19 @@ begin
         end
       end;
     end;
-    MemoNote.Text := AText;
+    if MemoNote.Visible then begin
+      MemoNote.Text := AText;
+    end;
+    if Assigned(SciEditNote) and SciEditNote.Visible then begin
+      SciEditNote.Text := AText;
+      SciEditNote.SetSavepoint;  // Clear Undo history
+    end;
     if not (ReadOnly = 'true') then begin
       MemoNote.ReadOnly := False;
+      if Assigned(SciEditNote) then begin
+        SciEditNote.ReadOnly := False;
+      end;
+      // TODO(SciEdit): Colors...
       if MemoNote.Lines.Count < 2 then begin
         MemoNote.SelStart := LazUtf8.UTF8Length(AText);
       end;
@@ -777,6 +858,8 @@ end;
 
 procedure TFormFooNoteMain.FormCreate(Sender: TObject);
 begin
+  SciEditNote := nil;
+
   InitLogFFI; // Run after AllocConsole for env_logger to detect colors.
   InitRootTreeUrlAndConfigFileName; // Affects config name.
   InitAppConfigLink; // Link Editor TFont to AppConfig's Font.
@@ -857,7 +940,7 @@ begin
       exit;
     end;
   end;
-  MemoNote.SetFocus;
+  EditorSetFocus;
 end;
 
 procedure TFormFooNoteMain.ActionNewNoteExecute(Sender: TObject);
@@ -870,7 +953,7 @@ begin
       exit;
     end;
   end;
-  MemoNote.SetFocus;
+  EditorSetFocus;
 end;
 
 procedure TFormFooNoteMain.ActionNewSeparatorExecute(Sender: TObject);
@@ -887,7 +970,7 @@ end;
 
 procedure TFormFooNoteMain.MemoNoteChange(Sender: TObject);
 begin
-  if MemoNote.ReadOnly then begin
+  if MemoNote.ReadOnly or not MemoNote.Visible then begin
     exit;
   end;
   if SelectedId = RootNodeData.Id then begin
@@ -912,6 +995,35 @@ begin
   // Seems broken after Drag-and-drop move:
   // TreeViewSync.SyncTreeNode(TreeViewNoteTree.Selected);
 end;
+
+procedure TFormFooNoteMain.SciEditNoteChange(Sender: TObject);
+begin
+  if SciEditNote.ReadOnly or not SciEditNote.Visible then begin
+    exit;
+  end;
+  if SelectedId = RootNodeData.Id then begin
+    // Create a new node on demand.
+    try
+      SelectExpandNode(NewNode(SciEditNote.Text, ''));
+    except
+      on e: EExternal do begin
+        ErrorDlg(e.Message);
+        exit;
+      end;
+    end;
+    Exit;
+  end;
+  NoteBackend.TrySetText(SelectedId, SciEditNote.Text);
+  // Only refresh when changing the first line.
+  if SciEditNote.CaretPos.Y <= 1 then begin
+    RefreshFullTree;
+  end;
+  // Schedule AutoSave
+  ScheduleAutoSave;
+  // Seems broken after Drag-and-drop move:
+  // TreeViewSync.SyncTreeNode(TreeViewNoteTree.Selected);
+end;
+
 
 procedure TFormFooNoteMain.FormClose(Sender: TObject; var CloseAction: TCloseAction);
 begin
@@ -1310,8 +1422,10 @@ begin
       ClipBoard.Close;
       FreeAndNil(S);
     end;
-  end else if MemoNote.Focused then begin
+  end else if MemoNote.Visible and MemoNote.Focused then begin
     MemoNote.CopyToClipboard;
+  end else if Assigned(SciEditNote) and SciEditNote.Focused then begin
+    SciEditNote.CopyToClipboard;
   end;
 end;
 
@@ -1350,6 +1464,7 @@ begin
         SelectedIds := Ids;
         ScheduleAutoSave;
       end else begin
+        // Paste into a new node.
         T := ClipBoard.AsText;
         if not T.IsEmpty then begin
           try
@@ -1360,14 +1475,23 @@ begin
               exit;
             end;
           end;
-          MemoNote.SetFocus;
+          if MemoNote.Visible then begin
+            MemoNote.SetFocus;
+          end else if Assigned(SciEditNote) and SciEditNote.Visible then begin
+            SciEditNote.SetFocus;
+          end;
         end;
+
       end;
     finally
       FreeAndNil(S);
     end;
   end else if MemoNote.Focused then begin
-    MemoNote.PasteFromClipboard;
+    if MemoNote.Visible then begin
+      MemoNote.PasteFromClipboard;
+    end else if Assigned(SciEditNote) and SciEditNote.Visible then begin
+      SciEditNote.PasteFromClipboard;
+    end;
     // Might cause title change.
     RefreshFullTree;
   end;
@@ -1635,9 +1759,12 @@ end;
 
 procedure TFormFooNoteMain.FocusEditorEnd;
 begin
-  if MemoNote.CanSetFocus and not MemoNote.ReadOnly then begin
+  if MemoNote.Visible and MemoNote.CanSetFocus and not MemoNote.ReadOnly then begin
     MemoNote.SelStart := 32767;
     MemoNote.SetFocus;
+  end else if Assigned(SciEditNote) and not SciEditNote.ReadOnly then begin
+    SciEditNote.SelStart := -1; // See SCI_SETSEL
+    SciEditNote.SetFocus;
   end;
 end;
 
@@ -2007,6 +2134,30 @@ begin
     exit;
   end;
   MemoUtil.SmartKeyDown(MemoNote, Key, Shift);
+end;
+
+procedure TFormFooNoteMain.SciEditNoteKeyDown(Sender: TObject; var Key: word; Shift: TShiftState);
+begin
+  // TODO(SciEdit): Action List hotkeys?
+  if key = 27 then begin
+    // ESC - lose focus, or exit ZenMode
+    if AppConfig.ZenMode then begin
+      AppConfig.ZenMode := False;
+    end else begin
+      TreeViewNoteTree.SetFocus;
+    end;
+    exit;
+  end;
+end;
+
+procedure TFormFooNoteMain.EditorSetFocus;
+begin
+  if MemoNote.Visible then begin
+    MemoNote.SetFocus;
+  end;
+  if Assigned(SciEditNote) and SciEditNote.Visible then begin
+    SciEditNote.SetFocus;
+  end;
 end;
 
 procedure TFormFooNoteMain.TreeViewNoteTreeDeletion(Sender: TObject; Node: TTreeNode);

@@ -81,14 +81,14 @@ object FormFooNoteMain: TFormFooNoteMain
     AnchorSideTop.Control = Owner
     AnchorSideRight.Control = PanelDockSplitterRight
     Left = 8
-    Height = 27
+    Height = 25
     Top = 0
     Width = 241
     Align = alCustom
     Anchors = [akTop, akLeft, akRight]
     AutoSize = True
     BevelOuter = bvNone
-    ClientHeight = 27
+    ClientHeight = 25
     ClientWidth = 241
     ParentFont = False
     TabOrder = 1
@@ -101,10 +101,10 @@ object FormFooNoteMain: TFormFooNoteMain
       AnchorSideTop.Control = PanelTop
       AnchorSideRight.Control = PanelTop
       AnchorSideRight.Side = asrBottom
-      Left = 134
-      Height = 17
+      Left = 129
+      Height = 15
       Top = 5
-      Width = 102
+      Width = 107
       Align = alCustom
       Anchors = [akTop, akLeft, akRight]
       BorderSpacing.Around = 5
@@ -124,8 +124,8 @@ object FormFooNoteMain: TFormFooNoteMain
       AnchorSideRight.Side = asrBottom
       Left = 5
       Height = 22
-      Top = 2
-      Width = 60
+      Top = 1
+      Width = 55
       Align = alCustom
       AutoSize = True
       BorderSpacing.Left = 5
@@ -152,9 +152,9 @@ object FormFooNoteMain: TFormFooNoteMain
       AnchorSideLeft.Side = asrBottom
       AnchorSideTop.Control = EditNoteSearch
       AnchorSideTop.Side = asrCenter
-      Left = 70
+      Left = 65
       Height = 22
-      Top = 2
+      Top = 1
       Width = 59
       Align = alCustom
       AutoSize = True
@@ -249,8 +249,8 @@ object FormFooNoteMain: TFormFooNoteMain
     AnchorSideRight.Control = PanelDockSplitterRight
     AnchorSideBottom.Control = SplitterTreeNote
     Left = 13
-    Height = 334
-    Top = 27
+    Height = 336
+    Top = 25
     Width = 231
     Anchors = [akTop, akLeft, akRight, akBottom]
     BorderSpacing.Left = 5
@@ -258,12 +258,12 @@ object FormFooNoteMain: TFormFooNoteMain
     BevelColor = clWindow
     BevelOuter = bvNone
     BorderStyle = bsSingle
-    ClientHeight = 330
+    ClientHeight = 332
     ClientWidth = 227
     TabOrder = 2
     object TreeViewSearchTree: TTreeView
       Left = 0
-      Height = 330
+      Height = 332
       Top = 0
       Width = 227
       Align = alClient
@@ -286,7 +286,7 @@ object FormFooNoteMain: TFormFooNoteMain
     end
     object TreeViewNoteTree: TTreeView
       Left = 0
-      Height = 330
+      Height = 332
       Top = 0
       Width = 227
       Align = alClient

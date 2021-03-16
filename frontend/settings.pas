@@ -54,6 +54,8 @@ type
     FSearchBarFont: TFont;
     FEditorScrollBars: TScrollStyle;
     FWindowColor: TColor;
+    FUseSciEdit: boolean;
+    FSciDirectWrite: boolean;
 
     // Callback.
     Callbacks: array of TConfigChangeCallback;
@@ -66,6 +68,7 @@ type
     procedure SetAutoSaveInterval(Value: integer);
     procedure SetTreeHorizonScrollBar(Value: boolean);
     procedure SetNoteHorizonScrollBar(Value: boolean);
+    procedure SetUseSciEdit(Value: boolean);
   public
     // Not saved on disk. Do not trigger callbacks.
     ForceNotTop: boolean;
@@ -74,6 +77,7 @@ type
     RootTreeUrl: string;
     ConfigFileName: string;
     SaveFailureMessage: string;
+    HasSciEdit: boolean;
 
     procedure RegisterOnChangeCallback(callback: TConfigChangeCallback);
     procedure NotifyAll;
@@ -86,6 +90,7 @@ type
     property AutoSaveInterval: integer read FAutoSaveInterval write SetAutoSaveInterval;
     property TreeHorizonScrollBar: boolean read FTreeHorizonScrollBar write SetTreeHorizonScrollBar;
     property NoteHorizonScrollBar: boolean read FNoteHorizonScrollBar write SetNoteHorizonScrollBar;
+    property UseSciEdit: boolean read FUseSciEdit write SetUseSciEdit default True;
 
     // Do not trigger callbacks.
     property EditorFont: TFont read FEditorFont write FEditorFont;
@@ -108,6 +113,7 @@ type
     property LastSelectedId: Int32 read FLastSelection write FLastSelection;
     property WindowColor: TColor read FWindowColor write FWindowColor;
     property EditorScrollBars: TScrollStyle read FEditorScrollBars write FEditorScrollBars;
+    property SciDirectWrite: boolean read FSciDirectWrite write FSciDirectWrite;
   end;
 
 const
@@ -195,6 +201,16 @@ procedure TAppConfig.SetNoteHorizonScrollBar(Value: boolean);
 begin
   FNoteHorizonScrollBar := Value;
   RunCallbacks('NoteHorizonScrollBar');
+end;
+
+procedure TAppConfig.SetUseSciEdit(Value: boolean);
+begin
+  if HasSciEdit then begin
+    FUseSciEdit := Value;
+  end else begin
+    FUseSciEdit := False;
+  end;
+  RunCallbacks('UseSciEdit');
 end;
 
 procedure TAppConfig.SetFeatureLevel(Value: TFeatureLevel);

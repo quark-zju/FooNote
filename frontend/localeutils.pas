@@ -10,6 +10,9 @@ uses
 
 procedure InitLocale(lang: string);
 
+var
+  LocaleName: string;
+
 implementation
 
 function notebackend_set_lang(): Int32; cdecl; external 'notebackend';
@@ -66,10 +69,12 @@ begin
     notebackend_get_lang();
     Lang := StackFFI.StackPopString();
     LogFFI.LogInfo(Format('System SysLang = %s => %s', [SysLang, Lang]));
+    LocaleName := Lang;
   end else begin
     LogFFI.LogInfo(Format('Specified Lang = %s', [Lang]));
     StackFFI.StackPushString(Lang);
     notebackend_set_lang();
+    LocaleName := Lang;
   end;
 
   if not Lang.IsEmpty then begin

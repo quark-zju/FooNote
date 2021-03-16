@@ -236,9 +236,9 @@
         <ResourceBaseClass Value="Form"/>
       </Unit19>
       <Unit20>
-        <Filename Value="scieditwindows.pas"/>
+        <Filename Value="sciedit.pas"/>
         <IsPartOfProject Value="True"/>
-        <UnitName Value="SciEditWindows"/>
+        <UnitName Value="SciEdit"/>
       </Unit20>
       <Unit21>
         <Filename Value="scintilla.pas"/>
