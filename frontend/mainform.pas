@@ -7,6 +7,7 @@ interface
 uses
   {$ifdef Windows}
   PlatformWindows,
+  SciEditWindows,
   {$endif}
   Classes, SysUtils, Forms, Controls, Graphics, Dialogs, StdCtrls, Menus,
   ExtCtrls, ComCtrls, ActnList, PairSplitter, StdActns, ClipBrd, LCLType,

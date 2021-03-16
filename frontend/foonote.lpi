@@ -119,7 +119,7 @@
         <PackageName Value="LCL"/>
       </Item1>
     </RequiredPackages>
-    <Units Count="20">
+    <Units Count="22">
       <Unit0>
         <Filename Value="foonote.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -235,6 +235,16 @@
         <ComponentName Value="FormPassword"/>
         <ResourceBaseClass Value="Form"/>
       </Unit19>
+      <Unit20>
+        <Filename Value="scieditwindows.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="SciEditWindows"/>
+      </Unit20>
+      <Unit21>
+        <Filename Value="scintilla.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="Scintilla"/>
+      </Unit21>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
