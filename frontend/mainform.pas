@@ -812,8 +812,14 @@ begin
         MemoNote.SelStart := LazUtf8.UTF8Length(AText);
       end;
       MemoNote.Color := clWindow;
+      if Assigned(SciEditNote) then begin
+        SciEditNote.Color := clWindow;
+      end;
     end else begin
       MemoNote.Color := clBtnFace;
+      if Assigned(SciEditNote) then begin
+        SciEditNote.Color := clBtnFace;
+      end;
     end;
     FSelectedId := Id;
   end;

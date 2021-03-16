@@ -35,6 +35,8 @@ type
     procedure SetWordWrap(Value: boolean);
     function GetSelStart: integer;
     procedure SetSelStart(Val: integer);
+    function GetColor: TColor;
+    procedure SetColor(Val: TColor);
   protected
     // https://www.scintilla.org/Steps.html
     procedure CreateWnd; override;
@@ -52,7 +54,7 @@ type
     property WordWrap: boolean read GetWordWrap write SetWordWrap default True;
     property CaretPos: TPoint read GetCaretPos;
     property SelStart: integer read GetSelStart write SetSelStart;
-
+    property Color: TColor read GetColor write SetColor;
     property OnChange: TNotifyEvent read FOnChange write FOnChange;
   end;
 
@@ -144,6 +146,16 @@ end;
 procedure TSciEdit.SetSelStart(Val: integer);
 begin
   SciMsg(SCI_GOTOPOS, Val);
+end;
+
+function TSciEdit.GetColor: TColor;
+begin
+  Result := SciMsg(SCI_STYLEGETBACK, STYLE_DEFAULT);
+end;
+
+procedure TSciEdit.SetColor(Val: TColor);
+begin
+  SciMsg(SCI_STYLESETBACK, STYLE_DEFAULT, ColorToRGB(Val));
 end;
 
 function TSciEdit.GetCaretPos: TPoint;
@@ -266,7 +278,7 @@ begin
   SciMsg(SCI_SETIMEINTERACTION, SC_IME_INLINE);
 
   // Tab Indent
-  SciMsg(SCI_SETTABWIDTH, 2);
+  SciMsg(SCI_SETTABWIDTH, 4);
   SciMsg(SCI_SETMARGINS, 0);
 
   // Multi-selection
