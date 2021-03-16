@@ -15,6 +15,7 @@ type
   TFormFooNoteSettings = class(TForm)
     ButtonOk: TButton;
     ButtonSelFont: TButton;
+    ButtonSelEditorFont: TButton;
     CheckBoxTreeHorizonScrollbar: TCheckBox;
     CheckBoxOnTop: TCheckBox;
     CheckBoxNoteHorizonScrollbar: TCheckBox;
@@ -23,6 +24,7 @@ type
     GroupBoxInterfaceSettings: TGroupBox;
     LabelAutoSaveInterval: TLabel;
     SpinEditAutoSave: TSpinEdit;
+    procedure ButtonSelEditorFontClick(Sender: TObject);
     procedure ButtonSelFontClick(Sender: TObject);
     procedure CheckBoxNoteHorizonScrollbarChange(Sender: TObject);
     procedure CheckBoxOnTopChange(Sender: TObject);
@@ -110,6 +112,20 @@ begin
     SetFont(AppConfig.TreeViewSearchFont, F);
     SetFont(AppConfig.TreeViewFont, F);
     SetFont(AppConfig.SearchBarFont, F);
+  end;
+end;
+
+procedure TFormFooNoteSettings.ButtonSelEditorFontClick(Sender: TObject);
+var
+  F: TFont;
+begin
+  FontDialog1.Font := AppConfig.EditorFont;
+  if FontDialog1.Execute then begin
+    F := FontDialog1.Font;
+    if LogFFI.LogHasDebug then begin
+      LogFFI.LogDebug(Format('Selected Editor Font: %s %d', [F.Name, F.Size]));
+    end;
+    SetFont(AppConfig.EditorFont, F);
   end;
 end;
 
