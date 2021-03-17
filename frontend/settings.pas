@@ -69,6 +69,7 @@ type
     procedure SetTreeHorizonScrollBar(Value: boolean);
     procedure SetNoteHorizonScrollBar(Value: boolean);
     procedure SetUseSciEdit(Value: boolean);
+    procedure SetEditorFont(AFont: TFont);
   public
     // Not saved on disk. Do not trigger callbacks.
     ForceNotTop: boolean;
@@ -93,7 +94,7 @@ type
     property UseSciEdit: boolean read FUseSciEdit write SetUseSciEdit default True;
 
     // Do not trigger callbacks.
-    property EditorFont: TFont read FEditorFont write FEditorFont;
+    property EditorFont: TFont read FEditorFont write SetEditorFont;
     property TreeViewFont: TFont read FTreeViewFont write FTreeViewFont;
     property TreeViewSearchFont: TFont read FTreeViewSearchFont write FTreeViewSearchFont;
     property SearchBarFont: TFont read FSearchBarFont write FSearchBarFont;
@@ -211,6 +212,16 @@ begin
     FUseSciEdit := False;
   end;
   RunCallbacks('UseSciEdit');
+end;
+
+procedure TAppConfig.SetEditorFont(AFont: TFont);
+begin
+  if Assigned(FEditorFont) then begin
+    FEditorFont.Assign(AFont);
+  end else begin
+    FEditorFont := AFont;
+  end;
+  RunCallbacks('EditorFont');
 end;
 
 procedure TAppConfig.SetFeatureLevel(Value: TFeatureLevel);

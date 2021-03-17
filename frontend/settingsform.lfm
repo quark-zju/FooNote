@@ -1,12 +1,12 @@
 object FormFooNoteSettings: TFormFooNoteSettings
-  Left = 108
-  Height = 341
-  Top = 275
+  Left = 72
+  Height = 343
+  Top = 183
   Width = 305
   BorderIcons = []
   BorderStyle = bsDialog
   Caption = 'FooNote Settings'
-  ClientHeight = 341
+  ClientHeight = 343
   ClientWidth = 305
   OnCreate = FormCreate
   OnShow = FormShow
@@ -19,7 +19,7 @@ object FormFooNoteSettings: TFormFooNoteSettings
     AnchorSideBottom.Side = asrBottom
     Left = 215
     Height = 25
-    Top = 306
+    Top = 308
     Width = 80
     Anchors = [akRight, akBottom]
     AutoSize = True
@@ -131,7 +131,6 @@ object FormFooNoteSettings: TFormFooNoteSettings
   end
   object GroupBoxOther: TGroupBox
     AnchorSideLeft.Control = Owner
-    AnchorSideTop.Control = GroupBoxInterfaceSettings
     AnchorSideTop.Side = asrBottom
     AnchorSideRight.Control = Owner
     AnchorSideRight.Side = asrBottom

@@ -499,6 +499,12 @@ begin
       end;
     end;
   end;
+  if (Name = AnyConfigName) or (Name = 'EditorFont') then begin
+    This.MemoNote.Font.Assign(Config.EditorFont);
+    if Assigned(This.SciEditNote) then begin
+      This.SciEditNote.SetDefaultFont(Config.EditorFont);
+    end;
+  end;
   if (Name = AnyConfigName) or (Name = 'UseSciEdit') then begin
     B := Config.UseSciEdit;
     if LogHasDebug then begin
@@ -509,6 +515,7 @@ begin
       if not Assigned(This.SciEditNote) then begin
         LogDebug('Creating SciEdit');
         This.SciEditNote := TSciEdit.Create(This);
+        This.SciEditNote.Font.Assign(This.MemoNote.Font);
         This.SciEditNote.Align := This.MemoNote.Align;
         This.SciEditNote.OnChange := @This.SciEditNoteChange;
         This.SciEditNote.OnKeyDown := @This.SciEditNoteKeyDown;
@@ -517,6 +524,7 @@ begin
         LogDebug(Format('Created SciEdit: %d', [This.SciEditNote.Handle]));
         // Refresh other things.
         OnConfigChange('NoteHorizonScrollBar', Config);
+        OnConfigChange('EditorFont', Config);
       end;
       This.MemoNote.Visible := False;
       This.SciEditNote.Visible := False;
@@ -807,7 +815,6 @@ begin
       if Assigned(SciEditNote) then begin
         SciEditNote.ReadOnly := False;
       end;
-      // TODO(SciEdit): Colors...
       if MemoNote.Lines.Count < 2 then begin
         MemoNote.SelStart := LazUtf8.UTF8Length(AText);
       end;
@@ -1769,7 +1776,7 @@ begin
     MemoNote.SelStart := 32767;
     MemoNote.SetFocus;
   end else if Assigned(SciEditNote) and not SciEditNote.ReadOnly then begin
-    SciEditNote.SelStart := -1; // See SCI_SETSEL
+    SciEditNote.SelStart := -1; // Select the end. See SCI_SETSEL
     SciEditNote.SetFocus;
   end;
 end;
@@ -2144,7 +2151,6 @@ end;
 
 procedure TFormFooNoteMain.SciEditNoteKeyDown(Sender: TObject; var Key: word; Shift: TShiftState);
 begin
-  // TODO(SciEdit): Action List hotkeys?
   if key = 27 then begin
     // ESC - lose focus, or exit ZenMode
     if AppConfig.ZenMode then begin

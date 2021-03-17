@@ -138,7 +138,7 @@ begin
     if LogFFI.LogHasDebug then begin
       LogFFI.LogDebug(Format('Selected Editor Font: %s %d', [F.Name, F.Size]));
     end;
-    SetFont(AppConfig.EditorFont, F);
+    AppConfig.EditorFont := F;
   end;
 end;
 

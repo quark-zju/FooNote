@@ -36,7 +36,6 @@ type
     function GetSelStart: integer;
     procedure SetSelStart(Val: integer);
     function GetColor: TColor;
-    procedure SetColor(Val: TColor);
   protected
     // https://www.scintilla.org/Steps.html
     procedure CreateWnd; override;
@@ -49,6 +48,8 @@ type
     procedure SetSavepoint;
     procedure CopyToClipboard;
     procedure PasteFromClipboard;
+    procedure SetColor(Val: TColor);
+    procedure SetDefaultFont(Value: TFont);
 
     property Text: string read GetText write SetText;
     property ReadOnly: boolean read GetReadOnly write SetReadOnly;
@@ -159,6 +160,23 @@ begin
   SciMsg(SCI_STYLESETBACK, STYLE_DEFAULT, ColorToRGB(Val));
 end;
 
+procedure TSciEdit.SetDefaultFont(Value: TFont);
+var
+  FontSize: integer;
+  FontName: string;
+begin
+  if Assigned(Value) then begin
+    // Font
+    FontSize := Round(Abs(Graphics.GetFontData(Value.Handle).Height) * 72 / Font.PixelsPerInch);
+    FontName := Graphics.GetFontData(Value.Handle).Name;
+    if LogHasDebug then begin
+      LogDebug(Format('SciEdit Font: %s %d', [FontName, FontSize]));
+    end;
+    SciMsgSetStr(SCI_STYLESETFONT, STYLE_DEFAULT, FontName);
+    SciMsg(SCI_STYLESETSIZE, STYLE_DEFAULT, FontSize);
+  end;
+end;
+
 function TSciEdit.GetCaretPos: TPoint;
 var
   P: PtrInt;
@@ -253,7 +271,6 @@ begin
   StrDispose(P);
 end;
 
-
 {$ifdef Windows}
 function WrappedSciEditWndProc(Ahwnd: HWND; uMsg: UINT; wParam: WParam; lParam: LParam): LRESULT; stdcall;
 var
@@ -298,9 +315,6 @@ end;
 {$endif}
 
 procedure TSciEdit.InitSettings;
-var
-  FontSize: integer;
-  FontName: string;
 begin
   // Utf-8!
   SciMsg(SCI_SETCODEPAGE, SC_CP_UTF8);
@@ -323,18 +337,14 @@ begin
   SciMsg(SCI_SETMULTIPLESELECTION, 1);
   SciMsg(SCI_SETADDITIONALSELECTIONTYPING, 1);
 
-  // Font
-  FontSize := Round(Abs(Graphics.GetFontData(Font.Reference.Handle).Height) * 72 / Font.PixelsPerInch);
-  FontName := Font.Name;
-  if FontName = 'default' then begin
-    FontName := 'Microsoft YaHei';
-  end;
-  SciMsgSetStr(SCI_STYLESETFONT, STYLE_DEFAULT, FontName);
-  SciMsg(SCI_STYLESETSIZE, STYLE_DEFAULT, FontSize);
-
   // Colors
   SciMsg(SCI_SETSELBACK, 1, ColorToRGB(clHighlight));
   SciMsg(SCI_SETSELFORE, 1, ColorToRGB(clHighlightText));
+
+  // Fonts
+  if Assigned(Font) then begin
+    SetDefaultFont(Font);
+  end;
 
   {$IFDEF WINDOWS}
   if AppConfig.SciDirectWrite then begin
