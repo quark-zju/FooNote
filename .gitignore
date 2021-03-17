@@ -25,3 +25,6 @@ a.*
 *.obj
 *.pdb
 *.res
+*.dll
+*.exp
+*.lib
