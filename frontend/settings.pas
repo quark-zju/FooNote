@@ -264,12 +264,13 @@ end;
 initialization
   AppConfig := TAppConfig.Create;
 
-  // Defaults
+  // Defaults (Property default is not effective).
   AppConfig.FMaxWidth := 600;
   AppConfig.FAutoSaveInterval := 30;
   AppConfig.FRememberPosition := True;
   AppConfig.ConfigFileName := 'FooNoteConfig.json';
   AppConfig.FWindowColor := clWindow;
+  AppConfig.FUseSciEdit := True;
   AppConfig.FEditorScrollBars := ssAutoVertical;
 
 finalization
