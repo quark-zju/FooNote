@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, Controls, StdCtrls, LCLType, LCLIntf, LMessages, Graphics,
-  Scintilla, Settings, LocaleUtils,
+  Scintilla, Settings, LocaleUtils, LogFFI,
   {$ifdef Windows}
   Windows, win32int, win32proc
   {$endif};
@@ -42,7 +42,8 @@ type
     procedure CreateWnd; override;
   public
     function SciMsg(iMessage: UInt32; wParam: PtrUInt = 0; lParam: PtrInt = 0): PtrInt;
-    function SciMsgCStr(iMessage: UInt32; wParam: PtrUInt; S: string): PtrInt;
+    function SciMsgSetStr(iMessage: UInt32; wParam: PtrUInt; S: string): PtrInt;
+    function SciMsgGetStr(iMessage: UInt32; wParam: PtrUInt; Len: PtrInt): string;
   public
     class function IsAvailable: boolean;
     procedure SetSavepoint;
@@ -94,7 +95,7 @@ begin
   OrigReadOnly := GetReadOnly;
   SetReadOnly(False);
   Changing := True;
-  SciMsgCStr(SCI_SETTEXT, 0, Value);
+  SciMsgSetStr(SCI_SETTEXT, 0, Value);
   Changing := False;
   SetReadOnly(OrigReadOnly);
 end;
@@ -102,13 +103,9 @@ end;
 function TSciEdit.GetText: string;
 var
   Len: PtrInt;
-  P: PChar;
 begin
   Len := SciMsg(SCI_GETLENGTH, 0, 0);
-  P := StrAlloc(Len + 1);
-  SciMsg(SCI_GETTEXT, Len + 1, PtrInt(P));
-  Result := StrPas(P);
-  StrDispose(P);
+  Result := SciMsgGetStr(SCI_GETTEXT, Len + 1, Len);
 end;
 
 function TSciEdit.GetReadOnly: boolean;
@@ -145,7 +142,11 @@ end;
 
 procedure TSciEdit.SetSelStart(Val: integer);
 begin
-  SciMsg(SCI_GOTOPOS, Val);
+  if Val < 0 then begin
+    SciMsg(SCI_SETSEL, PtrUInt(-1), -1);
+  end else begin
+    SciMsg(SCI_GOTOPOS, Val);
+  end;
 end;
 
 function TSciEdit.GetColor: TColor;
@@ -176,6 +177,8 @@ end;
 procedure TSciEdit.SciNotify(var Notif: SCNotification);
 var
   code: dword;
+  Line, LineLen, I: longint;
+  LineContent: string;
 begin
   code := Notif.nmhdr.code;
   if (code = SCN_PAINTED) or (code = SCN_STYLENEEDED) then begin
@@ -186,7 +189,33 @@ begin
   end;
   if (code = SCN_CHARADDED) then begin
     if (Notif.ch = 10) or (Notif.ch = 13) then begin
-      // TODO: Insert spaces?
+      // Line: start from 0; new Line (after "\n")
+      Line := CaretPos.Y;
+      LineLen := SciMsg(SCI_LINELENGTH, Line);
+      if (Line > 0) and (LineLen <= 2) and (SciMsg(SCI_GETSELECTIONS) <= 1) then begin
+        // Count leading spaces from the previous line.
+        LineLen := SciMsg(SCI_LINELENGTH, Line - 1);
+        if LineLen < 1000 then begin
+          LineContent := SciMsgGetStr(SCI_GETLINE, Line - 1, LineLen);
+          for I := 0 to LineLen do begin
+            case LineContent[I] of
+              #9, #32: begin
+                continue;
+              end;
+              else begin
+                if I > 0 then begin
+                  LineContent[I] := #0;
+                  if LogHasDebug then begin
+                    LogDebug(Format('Auto Indent (prefix: %d chars)', [I - 1]));
+                  end;
+                  SciMsg(SCI_REPLACESEL, 0, PtrInt(PChar(LineContent)));
+                  break;
+                end;
+              end;
+            end;
+          end;
+        end;
+      end;
     end;
   end;
 end;
@@ -199,7 +228,7 @@ begin
   end;
 end;
 
-function TSciEdit.SciMsgCStr(iMessage: UInt32; wParam: PtrUInt; S: string): PtrInt;
+function TSciEdit.SciMsgSetStr(iMessage: UInt32; wParam: PtrUInt; S: string): PtrInt;
 var
   P: PChar;
   S2: string;
@@ -212,6 +241,18 @@ begin
   end;
   Result := SciMsg(iMessage, wParam, PtrInt(P));
 end;
+
+function TSciEdit.SciMsgGetStr(iMessage: UInt32; wParam: PtrUInt; Len: PtrInt): string;
+var
+  P: PChar;
+begin
+  P := StrAlloc(Len + 1);
+  SciMsg(iMessage, wParam, PtrInt(P));
+  P[Len] := #0;
+  Result := StrPas(P);
+  StrDispose(P);
+end;
+
 
 {$ifdef Windows}
 function WrappedSciEditWndProc(Ahwnd: HWND; uMsg: UINT; wParam: WParam; lParam: LParam): LRESULT; stdcall;
@@ -288,7 +329,7 @@ begin
   if FontName = 'default' then begin
     FontName := 'Microsoft YaHei';
   end;
-  SciMsgCStr(SCI_STYLESETFONT, STYLE_DEFAULT, FontName);
+  SciMsgSetStr(SCI_STYLESETFONT, STYLE_DEFAULT, FontName);
   SciMsg(SCI_STYLESETSIZE, STYLE_DEFAULT, FontSize);
 
   // Colors
