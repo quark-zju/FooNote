@@ -12,19 +12,19 @@ object AboutFooNoteForm: TAboutFooNoteForm
   LCLVersion = '2.0.10.0'
   object PanelButtons: TPanel
     Left = 5
-    Height = 32
-    Top = 374
+    Height = 30
+    Top = 376
     Width = 420
     Align = alBottom
     AutoSize = True
     BorderSpacing.Around = 5
     BevelOuter = bvNone
-    ClientHeight = 32
+    ClientHeight = 30
     ClientWidth = 420
     TabOrder = 0
     object ButtonOk: TButton
       Left = 335
-      Height = 27
+      Height = 25
       Top = 0
       Width = 80
       Align = alRight
@@ -47,17 +47,17 @@ object AboutFooNoteForm: TAboutFooNoteForm
     AnchorSideRight.Side = asrBottom
     AnchorSideBottom.Control = PanelButtons
     Left = 10
-    Height = 354
+    Height = 356
     Top = 10
     Width = 410
-    ActivePage = TabSheet1
+    ActivePage = TabSheet2
     Anchors = [akTop, akLeft, akRight, akBottom]
     BorderSpacing.Around = 10
-    TabIndex = 0
+    TabIndex = 1
     TabOrder = 1
     object TabSheet1: TTabSheet
       Caption = 'About'
-      ClientHeight = 324
+      ClientHeight = 328
       ClientWidth = 402
       object ImageIcon: TImage
         AnchorSideLeft.Control = TabSheet1
@@ -214,9 +214,9 @@ object AboutFooNoteForm: TAboutFooNoteForm
         AnchorSideTop.Control = LabelLink
         AnchorSideTop.Side = asrBottom
         Left = 51
-        Height = 17
-        Top = 148
-        Width = 44
+        Height = 15
+        Top = 144
+        Width = 38
         BorderSpacing.Top = 20
         Caption = 'Version'
         ParentColor = False
@@ -226,10 +226,10 @@ object AboutFooNoteForm: TAboutFooNoteForm
         AnchorSideLeft.Control = LabelVersion
         AnchorSideLeft.Side = asrBottom
         AnchorSideTop.Control = LabelVersion
-        Left = 105
-        Height = 17
-        Top = 148
-        Width = 7
+        Left = 99
+        Height = 15
+        Top = 144
+        Width = 6
         BorderSpacing.Left = 10
         Caption = '1'
         ParentColor = False
@@ -240,9 +240,9 @@ object AboutFooNoteForm: TAboutFooNoteForm
         AnchorSideTop.Control = LabelVersionNumber
         AnchorSideTop.Side = asrBottom
         Left = 51
-        Height = 17
-        Top = 165
-        Width = 60
+        Height = 15
+        Top = 159
+        Width = 54
         Caption = 'Build Date'
         ParentColor = False
         ParentFont = False
@@ -251,10 +251,10 @@ object AboutFooNoteForm: TAboutFooNoteForm
         AnchorSideLeft.Control = LabelBuildDate
         AnchorSideLeft.Side = asrBottom
         AnchorSideTop.Control = LabelBuildDate
-        Left = 121
-        Height = 17
-        Top = 165
-        Width = 7
+        Left = 115
+        Height = 15
+        Top = 159
+        Width = 6
         BorderSpacing.Left = 10
         Caption = '1'
         ParentColor = False
@@ -266,9 +266,9 @@ object AboutFooNoteForm: TAboutFooNoteForm
         AnchorSideTop.Side = asrBottom
         Cursor = crHandPoint
         Left = 51
-        Height = 17
-        Top = 111
-        Width = 218
+        Height = 15
+        Top = 109
+        Width = 204
         Caption = 'https://github.com/quark-zju/foonote'
         Font.Color = clHotLight
         Font.Style = [fsUnderline]
@@ -281,9 +281,9 @@ object AboutFooNoteForm: TAboutFooNoteForm
         AnchorSideTop.Control = ImageIcon
         AnchorSideTop.Side = asrBottom
         Left = 51
-        Height = 17
+        Height = 15
         Top = 94
-        Width = 300
+        Width = 277
         Caption = 'Lightweight tree-structured note-taking companion.'
         ParentColor = False
         ParentFont = False
@@ -295,8 +295,8 @@ object AboutFooNoteForm: TAboutFooNoteForm
         AnchorSideRight.Control = ImageIcon
         AnchorSideRight.Side = asrBottom
         Left = 51
-        Height = 25
-        Top = 209
+        Height = 23
+        Top = 199
         Width = 300
         Anchors = [akTop, akLeft, akRight]
         ReadOnly = True
@@ -307,9 +307,9 @@ object AboutFooNoteForm: TAboutFooNoteForm
         AnchorSideTop.Control = LabelBuildDateValue
         AnchorSideTop.Side = asrBottom
         Left = 51
-        Height = 17
-        Top = 192
-        Width = 87
+        Height = 15
+        Top = 184
+        Width = 76
         BorderSpacing.Top = 10
         Caption = 'Root Tree Path'
         ParentColor = False
@@ -320,9 +320,9 @@ object AboutFooNoteForm: TAboutFooNoteForm
         AnchorSideTop.Control = EditRootTreeUrl
         AnchorSideTop.Side = asrBottom
         Left = 51
-        Height = 17
-        Top = 244
-        Width = 90
+        Height = 15
+        Top = 232
+        Width = 84
         BorderSpacing.Top = 10
         Caption = 'Config File Path'
         ParentColor = False
@@ -335,8 +335,8 @@ object AboutFooNoteForm: TAboutFooNoteForm
         AnchorSideRight.Control = ImageIcon
         AnchorSideRight.Side = asrBottom
         Left = 51
-        Height = 25
-        Top = 261
+        Height = 23
+        Top = 247
         Width = 300
         Anchors = [akTop, akLeft, akRight]
         ReadOnly = True
@@ -345,11 +345,11 @@ object AboutFooNoteForm: TAboutFooNoteForm
     end
     object TabSheet2: TTabSheet
       Caption = 'Licenses'
-      ClientHeight = 274
+      ClientHeight = 328
       ClientWidth = 402
       object MemoGPL3: TMemo
         Left = 10
-        Height = 254
+        Height = 308
         Top = 10
         Width = 382
         Align = alClient
@@ -1029,6 +1029,29 @@ object AboutFooNoteForm: TAboutFooNoteForm
           'the library.  If this is what you want to do, use the GNU Lesser General'
           'Public License instead of this License.  But first, please read'
           '<https://www.gnu.org/licenses/why-not-lgpl.html>.'
+          ''
+          '--------'
+          ''
+          'License for Lexilla, Scintilla, and SciTE'
+          ''
+          'Copyright 1998-2021 by Neil Hodgson <neilh@scintilla.org>'
+          ''
+          'All Rights Reserved'
+          ''
+          'Permission to use, copy, modify, and distribute this software and its'
+          'documentation for any purpose and without fee is hereby granted,'
+          'provided that the above copyright notice appear in all copies and that'
+          'both that copyright notice and this permission notice appear in'
+          'supporting documentation.'
+          ''
+          'NEIL HODGSON DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS'
+          'SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY'
+          'AND FITNESS, IN NO EVENT SHALL NEIL HODGSON BE LIABLE FOR ANY'
+          'SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES'
+          'WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS,'
+          'WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER'
+          'TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE'
+          'OR PERFORMANCE OF THIS SOFTWARE.'
         )
         ReadOnly = True
         ScrollBars = ssAutoBoth
