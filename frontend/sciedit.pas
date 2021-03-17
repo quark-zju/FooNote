@@ -176,7 +176,6 @@ end;
 procedure TSciEdit.SciNotify(var Notif: SCNotification);
 var
   code: dword;
-  c: char;
 begin
   code := Notif.nmhdr.code;
   if (code = SCN_PAINTED) or (code = SCN_STYLENEEDED) then begin
@@ -220,7 +219,7 @@ var
   WindowInfo: PWin32WindowInfo;
   This: TSciEdit;
   SciWndProc: WNDPROC;
-  ShouldHandle: boolean;
+  BypassLCL: boolean;
 begin
   WindowInfo := GetWin32WindowInfo(Ahwnd);
   This := TSciEdit(WindowInfo^.WinControl);
@@ -230,32 +229,29 @@ begin
     exit;
   end;
 
-  // Copy WndProc, WM_NCDESTROY might de-alloc WindowInfo.
-  SciWndProc := WindowInfo^.DefWndProc;
+  // Should LCL handle the WndProc? Note LCL can also forward to SciWndProc.
+  // LCL will emit LM/CN messages, and response to Action List.
+  // See win32callback.inc. It calls CallDefaultWindowProc when WinProcess is True.
+  // Pay attention to when it sets WinProcess to False.
+  BypassLCL := False;
 
-  // Should LCL handle the WndProc? Currently we want LCL handle ESC KeyPress and Focus changes.
-  ShouldHandle := False;
-
-  // Forward some events as LCL CM message.
-  if ((uMsg = WM_KEYDOWN) or (uMsg = WM_KEYUP)) and (wParam = VK_ESCAPE) then begin
-    ShouldHandle := True;
-  end;
-  if (uMsg = WM_SETFOCUS) or (uMsg = WM_KILLFOCUS) or (uMsg = WM_SHOWWINDOW) or
-    (uMsg = WM_ENABLE) or (uMsg = WM_GETFONT) or (uMsg = WM_SETFONT) or (uMsg = WM_ACTIVATE) then begin
-    ShouldHandle := True;
+  // "WantTab". Do not make LCL handle "Tab" key.
+  if ((uMsg >= WM_KEYFIRST) and (uMsg <= WM_KEYLAST)) and (wParam = VK_TAB) then begin
+    BypassLCL := True;
   end;
 
-  // Release WindowInfo on destroy. This is required according to MSDN.
-  if uMsg = WM_NCDESTROY then begin
-    ShouldHandle := True;
+  if (uMsg = WM_ERASEBKGND) or (uMsg = WM_PAINT) then begin
+    BypassLCL := True;
   end;
 
-  if ShouldHandle then begin
-    WindowProc(Ahwnd, uMsg, wParam, lParam);
+  if BypassLCL then begin
+    // Scintilla WndProc.
+    SciWndProc := WindowInfo^.DefWndProc;
+    Result := CallWindowProc(SciWndProc, Ahwnd, uMsg, wParam, lParam);
+  end else begin
+    // LCL WndProc.
+    Result := WindowProc(Ahwnd, uMsg, wParam, lParam);
   end;
-
-  // Call Scintilla WndProc.
-  Result := CallWindowProc(SciWndProc, Ahwnd, uMsg, wParam, lParam);
 end;
 
 {$endif}
@@ -267,6 +263,7 @@ var
 begin
   // Utf-8!
   SciMsg(SCI_SETCODEPAGE, SC_CP_UTF8);
+  SciMsg(SCI_SETEOLMODE, SC_EOL_LF);
 
   // Line-wrap, Scrolling
   SetWordWrap(True);
