@@ -13,12 +13,12 @@ for path in ["/usr/bin/inkscape", "/Program Files/Inkscape/inkscape.exe"]:
 # Export svg to bitmaps of different sizes
 src = "icon.svg"
 pngs = []
-for size in [16, 32, 48, 256]:
+for size in [16, 24, 32, 48, 256]:
     dst = "%s.png" % size
     print("Exporting %s from %s" % (dst, src))
     cmd = [
         "inkscape",
-        "-o",
+        "-e",
         dst,
         "-w",
         str(size),
