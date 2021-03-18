@@ -6,9 +6,9 @@ interface
 
 uses
   Classes, SysUtils, Controls, StdCtrls, LCLType, LCLIntf, LMessages, Graphics,
-  Scintilla, Settings, LocaleUtils, LogFFI,
+  Scintilla, Settings, LocaleUtils, LogFFI
   {$ifdef Windows}
-  Windows, win32int, win32proc
+  , Windows, win32int, win32proc
   {$endif};
 
 type
