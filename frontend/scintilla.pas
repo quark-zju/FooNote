@@ -44,7 +44,7 @@ type
 {include "Sci_Position.h"}
 type
   Sci_Position = PtrInt;
-  Sci_PositionU = size_t;
+  Sci_PositionU = PtrUInt;
   Sci_PositionCR = longint;
 
 type
