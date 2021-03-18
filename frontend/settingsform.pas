@@ -121,7 +121,7 @@ begin
     if LogFFI.LogHasDebug then begin
       LogFFI.LogDebug(Format('Selected Font: %s %d', [F.Name, F.Size]));
     end;
-    SetFont(AppConfig.EditorFont, F);
+    AppConfig.EditorFont := F;
     SetFont(AppConfig.TreeViewSearchFont, F);
     SetFont(AppConfig.TreeViewFont, F);
     SetFont(AppConfig.SearchBarFont, F);

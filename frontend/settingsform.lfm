@@ -1,7 +1,7 @@
 object FormFooNoteSettings: TFormFooNoteSettings
-  Left = 72
+  Left = 108
   Height = 343
-  Top = 183
+  Top = 275
   Width = 305
   BorderIcons = []
   BorderStyle = bsDialog
@@ -11,6 +11,7 @@ object FormFooNoteSettings: TFormFooNoteSettings
   OnCreate = FormCreate
   OnShow = FormShow
   Position = poWorkAreaCenter
+  ShowHint = True
   LCLVersion = '2.0.10.0'
   object ButtonOk: TButton
     AnchorSideRight.Control = Owner
@@ -121,6 +122,7 @@ object FormFooNoteSettings: TFormFooNoteSettings
       AnchorSideTop.Side = asrBottom
       Left = 10
       Height = 19
+      Hint = 'Scintilla Editor provides some advanced features like multi-level undo, multiple cursors, drag and drop, smart home / end etc.'
       Top = 39
       Width = 117
       BorderSpacing.Around = 10

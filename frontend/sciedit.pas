@@ -36,6 +36,7 @@ type
     function GetSelStart: integer;
     procedure SetSelStart(Val: integer);
     function GetColor: TColor;
+    procedure SetColor(Val: TColor);
   protected
     // https://www.scintilla.org/Steps.html
     procedure CreateWnd; override;
@@ -48,7 +49,6 @@ type
     procedure SetSavepoint;
     procedure CopyToClipboard;
     procedure PasteFromClipboard;
-    procedure SetColor(Val: TColor);
     procedure SetDefaultFont(Value: TFont);
 
     property Text: string read GetText write SetText;
@@ -166,8 +166,7 @@ var
   FontName: string;
 begin
   if Assigned(Value) then begin
-    // Font
-    FontSize := Round(Abs(Graphics.GetFontData(Value.Handle).Height) * 72 / Font.PixelsPerInch);
+    FontSize := Round(Abs(Graphics.GetFontData(Value.Handle).Height) * 72 / Value.PixelsPerInch);
     FontName := Graphics.GetFontData(Value.Handle).Name;
     if LogHasDebug then begin
       LogDebug(Format('SciEdit Font: %s %d', [FontName, FontSize]));

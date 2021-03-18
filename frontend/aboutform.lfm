@@ -1,5 +1,5 @@
 object AboutFooNoteForm: TAboutFooNoteForm
-  Left = 379
+  Left = 380
   Height = 411
   Top = 281
   Width = 430
@@ -50,10 +50,10 @@ object AboutFooNoteForm: TAboutFooNoteForm
     Height = 356
     Top = 10
     Width = 410
-    ActivePage = TabSheet2
+    ActivePage = TabSheet1
     Anchors = [akTop, akLeft, akRight, akBottom]
     BorderSpacing.Around = 10
-    TabIndex = 1
+    TabIndex = 0
     TabOrder = 1
     object TabSheet1: TTabSheet
       Caption = 'About'
