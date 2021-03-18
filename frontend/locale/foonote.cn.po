@@ -351,6 +351,10 @@ msgctxt "tformfoonotesettings.buttonok.caption"
 msgid "&OK"
 msgstr "确定(&O)"
 
+#: tformfoonotesettings.buttonseleditorfont.caption
+msgid "Select &Editor Font"
+msgstr "编辑区字体(&E)"
+
 #: tformfoonotesettings.buttonselfont.caption
 msgid "Select &Font"
 msgstr "字体(&F)"
@@ -370,6 +374,14 @@ msgstr "置顶(&T)"
 #: tformfoonotesettings.checkboxtreehorizonscrollbar.caption
 msgid "Note Tree &Horizontal Scrollbar"
 msgstr "笔记树水平滚动条(&H)"
+
+#: tformfoonotesettings.checkboxusesciedit.caption
+msgid "Use &Scintilla Editor"
+msgstr "启用 &Scintilla 文本编辑器"
+
+#: tformfoonotesettings.checkboxusesciedit.hint
+msgid "Scintilla Editor provides some advanced features like multi-level undo, multiple cursors, drag and drop, smart home / end etc."
+msgstr "Scintilla 文本编辑器支持一些高级功能，如：多级撤销、多光标、文本拖拽、智能 HOME/END 等。"
 
 #: tformfoonotesettings.groupboxinterfacesettings.caption
 msgid "Interface"
