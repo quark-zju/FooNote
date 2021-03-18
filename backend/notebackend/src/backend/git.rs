@@ -711,7 +711,7 @@ impl GitInfo {
     fn rev_parse(&self, commitish: &str) -> io::Result<HexOid> {
         let s = self
             .git()
-            .args(&["rev-parse", commitish, "--"])
+            .args(&["rev-parse", commitish])
             .output()?
             .trim()
             .to_string();
