@@ -10,6 +10,7 @@ jobs:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v2
+    - uses: ilammy/msvc-dev-cmd@v1
     - name: Build backend
       run: cargo build --release --manifest-path backend/Cargo.toml --verbose --target-dir=target
     - name: Install Lazarus
@@ -18,12 +19,17 @@ jobs:
         lazarus-version: 2.0.10
     - name: Build GUI
       run: lazbuild --build-mode=Release "frontend/foonote.lpi"
+    - name: Build Scintilla
+      run: |
+        cd thirdparty\scintilla\win32
+        nmake -f scintilla.mak
     - name: Copy Binaries
       run: |
         mkdir dist
         cp target/release/notebackend.dll dist
         cp target/release/notebackend_python.dll dist
         cp frontend/foonote.exe dist
+        cp thirdparty/scintilla/bin/scintilla.dll dist
         $compress = @{
           Path = "dist\*"
           CompressionLevel = "Optimal"
