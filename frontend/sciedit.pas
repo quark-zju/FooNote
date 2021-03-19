@@ -301,6 +301,15 @@ begin
     BypassLCL := True;
   end;
 
+  if (uMsg = WM_SETFOCUS) then begin
+    This.SciMsg(SCI_SETSELBACK, 1, ColorToRGB(clHighlight));
+    This.SciMsg(SCI_SETSELFORE, 1, ColorToRGB(clHighlightText));
+  end;
+  if (uMsg = WM_KILLFOCUS) then begin
+    This.SciMsg(SCI_SETSELBACK, 1, clSilver);
+    This.SciMsg(SCI_SETSELFORE, 1, ColorToRGB(clWindowText));
+  end;
+
   if BypassLCL then begin
     // Scintilla WndProc.
     SciWndProc := WindowInfo^.DefWndProc;
@@ -394,6 +403,8 @@ begin
       // WindowInfo glues hwnd and LCL window. See also win32callback and win32proc.
       WindowInfo := AllocWindowInfo(Handle);
       WindowInfo^.WinControl := Self;
+      // WrappedSciEditWndProc -> LCL WndProc -> Sci WndProc (WindowInfo.DefWndProc)
+      // WrappedSciEditWndProc -> Sci WndProc (bypass LCL)
       WindowInfo^.DefWndProc := Windows.WNDPROC(SetWindowLongPtr(Handle, GWL_WNDPROC,
         PtrUInt(@WrappedSciEditWndProc)));
     end;
