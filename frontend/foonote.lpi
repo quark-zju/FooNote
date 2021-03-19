@@ -233,6 +233,7 @@
         <Filename Value="passwordform.pas"/>
         <IsPartOfProject Value="True"/>
         <ComponentName Value="FormPassword"/>
+        <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
       </Unit19>
       <Unit20>
