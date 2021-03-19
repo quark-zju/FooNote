@@ -515,6 +515,8 @@ begin
       if not Assigned(This.SciEditNote) then begin
         LogDebug('Creating SciEdit');
         This.SciEditNote := TSciEdit.Create(This);
+        This.SciEditNote.TabOrder := This.MemoNote.TabOrder;
+        This.SciEditNote.TabStop := True;
         This.SciEditNote.Font.Assign(This.MemoNote.Font);
         This.SciEditNote.Align := This.MemoNote.Align;
         This.SciEditNote.OnChange := @This.SciEditNoteChange;
