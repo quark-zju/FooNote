@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, Controls, StdCtrls, LCLType, LCLIntf, LMessages, Graphics,
-  Scintilla, Settings, LocaleUtils, LogFFI
+  Scintilla, Settings, LocaleUtils, LogFFI, Forms
   {$ifdef Windows}
   , Windows, win32int, win32proc
   {$endif};
@@ -21,11 +21,26 @@ type
     // https://www.scintilla.org/ScintillaDoc.html#Notifications
     procedure CNNotify(var Message: TLMNotify); message CN_NOTIFY;
     procedure SciNotify(var Notif: SCNotification);
+
+  private
+    // States. Useful if the Window is re-created (ex. docking, setting LCL form border).
+    FText: string;
+    FReadOnly: boolean;
+    FColor: TColor;
+    FWordWrap: boolean;
+    FFont: TFont;
+
+    // Whether the SciEdit is fully initialized.
+    // If not, avoid setting out OnChange events.
+    IsInitialized: boolean;
   private
     // Inside SetText? (prevent OnChange events)
     Changing: boolean;
     FOnChange: TNotifyEvent;
+
     procedure InitSettings;
+    procedure UpdateSelectionColor(AFocused: boolean);
+
     function GetText: string;
     procedure SetText(Value: string);
     function GetReadOnly: boolean;
@@ -40,6 +55,10 @@ type
   protected
     // https://www.scintilla.org/Steps.html
     procedure CreateWnd; override;
+    procedure InitializeWnd; override;
+    procedure FinalizeWnd; override;
+
+    function GetCachedText(var CachedText: TCaption): boolean; override;
   public
     function SciMsg(iMessage: UInt32; wParam: PtrUInt = 0; lParam: PtrInt = 0): PtrInt;
     function SciMsgSetStr(iMessage: UInt32; wParam: PtrUInt; S: string): PtrInt;
@@ -50,6 +69,8 @@ type
     procedure CopyToClipboard;
     procedure PasteFromClipboard;
     procedure SetDefaultFont(Value: TFont);
+
+    constructor Create(TheOwner: TComponent); override;
 
     property Text: string read GetText write SetText;
     property ReadOnly: boolean read GetReadOnly write SetReadOnly;
@@ -94,11 +115,17 @@ var
   OrigReadOnly: boolean;
 begin
   OrigReadOnly := GetReadOnly;
-  SetReadOnly(False);
+  FText := Value;
+  if OrigReadOnly then begin
+    SetReadOnly(False);
+  end;
+  // Prevent OnChange event.
   Changing := True;
   SciMsgSetStr(SCI_SETTEXT, 0, Value);
   Changing := False;
-  SetReadOnly(OrigReadOnly);
+  if OrigReadOnly then begin
+    SetReadOnly(OrigReadOnly);
+  end;
 end;
 
 function TSciEdit.GetText: string;
@@ -116,6 +143,7 @@ end;
 
 procedure TSciEdit.SetReadOnly(Value: boolean);
 begin
+  FReadOnly := Value;
   SciMsg(SCI_SETREADONLY, Value.ToInteger);
 end;
 
@@ -126,6 +154,7 @@ end;
 
 procedure TSciEdit.SetWordWrap(Value: boolean);
 begin
+  FWordWrap := Value;
   if Value then begin
     SciMsg(SCI_SETWRAPMODE, SC_WRAP_CHAR);
     SciMsg(SCI_SETHSCROLLBAR, 0);
@@ -157,6 +186,7 @@ end;
 
 procedure TSciEdit.SetColor(Val: TColor);
 begin
+  FColor := Val;
   SciMsg(SCI_STYLESETBACK, STYLE_DEFAULT, ColorToRGB(Val));
 end;
 
@@ -166,6 +196,7 @@ var
   FontName: string;
 begin
   if Assigned(Value) then begin
+    FFont.Assign(Value);
     FontSize := Round(Abs(Graphics.GetFontData(Value.Handle).Height) * 72 / Value.PixelsPerInch);
     FontName := Graphics.GetFontData(Value.Handle).Name;
     if LogHasDebug then begin
@@ -201,7 +232,7 @@ begin
   if (code = SCN_PAINTED) or (code = SCN_STYLENEEDED) then begin
     exit;
   end;
-  if (code = SCN_MODIFIED) and Assigned(OnChange) and not Changing then begin
+  if (code = SCN_MODIFIED) and IsInitialized and Assigned(OnChange) and not Changing then begin
     OnChange(Self);
   end;
   if (code = SCN_CHARADDED) then begin
@@ -302,12 +333,10 @@ begin
   end;
 
   if (uMsg = WM_SETFOCUS) then begin
-    This.SciMsg(SCI_SETSELBACK, 1, ColorToRGB(clHighlight));
-    This.SciMsg(SCI_SETSELFORE, 1, ColorToRGB(clHighlightText));
+    This.UpdateSelectionColor(True);
   end;
   if (uMsg = WM_KILLFOCUS) then begin
-    This.SciMsg(SCI_SETSELBACK, 1, clSilver);
-    This.SciMsg(SCI_SETSELFORE, 1, ColorToRGB(clWindowText));
+    This.UpdateSelectionColor(False);
   end;
 
   if BypassLCL then begin
@@ -321,6 +350,17 @@ begin
 end;
 
 {$endif}
+
+procedure TSciEdit.UpdateSelectionColor(AFocused: boolean);
+begin
+  if Focused then begin
+    SciMsg(SCI_SETSELBACK, 1, ColorToRGB(clHighlight));
+    SciMsg(SCI_SETSELFORE, 1, ColorToRGB(clHighlightText));
+  end else begin
+    SciMsg(SCI_SETSELBACK, 1, clSilver);
+    SciMsg(SCI_SETSELFORE, 1, ColorToRGB(clWindowText));
+  end;
+end;
 
 procedure TSciEdit.InitSettings;
 begin
@@ -374,6 +414,24 @@ begin
   end else begin
     SciMsg(SCI_SETLOCALE, SC_LOCALE_EN);
   end;
+
+  // Restore some states.
+  SetWordWrap(FWordWrap);
+  SetReadOnly(FReadOnly);
+  UpdateSelectionColor(Focused);
+end;
+
+procedure TSciEdit.FinalizeWnd;
+begin
+  FText := GetText;
+  IsInitialized := False;
+  inherited;
+end;
+
+function TSciEdit.GetCachedText(var CachedText: TCaption): boolean;
+begin
+  // Disable TWinControl.InitializeWnd from calling WSSetText.
+  Result := False;
 end;
 
 procedure TSciEdit.CreateWnd;
@@ -432,6 +490,25 @@ begin
   {$endif}
 end;
 
+procedure TSciEdit.InitializeWnd;
+begin
+  // Restore more states.
+  inherited;
+  SetColor(FColor);
+  SetDefaultFont(FFont);
+  SetText(FText);
+  IsInitialized := True;
+end;
+
+constructor TSciEdit.Create(TheOwner: TComponent);
+begin
+  FText := '';
+  FColor := clWindow;
+  FWordWrap := True;
+  FFont := Screen.SystemFont;
+  IsInitialized := False;
+  inherited;
+end;
 
 initialization
 {$ifdef Windows}

@@ -441,17 +441,11 @@ begin
       This.MemoNote.Parent := This.PanelZen;
       if Assigned(This.SciEditNote) then begin
         This.SciEditNote.Parent := This.PanelZen;
-        if This.SciEditNote.Visible then begin
-          This.RefreshSelectedText;
-        end;
       end;
     end else begin
       This.MemoNote.Parent := This.PanelEdit;
       if Assigned(This.SciEditNote) then begin
         This.SciEditNote.Parent := This.PanelEdit;
-        if This.SciEditNote.Visible then begin
-          This.RefreshSelectedText;
-        end;
       end;
     end;
     if This.MemoNote.Visible and not This.MemoNote.Focused and This.MemoNote.CanSetFocus then begin
