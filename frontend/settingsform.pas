@@ -5,8 +5,8 @@ unit settingsform;
 interface
 
 uses
-  Classes, SysUtils, Forms, Controls, Graphics, Dialogs, StdCtrls, ExtCtrls,
-  Spin, Settings, LogFFI, SciEdit;
+  Classes, SysUtils, Forms, Controls, Graphics, Dialogs, StdCtrls,
+  Spin, Settings, LogFFI;
 
 type
 

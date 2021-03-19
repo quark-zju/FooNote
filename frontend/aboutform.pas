@@ -5,8 +5,8 @@ unit AboutForm;
 interface
 
 uses
-  Classes, SysUtils, Forms, Controls, Graphics, Dialogs, ExtCtrls, StdCtrls,
-  ComCtrls, FileInfo, Settings, BuildInfo, LclIntf, LogFFI;
+  Forms, Dialogs, ExtCtrls, StdCtrls,
+  ComCtrls, Settings, BuildInfo, LclIntf, LogFFI;
 
 type
 

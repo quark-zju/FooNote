@@ -9,9 +9,9 @@ uses
   PlatformWindows,
   {$endif}
   Classes, SysUtils, Forms, Controls, Graphics, Dialogs, StdCtrls, Menus,
-  ExtCtrls, ComCtrls, ActnList, PairSplitter, StdActns, ClipBrd, LCLType,
+  ExtCtrls, ComCtrls, ActnList, ClipBrd, LCLType,
   LazUtf8, FGL, LogFFI, Math, NoteBackend, NoteTypes, MemoUtil,
-  LCLTranslator, Buttons, JSONPropStorage, TreeNodeData, StackFFI,
+  TreeNodeData, StackFFI,
   TreeViewSync, Settings, PreviewForm, AboutForm, FileUtil, md5,
   savemsgform, selecturlform, LocaleUtils, SettingsForm, PasswordForm, Types,
   SciEdit;

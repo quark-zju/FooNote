@@ -6,7 +6,7 @@ unit Settings;
 interface
 
 uses
-  Classes, SysUtils, fpjsonrtti, Graphics, NoteTypes, FpJson, StdCtrls, LogFFI;
+  Classes, SysUtils, fpjsonrtti, Graphics, FpJson, StdCtrls, LogFFI;
 
 type
   TDockSide = (dsNone = 0, dsLeft = 1, dsRight = 2);

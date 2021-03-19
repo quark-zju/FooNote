@@ -5,7 +5,7 @@ unit savemsgform;
 interface
 
 uses
-  Classes, SysUtils, Forms, Controls, Graphics, Dialogs, StdCtrls, Settings,
+  SysUtils, Forms, Controls, Graphics, Dialogs, StdCtrls, Settings,
   Process;
 
 type

@@ -5,7 +5,7 @@ unit SciEdit;
 interface
 
 uses
-  Classes, SysUtils, Controls, StdCtrls, LCLType, LCLIntf, LMessages, Graphics,
+  Classes, SysUtils, Controls, LCLType, LCLIntf, LMessages, Graphics,
   Scintilla, Settings, LocaleUtils, LogFFI, Forms
   {$ifdef Windows}
   , Windows, win32int, win32proc

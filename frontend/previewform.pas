@@ -8,7 +8,7 @@ uses
   {$ifdef Windows}
   PlatformWindows,
   {$endif}
-  Classes, SysUtils, Forms, Controls, Graphics, StdCtrls, ComCtrls, ExtCtrls;
+  Classes, SysUtils, Forms, Controls, Graphics, ExtCtrls;
 
 type
 

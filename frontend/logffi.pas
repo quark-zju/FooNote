@@ -5,7 +5,7 @@ unit LogFFI;
 interface
 
 uses
-  Classes, SysUtils, StackFFI;
+  SysUtils, StackFFI;
 
 // Log booleans for fast paths.
 var

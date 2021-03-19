@@ -5,7 +5,7 @@ unit NoteBackend;
 interface
 
 uses
-  Classes, SysUtils, NoteTypes, Math, StackFFI, LogFFI;
+  SysUtils, NoteTypes, Math, StackFFI, LogFFI;
 
 // Main APIs.
 

@@ -5,7 +5,7 @@ unit LocaleUtils;
 interface
 
 uses
-  Classes, SysUtils, gettext, LogFFI, StackFFI, LCLTranslator,
+  SysUtils, gettext, LogFFI, StackFFI, LCLTranslator,
   LResources, Translations, Forms;
 
 procedure InitLocale(lang: string);
