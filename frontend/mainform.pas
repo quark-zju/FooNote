@@ -506,7 +506,7 @@ begin
     end;
   end;
   if (Name = AnyConfigName) or (Name = 'UseSciEdit') then begin
-    B := Config.UseSciEdit;
+    B := Config.UseSciEdit and TSciEdit.IsAvailable;
     if LogHasDebug then begin
       LogDebug(Format('UseSciEdit = %d', [B.ToInteger]));
     end;
