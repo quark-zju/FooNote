@@ -1495,8 +1495,8 @@ begin
     finally
       FreeAndNil(S);
     end;
-  end else if MemoNote.Focused then begin
-    if MemoNote.Visible then begin
+  end else begin
+    if MemoNote.Visible and MemoNote.Focused then begin
       MemoNote.PasteFromClipboard;
     end else if Assigned(SciEditNote) and SciEditNote.Visible then begin
       SciEditNote.PasteFromClipboard;
