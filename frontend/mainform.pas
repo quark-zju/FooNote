@@ -240,7 +240,7 @@ type
     procedure RefreshSelectedText;
     function InsertLocation(Id: FullId; NParent: integer; out Pos: integer): FullId;
     function NewNode(AText, AMeta: string; NParent: integer = 0): FullId;
-    function NewMountNode(AText, Url: string; NParent: integer = 1): FullId;
+    function NewMountNode(AText, Url: string; Copyable: boolean = True; NParent: integer = 1): FullId;
     procedure SelectExpandNode(Id: FullId);
     procedure SetSelectedId(Id: FullId);
     function GetSelectedIds(): VecFullId;
@@ -911,9 +911,15 @@ begin
 {$endif}
 end;
 
-function TFormFooNoteMain.NewMountNode(AText, Url: string; NParent: integer = 1): FullId;
+function TFormFooNoteMain.NewMountNode(AText, Url: string; Copyable: boolean = True; NParent: integer = 1): FullId;
+var
+  Meta: string;
 begin
-  Result := NewNode(AText, 'type=mount' + #10 + 'mount=' + Url + #10, NParent);
+  Meta := 'type=mount' + #10 + 'mount=' + Url + #10;
+  if not Copyable then begin
+    Meta += 'copyable=false'#10;
+  end;
+  Result := NewNode(AText, Meta, NParent);
 end;
 
 function TFormFooNoteMain.NewNode(AText, AMeta: string; NParent: integer = 0): FullId;
@@ -1159,7 +1165,8 @@ begin
   if PasswordForm.FormPassword.ShowModal = mrOk then begin
     S := PasswordForm.PasswordResult;
     try
-      Id := NewMountNode(RSEncryptedTextPrefix, Format('aes256:%s', [UniqueStringId]));
+      // Not copyable to prevent IV reuse.
+      Id := NewMountNode(RSEncryptedTextPrefix, Format('aes256:%s', [UniqueStringId]), False);
       TryUpdateMeta(Id, 'password=', S);
       SelectExpandNode(Id);
     except
@@ -1237,7 +1244,7 @@ var
   Id: FullId;
 begin
   try
-    Id := NewMountNode(RSMemoryRootTitle, Format('memory:%s', [UniqueStringId]));
+    Id := NewMountNode(RSMemoryRootTitle, Format('memory:%s', [UniqueStringId]), False);
   except
     on e: EExternal do begin
       ErrorDlg(e.Message);
