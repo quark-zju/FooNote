@@ -29,6 +29,8 @@ type
     FColor: TColor;
     FWordWrap: boolean;
     FFont: TFont;
+    FAnchor: PtrInt;
+    FCaret: PtrInt;
 
     // Whether the SciEdit is fully initialized.
     // If not, avoid setting out OnChange events.
@@ -424,6 +426,8 @@ end;
 procedure TSciEdit.FinalizeWnd;
 begin
   FText := GetText;
+  FAnchor := SciMsg(SCI_GETANCHOR);
+  FCaret := SciMsg(SCI_GETCURRENTPOS);
   IsInitialized := False;
   inherited;
 end;
@@ -497,6 +501,7 @@ begin
   SetColor(FColor);
   SetDefaultFont(FFont);
   SetText(FText);
+  SciMsg(SCI_SETSEL, FAnchor, FCaret);
   IsInitialized := True;
 end;
 
