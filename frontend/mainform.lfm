@@ -210,7 +210,7 @@ object FormFooNoteMain: TFormFooNoteMain
     Anchors = [akTop, akLeft, akBottom]
     BevelColor = clNone
     BevelOuter = bvNone
-    Color = clBackground
+    Color = clBlack
     ParentColor = False
     TabOrder = 0
     Visible = False
@@ -233,7 +233,7 @@ object FormFooNoteMain: TFormFooNoteMain
     Anchors = [akTop, akRight, akBottom]
     BevelColor = clNone
     BevelOuter = bvNone
-    Color = clBackground
+    Color = clBlack
     ParentColor = False
     TabOrder = 6
     Visible = False
