@@ -20,6 +20,7 @@ type
     Label2: TLabel;
     procedure ButtonCancelClick(Sender: TObject);
     procedure EditPasswordChange(Sender: TObject);
+    procedure EditPasswordKeyUp(Sender: TObject; var Key: word; Shift: TShiftState);
     procedure EditRetypePasswordChange(Sender: TObject);
     procedure FormShow(Sender: TObject);
   private
@@ -89,6 +90,17 @@ end;
 procedure TFormPassword.EditPasswordChange(Sender: TObject);
 begin
   EditRetypePasswordChange(Sender);
+end;
+
+procedure TFormPassword.EditPasswordKeyUp(Sender: TObject; var Key: word; Shift: TShiftState);
+var
+  S: string;
+begin
+  S := EditPassword.Text;
+  if (Key = 10) or (Key = 13) and (not S.IsEmpty) and EditRetypePassword.CanFocus then begin
+    EditRetypePassword.SetFocus;
+    Key := 0;
+  end;
 end;
 
 end.
