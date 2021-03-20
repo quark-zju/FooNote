@@ -235,8 +235,10 @@ begin
 {$ifndef Windows}
   Value := dsNone;
 {$endif}
-  FDockSide := Value;
-  RunCallbacks('DockSide');
+  if FDockSide <> Value then begin
+    FDockSide := Value;
+    RunCallbacks('DockSide');
+  end;
 end;
 
 procedure TAppConfig.SetZenMode(Value: boolean);

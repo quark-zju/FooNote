@@ -426,6 +426,9 @@ begin
       I := AppConfig.DockNoteSplitTop;
     end;
     if (I > 0) and (I < This.Height) then begin
+      if LogHasTrace then begin
+        LogTrace(Format('SplitterTreeNode.Top = %d -> %d', [This.SplitterTreeNote.Top, I]));
+      end;
       This.SplitterTreeNote.Top := I;
     end;
   end;
@@ -900,6 +903,10 @@ begin
       AppConfig.DockWidth := 0;
     end else begin
       AppConfig.DockWidth := Width;
+    end;
+    // Resize can cause Splitter movement.
+    if AppConfig.DockSide = dsNone then begin
+      AppConfig.NonDockNoteSplitTop := SplitterTreeNote.Top;
     end;
   end;
 end;
