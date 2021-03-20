@@ -44,7 +44,7 @@ impl Aes256BlobIo {
         result
     }
 
-    fn next_nonce(&mut self, sha1: [u8; SHA1_LEN]) -> [u8; NONCE_LEN] {
+    fn next_nonce(&mut self, noise: [u8; NONCE_LEN]) -> [u8; NONCE_LEN] {
         // IV = IV + 1
         let mut i = SALT_LEN;
         loop {
@@ -59,7 +59,7 @@ impl Aes256BlobIo {
         for i in 1..NONCE_LEN {
             let i = i + SALT_LEN;
             if self.data.len() < i {
-                self.data[i] ^= sha1[i];
+                self.data[i] ^= noise[i];
             }
         }
         self.nonce()
@@ -94,14 +94,17 @@ impl BlobIo for Aes256BlobIo {
     }
 
     fn save(&mut self, data: Vec<u8>) -> io::Result<()> {
-        let sha1 = sha1(&data);
-        if sha1 == self.last_input_sha1 {
+        let data_sha1 = sha1(&data);
+        if data_sha1 == self.last_input_sha1 {
             log::debug!("no change - skip re-encryption");
             return Ok(());
         }
 
         // Encrypt (to inline_data())
-        let nonce = self.next_nonce(sha1);
+        let nonce = {
+            let noise = rand::random();
+            self.next_nonce(noise)
+        };
         let mut result = self.salt().to_vec();
         result.extend_from_slice(&nonce);
         let nonce = GenericArray::from_slice(&nonce);
@@ -110,7 +113,7 @@ impl BlobIo for Aes256BlobIo {
         log::debug!("encrypted {} into {} bytes", data.len(), encrypted.len());
         result.extend(encrypted);
         self.data = result;
-        self.last_input_sha1 = sha1;
+        self.last_input_sha1 = data_sha1;
         Ok(())
     }
 
