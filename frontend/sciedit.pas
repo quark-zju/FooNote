@@ -191,6 +191,7 @@ procedure TSciEdit.SetColor(Val: TColor);
 begin
   FColor := Val;
   SciMsg(SCI_STYLESETBACK, STYLE_DEFAULT, ColorToRGB(Val));
+  SciMsg(SCI_STYLECLEARALL);
 end;
 
 procedure TSciEdit.SetDefaultFont(Value: TFont);
@@ -207,6 +208,9 @@ begin
     end;
     SciMsgSetStr(SCI_STYLESETFONT, STYLE_DEFAULT, FontName);
     SciMsg(SCI_STYLESETSIZE, STYLE_DEFAULT, FontSize);
+    SciMsg(SCI_STYLESETBOLD, STYLE_DEFAULT, FFont.Bold.ToInteger);
+    SciMsg(SCI_STYLESETITALIC, STYLE_DEFAULT, FFont.Italic.ToInteger);
+    SciMsg(SCI_STYLESETUNDERLINE, STYLE_DEFAULT, FFont.Underline.ToInteger);
   end;
 end;
 
