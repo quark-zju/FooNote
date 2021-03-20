@@ -19,6 +19,7 @@ type
     pSciWndData: PtrInt;
     pSciMsgFn: SciFnDirect;
     // https://www.scintilla.org/ScintillaDoc.html#Notifications
+    // WM_NOTIFY -(LCL)-> CN_NOTIFY -> SciNotify
     procedure CNNotify(var Message: TLMNotify); message CN_NOTIFY;
     procedure SciNotify(var Notif: SCNotification);
 
@@ -37,7 +38,7 @@ type
     IsInitialized: boolean;
   private
     // Inside SetText? (prevent OnChange events)
-    Changing: boolean;
+    Changing: integer;
     FOnChange: TNotifyEvent;
 
     procedure InitSettings;
@@ -122,9 +123,9 @@ begin
     SetReadOnly(False);
   end;
   // Prevent OnChange event.
-  Changing := True;
+  Changing += 1;
   SciMsgSetStr(SCI_SETTEXT, 0, Value);
-  Changing := False;
+  Changing -= 1;
   if OrigReadOnly then begin
     SetReadOnly(OrigReadOnly);
   end;
@@ -232,9 +233,10 @@ var
 begin
   code := Notif.nmhdr.code;
   if (code = SCN_PAINTED) or (code = SCN_STYLENEEDED) then begin
+    // Not interested.
     exit;
   end;
-  if (code = SCN_MODIFIED) and IsInitialized and Assigned(OnChange) and not Changing then begin
+  if (code = SCN_MODIFIED) and IsInitialized and Assigned(OnChange) and (Changing = 0) then begin
     OnChange(Self);
   end;
   if (code = SCN_CHARADDED) then begin
@@ -328,17 +330,26 @@ begin
   // "WantTab". Do not make LCL handle "Tab" key.
   if ((uMsg >= WM_KEYFIRST) and (uMsg <= WM_KEYLAST)) and (wParam = VK_TAB) then begin
     BypassLCL := True;
-  end;
-
-  if (uMsg = WM_ERASEBKGND) or (uMsg = WM_PAINT) then begin
+  end else if (uMsg = WM_ERASEBKGND) or (uMsg = WM_PAINT) then begin
     BypassLCL := True;
-  end;
-
-  if (uMsg = WM_SETFOCUS) then begin
+  end else if (uMsg = WM_SETFOCUS) then begin
     This.UpdateSelectionColor(True);
-  end;
-  if (uMsg = WM_KILLFOCUS) then begin
+  end else if (uMsg = WM_KILLFOCUS) then begin
     This.UpdateSelectionColor(False);
+  end else if uMsg = WM_IME_STARTCOMPOSITION then begin
+    if LogHasTrace then begin
+      // Prevent OnChange when IME is composing (ex. showing inline Pinyin)
+      LogTrace('SciEdit: IME StartComposition');
+    end;
+    This.Changing += 1;
+  end else if uMsg = WM_IME_ENDCOMPOSITION then begin
+    if LogHasTrace then begin
+      LogTrace('SciEdit: IME EndComposition');
+    end;
+    This.Changing -= 1;
+    if This.IsInitialized and Assigned(This.OnChange) and (This.Changing = 0) then begin
+      This.OnChange(This);
+    end;
   end;
 
   if BypassLCL then begin
@@ -448,7 +459,7 @@ begin
     Parent.HandleNeeded;
   end;
 
-  Changing := False;
+  Changing := 0;
 
   {$ifdef Windows}
   Include(FWinControlFlags, wcfCreatingHandle);
@@ -507,6 +518,7 @@ end;
 
 constructor TSciEdit.Create(TheOwner: TComponent);
 begin
+  Changing := 0;
   FText := '';
   FColor := clWindow;
   FWordWrap := True;
