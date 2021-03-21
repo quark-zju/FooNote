@@ -872,6 +872,10 @@ procedure TFormFooNoteMain.FormCreate(Sender: TObject);
 begin
   SciEditNote := nil;
 
+  {$ifdef DARWIN}
+  // Show Maximize button on macOS. It can be used to "Dock" windows.
+  BorderIcons := BorderIcons + [biMaximize];
+  {$endif}
   InitLogFFI; // Run after AllocConsole for env_logger to detect colors.
   InitRootTreeUrlAndConfigFileName; // Affects config name.
   InitAppConfigLink; // Link Editor TFont to AppConfig's Font.
