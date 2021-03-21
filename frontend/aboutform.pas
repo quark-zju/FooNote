@@ -27,7 +27,6 @@ type
     LabelVersionNumber: TLabel;
     MemoGPL3: TMemo;
     PageControl1: TPageControl;
-    PanelButtons: TPanel;
     TabSheet1: TTabSheet;
     TabSheet2: TTabSheet;
     procedure ButtonOkClick(Sender: TObject);

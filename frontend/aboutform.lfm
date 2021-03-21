@@ -1,69 +1,39 @@
 object AboutFooNoteForm: TAboutFooNoteForm
   Left = 380
-  Height = 411
+  Height = 405
   Top = 281
   Width = 430
   BorderIcons = [biSystemMenu]
   Caption = 'About FooNote'
-  ClientHeight = 411
+  ClientHeight = 405
   ClientWidth = 430
   OnCreate = FormCreate
   Position = poDesktopCenter
   LCLVersion = '2.0.10.0'
-  object PanelButtons: TPanel
-    Left = 5
-    Height = 30
-    Top = 376
-    Width = 420
-    Align = alBottom
-    AutoSize = True
-    BorderSpacing.Around = 5
-    BevelOuter = bvNone
-    ClientHeight = 30
-    ClientWidth = 420
-    TabOrder = 0
-    object ButtonOk: TButton
-      Left = 335
-      Height = 25
-      Top = 0
-      Width = 80
-      Align = alRight
-      AutoSize = True
-      BorderSpacing.Top = -5
-      BorderSpacing.Around = 5
-      Cancel = True
-      Caption = '&OK'
-      Constraints.MinWidth = 80
-      Default = True
-      ModalResult = 1
-      OnClick = ButtonOkClick
-      TabOrder = 0
-    end
-  end
   object PageControl1: TPageControl
     AnchorSideLeft.Control = Owner
     AnchorSideTop.Control = Owner
     AnchorSideRight.Control = Owner
     AnchorSideRight.Side = asrBottom
-    AnchorSideBottom.Control = PanelButtons
+    AnchorSideBottom.Control = ButtonOk
     Left = 10
-    Height = 356
+    Height = 350
     Top = 10
     Width = 410
     ActivePage = TabSheet1
     Anchors = [akTop, akLeft, akRight, akBottom]
     BorderSpacing.Around = 10
     TabIndex = 0
-    TabOrder = 1
+    TabOrder = 0
     object TabSheet1: TTabSheet
       Caption = 'About'
-      ClientHeight = 328
-      ClientWidth = 402
+      ClientHeight = 320
+      ClientWidth = 400
       object ImageIcon: TImage
         AnchorSideLeft.Control = TabSheet1
         AnchorSideLeft.Side = asrCenter
         AnchorSideTop.Control = TabSheet1
-        Left = 51
+        Left = 50
         Height = 64
         Top = 20
         Width = 300
@@ -213,7 +183,7 @@ object AboutFooNoteForm: TAboutFooNoteForm
         AnchorSideLeft.Control = ImageIcon
         AnchorSideTop.Control = LabelLink
         AnchorSideTop.Side = asrBottom
-        Left = 51
+        Left = 50
         Height = 15
         Top = 144
         Width = 38
@@ -226,7 +196,7 @@ object AboutFooNoteForm: TAboutFooNoteForm
         AnchorSideLeft.Control = LabelVersion
         AnchorSideLeft.Side = asrBottom
         AnchorSideTop.Control = LabelVersion
-        Left = 99
+        Left = 98
         Height = 15
         Top = 144
         Width = 6
@@ -239,7 +209,7 @@ object AboutFooNoteForm: TAboutFooNoteForm
         AnchorSideLeft.Control = ImageIcon
         AnchorSideTop.Control = LabelVersionNumber
         AnchorSideTop.Side = asrBottom
-        Left = 51
+        Left = 50
         Height = 15
         Top = 159
         Width = 54
@@ -251,7 +221,7 @@ object AboutFooNoteForm: TAboutFooNoteForm
         AnchorSideLeft.Control = LabelBuildDate
         AnchorSideLeft.Side = asrBottom
         AnchorSideTop.Control = LabelBuildDate
-        Left = 115
+        Left = 114
         Height = 15
         Top = 159
         Width = 6
@@ -265,7 +235,7 @@ object AboutFooNoteForm: TAboutFooNoteForm
         AnchorSideTop.Control = LabelDesc
         AnchorSideTop.Side = asrBottom
         Cursor = crHandPoint
-        Left = 51
+        Left = 50
         Height = 15
         Top = 109
         Width = 204
@@ -280,7 +250,7 @@ object AboutFooNoteForm: TAboutFooNoteForm
         AnchorSideLeft.Control = ImageIcon
         AnchorSideTop.Control = ImageIcon
         AnchorSideTop.Side = asrBottom
-        Left = 51
+        Left = 50
         Height = 15
         Top = 94
         Width = 277
@@ -294,7 +264,7 @@ object AboutFooNoteForm: TAboutFooNoteForm
         AnchorSideTop.Side = asrBottom
         AnchorSideRight.Control = ImageIcon
         AnchorSideRight.Side = asrBottom
-        Left = 51
+        Left = 50
         Height = 23
         Top = 199
         Width = 300
@@ -306,7 +276,7 @@ object AboutFooNoteForm: TAboutFooNoteForm
         AnchorSideLeft.Control = ImageIcon
         AnchorSideTop.Control = LabelBuildDateValue
         AnchorSideTop.Side = asrBottom
-        Left = 51
+        Left = 50
         Height = 15
         Top = 184
         Width = 76
@@ -319,7 +289,7 @@ object AboutFooNoteForm: TAboutFooNoteForm
         AnchorSideLeft.Control = ImageIcon
         AnchorSideTop.Control = EditRootTreeUrl
         AnchorSideTop.Side = asrBottom
-        Left = 51
+        Left = 50
         Height = 15
         Top = 232
         Width = 84
@@ -334,7 +304,7 @@ object AboutFooNoteForm: TAboutFooNoteForm
         AnchorSideTop.Side = asrBottom
         AnchorSideRight.Control = ImageIcon
         AnchorSideRight.Side = asrBottom
-        Left = 51
+        Left = 50
         Height = 23
         Top = 247
         Width = 300
@@ -345,11 +315,11 @@ object AboutFooNoteForm: TAboutFooNoteForm
     end
     object TabSheet2: TTabSheet
       Caption = 'Licenses'
-      ClientHeight = 328
+      ClientHeight = 358
       ClientWidth = 402
       object MemoGPL3: TMemo
         Left = 10
-        Height = 308
+        Height = 338
         Top = 10
         Width = 382
         Align = alClient
@@ -1059,5 +1029,26 @@ object AboutFooNoteForm: TAboutFooNoteForm
         WordWrap = False
       end
     end
+  end
+  object ButtonOk: TButton
+    AnchorSideRight.Control = Owner
+    AnchorSideRight.Side = asrBottom
+    AnchorSideBottom.Control = Owner
+    AnchorSideBottom.Side = asrBottom
+    Left = 340
+    Height = 25
+    Top = 370
+    Width = 80
+    Anchors = [akRight, akBottom]
+    AutoSize = True
+    BorderSpacing.Top = -5
+    BorderSpacing.Around = 10
+    Cancel = True
+    Caption = '&OK'
+    Constraints.MinWidth = 80
+    Default = True
+    ModalResult = 1
+    OnClick = ButtonOkClick
+    TabOrder = 1
   end
 end
