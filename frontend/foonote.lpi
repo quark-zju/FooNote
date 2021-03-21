@@ -45,6 +45,9 @@
             <IncludeFiles Value="$(ProjOutDir)"/>
             <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
           </SearchPaths>
+          <Conditionals Value="if TargetOS = 'darwin' then begin
+  LinkerOptions += ' -lnotebackend';
+end;"/>
           <Parsing>
             <SyntaxOptions>
               <IncludeAssertionCode Value="True"/>
@@ -67,6 +70,7 @@
               <UseExternalDbgSyms Value="True"/>
             </Debugging>
             <Options>
+              <PassLinkerOptions Value="True"/>
               <Win32>
                 <GraphicApplication Value="True"/>
               </Win32>
@@ -85,6 +89,9 @@
             <IncludeFiles Value="$(ProjOutDir)"/>
             <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
           </SearchPaths>
+          <Conditionals Value="if TargetOS = 'darwin' then begin
+  LinkerOptions += ' -lnotebackend';
+end;"/>
           <CodeGeneration>
             <SmartLinkUnit Value="True"/>
             <Optimizations>
@@ -98,6 +105,7 @@
             </Debugging>
             <LinkSmart Value="True"/>
             <Options>
+              <PassLinkerOptions Value="True"/>
               <Win32>
                 <GraphicApplication Value="True"/>
               </Win32>
@@ -258,8 +266,12 @@
       <IncludeFiles Value="$(ProjOutDir)"/>
       <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
+    <Conditionals Value="if TargetOS = 'darwin' then begin
+  LinkerOptions += ' -lnotebackend';
+end;"/>
     <Linking>
       <Options>
+        <PassLinkerOptions Value="True"/>
         <Win32>
           <GraphicApplication Value="True"/>
         </Win32>
