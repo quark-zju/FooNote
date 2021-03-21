@@ -23,7 +23,7 @@ object FormFooNoteSettings: TFormFooNoteSettings
     AnchorSideBottom.Side = asrBottom
     Left = 215
     Height = 25
-    Top = 270
+    Top = 299
     Width = 80
     Anchors = [akTop, akRight]
     AutoSize = True
@@ -42,14 +42,14 @@ object FormFooNoteSettings: TFormFooNoteSettings
     AnchorSideRight.Control = Owner
     AnchorSideRight.Side = asrBottom
     Left = 10
-    Height = 152
+    Height = 181
     Top = 10
     Width = 285
     Anchors = [akTop, akLeft, akRight]
     AutoSize = True
     BorderSpacing.Around = 10
     Caption = 'Interface'
-    ClientHeight = 132
+    ClientHeight = 161
     ClientWidth = 281
     TabOrder = 0
     object ButtonSelFont: TButton
@@ -58,13 +58,13 @@ object FormFooNoteSettings: TFormFooNoteSettings
       AnchorSideTop.Side = asrBottom
       Left = 10
       Height = 25
-      Top = 97
+      Top = 126
       Width = 84
       AutoSize = True
       BorderSpacing.Around = 10
       Caption = 'Select &Font'
       OnClick = ButtonSelFontClick
-      TabOrder = 3
+      TabOrder = 4
     end
     object CheckBoxOnTop: TCheckBox
       AnchorSideLeft.Control = GroupBoxInterfaceSettings
@@ -80,16 +80,16 @@ object FormFooNoteSettings: TFormFooNoteSettings
     end
     object CheckBoxTreeHorizonScrollbar: TCheckBox
       AnchorSideLeft.Control = GroupBoxInterfaceSettings
-      AnchorSideTop.Control = CheckBoxOnTop
+      AnchorSideTop.Control = CheckBoxUseSciEdit
       AnchorSideTop.Side = asrBottom
       Left = 10
       Height = 19
-      Top = 39
+      Top = 68
       Width = 178
       BorderSpacing.Around = 10
       Caption = 'Note Tree &Horizontal Scrollbar'
       OnChange = CheckBoxTreeHorizonScrollbarChange
-      TabOrder = 1
+      TabOrder = 2
     end
     object CheckBoxNoteHorizonScrollbar: TCheckBox
       AnchorSideLeft.Control = GroupBoxInterfaceSettings
@@ -97,12 +97,12 @@ object FormFooNoteSettings: TFormFooNoteSettings
       AnchorSideTop.Side = asrBottom
       Left = 10
       Height = 19
-      Top = 68
+      Top = 97
       Width = 187
       BorderSpacing.Around = 10
       Caption = 'Note Editor H&orizontal Scrollbar'
       OnChange = CheckBoxNoteHorizonScrollbarChange
-      TabOrder = 2
+      TabOrder = 3
     end
     object ButtonSelEditorFont: TButton
       AnchorSideLeft.Control = ButtonSelFont
@@ -111,13 +111,27 @@ object FormFooNoteSettings: TFormFooNoteSettings
       AnchorSideTop.Side = asrCenter
       Left = 104
       Height = 25
-      Top = 97
+      Top = 126
       Width = 118
       AutoSize = True
       BorderSpacing.Around = 10
       Caption = 'Select &Editor Font'
       OnClick = ButtonSelEditorFontClick
-      TabOrder = 4
+      TabOrder = 5
+    end
+    object CheckBoxUseSciEdit: TCheckBox
+      AnchorSideLeft.Control = GroupBoxInterfaceSettings
+      AnchorSideTop.Control = CheckBoxOnTop
+      AnchorSideTop.Side = asrBottom
+      Left = 10
+      Height = 19
+      Hint = 'Scintilla Editor provides some advanced features like multi-level undo, multiple cursors, drag and drop, smart home / end etc.'
+      Top = 39
+      Width = 117
+      BorderSpacing.Around = 10
+      Caption = 'Use &Scintilla Editor'
+      OnChange = CheckBoxUseSciEditChange
+      TabOrder = 1
     end
   end
   object GroupBoxOther: TGroupBox
@@ -128,7 +142,7 @@ object FormFooNoteSettings: TFormFooNoteSettings
     AnchorSideRight.Side = asrBottom
     Left = 10
     Height = 88
-    Top = 172
+    Top = 201
     Width = 285
     Anchors = [akTop, akLeft, akRight]
     AutoSize = True

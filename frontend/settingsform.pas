@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, Forms, Controls, Graphics, Dialogs, StdCtrls,
-  Spin, Settings, LogFFI;
+  Spin, Settings, LogFFI, SciEdit;
 
 type
 
@@ -16,6 +16,7 @@ type
     ButtonOk: TButton;
     ButtonSelFont: TButton;
     ButtonSelEditorFont: TButton;
+    CheckBoxUseSciEdit: TCheckBox;
     CheckBoxTreeHorizonScrollbar: TCheckBox;
     CheckBoxOnTop: TCheckBox;
     CheckBoxNoteHorizonScrollbar: TCheckBox;
@@ -29,6 +30,7 @@ type
     procedure CheckBoxNoteHorizonScrollbarChange(Sender: TObject);
     procedure CheckBoxOnTopChange(Sender: TObject);
     procedure CheckBoxTreeHorizonScrollbarChange(Sender: TObject);
+    procedure CheckBoxUseSciEditChange(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure FormShow(Sender: TObject);
     procedure SpinEditAutoSaveChange(Sender: TObject);
@@ -66,6 +68,10 @@ begin
     FormFooNoteSettings.SpinEditAutoSave.Value := I;
   end;
   B := Config.UseSciEdit;
+  if B <> FormFooNoteSettings.CheckBoxUseSciEdit.Checked then begin
+    FormFooNoteSettings.CheckBoxUseSciEdit.Checked := B;
+  end;
+  FormFooNoteSettings.CheckBoxUseSciEdit.Enabled := SciEdit.TSciEdit.IsAvailable;
 end;
 
 procedure SetFont(LinkedFont: TFont; Font: TFont);
@@ -83,6 +89,11 @@ end;
 procedure TFormFooNoteSettings.CheckBoxTreeHorizonScrollbarChange(Sender: TObject);
 begin
   AppConfig.TreeHorizonScrollBar := CheckBoxTreeHorizonScrollbar.Checked;
+end;
+
+procedure TFormFooNoteSettings.CheckBoxUseSciEditChange(Sender: TObject);
+begin
+  AppConfig.UseSciEdit := CheckBoxUseSciEdit.Checked;
 end;
 
 procedure TFormFooNoteSettings.FormCreate(Sender: TObject);
