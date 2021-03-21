@@ -1544,6 +1544,7 @@ mod tests {
             backend2.insert_ascii("C");
             backend2.persist().unwrap();
             // Rename back to restore the repo.
+            std::fs::remove_dir_all(&git_repo_path1).unwrap();
             std::fs::rename(&git_repo_path2, &git_repo_path1).unwrap();
         }
 
