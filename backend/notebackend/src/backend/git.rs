@@ -4,6 +4,7 @@ use crate::manifest::min_next_id;
 use crate::manifest::Manifest;
 use crate::merge;
 use crate::t;
+use ::sha1::{Digest, Sha1};
 use git_cmd::GitCommand;
 use notebackend_types::log;
 use notebackend_types::Id;
@@ -12,12 +13,9 @@ use parking_lot::lock_api::RwLockUpgradableReadGuard;
 use parking_lot::Mutex;
 use parking_lot::RwLock;
 use std::borrow::Cow;
-use std::collections::hash_map::DefaultHasher;
 use std::collections::HashMap;
-use std::collections::HashSet;
 use std::fmt;
 use std::fs::File;
-use std::hash::{Hash, Hasher};
 use std::io;
 use std::io::Read;
 use std::io::Write;
@@ -955,46 +953,38 @@ fn epoch() -> u64 {
 
 /// Create a remote pointing to the url on demand. Return the remote name.
 fn prepare_remote_name(repo_path: &Path, url: &str) -> io::Result<String> {
-    // origin  https://github.com/quark-zju/foonote (fetch)
-    let text = GitCommand::at(repo_path).args(&["remote", "-v"]).output()?;
+    // The name is based on the SHA1 of the `url`.
+    let remote_name = format!("rh_{}", sha1_hex(url.as_bytes()));
 
-    // Check existing remote names.
-    let mut taken_names = HashSet::new();
-    for line in text.lines() {
-        let split: Vec<&str> = line.split('\t').collect();
-        if let Some(&[remote_name, remote_url]) = split.get(..2) {
-            let remote_url = remote_url.strip_suffix(" (push)").unwrap_or(remote_url);
-            let remote_url = remote_url.strip_suffix(" (fetch)").unwrap_or(remote_url);
-            if remote_url == url || remote_url.starts_with(&format!("{} ", url)) {
-                return Ok(remote_name.to_string());
-            }
-            taken_names.insert(remote_name.to_string());
+    let existing_url = GitCommand::at(repo_path)
+        .args(&["remote", "get-url", remote_name.as_str()])
+        .output()
+        .ok();
+
+    if let Some(existing_url) = existing_url {
+        // The remote exists. Check its URL.
+        let existing_url = existing_url.trim();
+        if existing_url != url {
+            log::warn!(
+                "remote url for {} differs: {} vs {}",
+                remote_name,
+                existing_url,
+                url
+            );
         }
+    } else {
+        // Create the remote name.
+        let _out = GitCommand::at(repo_path)
+            .args(&["remote", "add", remote_name.as_str(), url])
+            .context(t!(
+                cn = "创建远端分支 {} ({}, {})",
+                en = "create remote {} for url {} repo at {}",
+                remote_name,
+                url,
+                repo_path.display()
+            ))
+            .output()?;
     }
-
-    // Pick a new remote name.
-    let base_name = {
-        let mut s = DefaultHasher::new();
-        url.hash(&mut s);
-        format!("r{:x}", s.finish() & 0xfffff)
-    };
-    let remote_name = (0..)
-        .map(|i| format!("{}{}", base_name, i))
-        .filter(|n| !taken_names.contains(n))
-        .next()
-        .unwrap();
-
-    // Create the new remote name.
-    let _out = GitCommand::at(repo_path)
-        .args(&["remote", "add", remote_name.as_str(), url])
-        .context(t!(
-            cn = "创建远端分支 {} ({}, {})",
-            en = "create remote {} for url {} repo at {}",
-            remote_name,
-            url,
-            repo_path.display()
-        ))
-        .output()?;
 
     Ok(remote_name.to_string())
 }
@@ -1248,6 +1238,14 @@ mod git_cmd {
 /// Extract the first line of message.
 fn first_line(s: &str) -> &str {
     s.lines().next().unwrap_or("(untitled)")
+}
+
+/// Calculate SHA1 hex of `data`.
+fn sha1_hex(data: &[u8]) -> String {
+    let mut hasher = Sha1::new();
+    hasher.update(data);
+    let hash: [u8; 20] = hasher.finalize().into();
+    hex::encode(&hash)
 }
 
 #[cfg(test)]
