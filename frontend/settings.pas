@@ -57,6 +57,7 @@ type
     FUseSciEdit: boolean;
     FSciDirectWrite: boolean;
     FShowMenuIcons: boolean;
+    FWin32EditorTabSize: Int32;
 
     // Callback.
     Callbacks: array of TConfigChangeCallback;
@@ -117,6 +118,7 @@ type
     property EditorScrollBars: TScrollStyle read FEditorScrollBars write FEditorScrollBars;
     property SciDirectWrite: boolean read FSciDirectWrite write FSciDirectWrite;
     property ShowMenuIcons: boolean read FShowMenuIcons write FShowMenuIcons;
+    property Win32EditorTabSize: Int32 read FWin32EditorTabSize write FWin32EditorTabSize;
   end;
 
 const
@@ -276,6 +278,10 @@ initialization
   AppConfig.FWindowColor := clWindow;
   AppConfig.FUseSciEdit := True;
   AppConfig.FEditorScrollBars := ssAutoVertical;
+
+  // See "EM_SETTABSTOPS": default is "32 dialog template units"
+  // which is too wide. Set it to 1/4 the default size.
+  AppConfig.FWin32EditorTabSize := 8;
 
   {$ifdef DARWIN}
   // On macOS, menu item with icons and without items align in an ugly way:

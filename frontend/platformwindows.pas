@@ -5,7 +5,8 @@ unit PlatformWindows;
 interface
 
 uses
-  Classes, SysUtils, Windows, Forms, Controls, Settings, ShellAPI, LogFFI, LazUTF8;
+  Classes, SysUtils, Windows, Forms, Controls, Settings, ShellAPI, LogFFI, LazUTF8,
+  StdCtrls;
 
 procedure SetupMainForm(Form: TForm);
 procedure StartMoving(Form: TForm);
@@ -15,6 +16,7 @@ procedure SetTransparentColor(Form: TForm; Color: COLORREF);
 procedure RepositionDock;
 procedure MoveTopMostWithoutFocus(Form: TForm);
 procedure ShowInfocus(Form: TForm);
+procedure SetEditTabSize(AEdit: TMemo; TabSize: Int32);
 
 procedure EnsureWrappedWndProc;
 
@@ -98,6 +100,11 @@ begin
     LogDebug('Start resizing via SC_SIZE');
   end;
   PostMessage(Form.Handle, WM_SYSCOMMAND, SC_SIZE, 0);
+end;
+
+procedure SetEditTabSize(AEdit: TMemo; TabSize: Int32);
+begin
+  SendMessage(AEdit.Handle, EM_SETTABSTOPS, 1, LPARAM(@TabSize));
 end;
 
 procedure UpdateCurrentMonitor();

@@ -223,7 +223,6 @@ type
     procedure InitAppConfigLink;
     procedure InitPlatformSpecific;
     procedure InitOnConfigChange;
-    procedure InitDarwinSpecific;
 
     procedure Reposition;
     procedure LoadAppConfigFromDiskWithoutApply;
@@ -707,6 +706,11 @@ procedure TFormFooNoteMain.InitPlatformSpecific;
 begin
 {$ifdef Windows}
   PlatformWindows.SetupMainForm(Self);
+  PlatformWindows.SetEditTabSize(MemoNote, AppConfig.Win32EditorTabSize);
+{$endif}
+{$ifdef DARWIN}
+  // Show Maximize button on macOS. It can be used to "Dock" windows.
+  BorderIcons := BorderIcons + [biMaximize];
 {$endif}
 end;
 
@@ -891,13 +895,6 @@ begin
   FreeAndNil(IdSet);
 end;
 
-procedure TFormFooNoteMain.InitDarwinSpecific;
-begin
-  {$ifdef DARWIN}
-  // Show Maximize button on macOS. It can be used to "Dock" windows.
-  BorderIcons := BorderIcons + [biMaximize];
-  {$endif}
-end;
 
 procedure TFormFooNoteMain.FormCreate(Sender: TObject);
 begin
@@ -912,7 +909,6 @@ begin
   InitPlatformSpecific; // Register OnConfigChange (affected by i18n).
   InitOnConfigChange;   // Register OnConfigChange.
   ApplyAppConfigToThisForm; // Apply non-callback (one-time) configs.
-  InitDarwinSpecific;
   AppConfig.NotifyAll; // Trigger "callback" to apply config changes.
 end;
 
