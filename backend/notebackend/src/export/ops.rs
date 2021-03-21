@@ -603,7 +603,7 @@ pub extern "C" fn notebackend_app_dir() -> i32 {
             None => std::path::Path::new(".").to_path_buf(),
             Some(p) => p,
         }
-        .join("FooNote");
+        .join("foonote");
         log::debug!("AppDir: {} (data dir)", path.display());
         let _ = fs::create_dir_all(&path);
         path
