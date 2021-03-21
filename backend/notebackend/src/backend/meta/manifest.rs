@@ -228,7 +228,9 @@ impl<T: TextIO> TreeBackend for ManifestBasedBackend<T> {
         Ok(id)
     }
 
-    fn set_text(&mut self, id: Self::Id, text: String) -> io::Result<bool> {
+    fn set_text(&mut self, id: Self::Id, mut text: String) -> io::Result<bool> {
+        // Normalize CRLF (from Windows) to LF.
+        text = text.replace("\r\n", "\n");
         self.ensure_not_read_only()?;
         let orig_text = self.get_text(id)?;
         let mut changed = false;
