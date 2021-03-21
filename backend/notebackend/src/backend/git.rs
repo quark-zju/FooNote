@@ -168,6 +168,7 @@ impl GitBackend {
     pub fn from_git_url(url: &str, cache_dir: Option<&Path>) -> io::Result<GitBackend> {
         let (url, branch_in_url) = split_url(url)?;
         let repo_path = prepare_bare_staging_repo(cache_dir)?;
+        maybe_create_local_repo(&Path::new(url))?;
         let remote_name = prepare_remote_name(&repo_path, url)?;
         let branch_name = branch_in_url.unwrap_or("").to_string();
         let mut text_io = GitTextIO {
@@ -187,6 +188,24 @@ impl GitBackend {
         let manifest = text_io.load_manifest()?;
         Ok(Self::from_manifest_text_io(manifest, text_io))
     }
+}
+
+fn maybe_create_local_repo(repo_path: &Path) -> io::Result<()> {
+    if let Some(parent) = repo_path.parent() {
+        if parent.exists() && !repo_path.exists() {
+            let path_str = repo_path.display().to_string();
+            let args = vec![
+                "-c",
+                "init.defaultBranch=master",
+                "init",
+                "--bare",
+                &path_str,
+            ];
+            log::info!("Creating local git repo at {}", path_str);
+            GitCommand::default().args(&args).run()?;
+        }
+    }
+    Ok(())
 }
 
 impl GitInfo {
@@ -1567,6 +1586,25 @@ mod tests {
             Some(_) => {}
             None => return, /* git does not work */
         }
+        let mut backend = GitBackend::from_git_url(&repo_path_str, Some(&cache_path)).unwrap();
+        backend.quick_insert(backend.get_root_id(), "a");
+        backend.persist().unwrap();
+    }
+
+    #[test]
+    fn test_auto_create_local_repo() {
+        let dir = tempfile::tempdir().unwrap();
+        let dir = dir.path();
+        let cache_path = dir.join("cache");
+
+        let repo_path_str = dir.join("repo1").display().to_string();
+        match init_git_repo(&repo_path_str, true) {
+            Some(_) => {}
+            None => return, /* git does not work */
+        }
+
+        // Repo2 will be created automatically.
+        let repo_path_str = dir.join("repo2").display().to_string();
         let mut backend = GitBackend::from_git_url(&repo_path_str, Some(&cache_path)).unwrap();
         backend.quick_insert(backend.get_root_id(), "a");
         backend.persist().unwrap();
