@@ -16,7 +16,10 @@ use notebackend_types::TreeBackend;
 use once_cell::sync::Lazy;
 use parking_lot::RwLock;
 use parking_lot::RwLockUpgradableReadGuard;
+use std::env;
+use std::fs;
 use std::io;
+use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::Mutex as StdMutex;
 
@@ -573,5 +576,40 @@ pub extern "C" fn notebackend_git_desc() -> i32 {
     // NOTEBACKEND_GIT_DESC is set by build.rs.
     let desc = env!("NOTEBACKEND_GIT_DESC");
     stack::push(desc.to_string());
+    errno::OK
+}
+
+// () -> (str)
+// Obtain the directory for storing application data.
+#[no_mangle]
+pub extern "C" fn notebackend_app_dir() -> i32 {
+    static APP_DIR: Lazy<PathBuf> = Lazy::new(|| {
+        // Can we use "cwd"? Only try this on Windows (Portable Software).
+        #[cfg(windows)]
+        if let Ok(cwd) = env::current_dir() {
+            // If cwd is "/" (started by macOS Finder), do not attempt to use
+            // it as the application dir.
+            if cwd.display().to_string() != "/" {
+                // Can we write to cwd?
+                if tempfile::tempfile_in(&cwd).is_ok() {
+                    log::debug!("AppDir: {} (cwd)", cwd.display());
+                    return cwd;
+                }
+            }
+        }
+
+        // Use user "data dir".
+        let path = match dirs::data_dir() {
+            None => std::path::Path::new(".").to_path_buf(),
+            Some(p) => p,
+        }
+        .join("FooNote");
+        log::debug!("AppDir: {} (data dir)", path.display());
+        let _ = fs::create_dir_all(&path);
+        path
+    });
+
+    let path = APP_DIR.display().to_string();
+    stack::push(path);
     errno::OK
 }
