@@ -1,6 +1,4 @@
 backup/
-frontend/icons/elementary-icons/*.png
-frontend/icons/elementary-icons/*.svg
 frontend/icons/mainicon/*.png
 frontend/icons/mainicon/*.ico
 frontend/lib/
@@ -20,7 +18,6 @@ frontend/.*
 frontend/locale/*.mo
 a
 a.*
-.*
 .vscode
 *.obj
 *.pdb
@@ -28,3 +25,4 @@ a.*
 *.dll
 *.exp
 *.lib
+*.dylib
