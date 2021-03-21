@@ -12,7 +12,11 @@ uses {$IFDEF UNIX} {$IFDEF UseCThreads}
 
 begin
   RequireDerivedFormResource := True;
-  Application.Title:='FooNote';
+  Application.Title := 'FooNote';
+{$ifdef Windows}
+  // Window Minimize will have the right (minimize, not hide) animations.
+  Application.MainFormOnTaskBar:=true;
+{$endif}
   Application.Scaled := True;
   Application.Initialize;
   Application.CreateForm(TFormFooNoteMain, FormFooNoteMain);
