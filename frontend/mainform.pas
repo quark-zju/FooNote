@@ -288,7 +288,7 @@ var
   BinaryClipboardFormat: TClipboardFormat;
 
 const
-  DefaultUrl: string = 'Default.foonote';
+  DefaultFileName: string = 'Default.foonote';
   StartDragThreshold: ValReal = 10;
 
 {$R *.lfm}
@@ -297,6 +297,11 @@ type
   TIdBoolMap = specialize TFPGMap<FullId, boolean>;
 
 { TFormFooNoteMain }
+
+function DefaultUrl: string;
+begin
+  Result := Format('%s%s%s', [AppDir, DirectorySeparator, DefaultFileName]);
+end;
 
 function UniqueStringId: string;
 var
@@ -345,15 +350,17 @@ end;
 
 procedure TFormFooNoteMain.InitRootTreeUrlAndConfigFileName;
 var
-  Url: string;
+  Url, MD5Suffix: string;
 begin
   if ParamCount() >= 1 then begin
     Url := ParamStr(1);
+    MD5Suffix := Format('-%s', [MDPrint(MD5String(url)).Substring(0, 7)]);
   end else begin
     Url := DefaultUrl;
+    MD5Suffix := '';
     MenuItemRootPath.Visible := False;
   end;
-  AppConfig.ConfigFileName := Format('FooNote-%s.cfg', [MDPrint(MD5String(url)).Substring(0, 7)]);
+  AppConfig.ConfigFileName := Format('%s%sFooNote%s.cfg', [AppDir, DirectorySeparator, MD5Suffix]);
   AppConfig.RootTreeUrl := Url;
 end;
 

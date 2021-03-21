@@ -21,6 +21,7 @@ procedure LogTrace(S: string);
 procedure InitLogFFI;
 
 function GitDesc: string;
+function AppDir: string;
 
 implementation
 
@@ -35,6 +36,7 @@ procedure notebackend_log_info(); cdecl; external 'notebackend';
 procedure notebackend_log_debug(); cdecl; external 'notebackend';
 procedure notebackend_log_trace(); cdecl; external 'notebackend';
 procedure notebackend_git_desc(); cdecl; external 'notebackend';
+procedure notebackend_app_dir(); cdecl; external 'notebackend';
 
 procedure InitLogFFI;
 begin
@@ -81,6 +83,12 @@ end;
 function GitDesc: string;
 begin
   notebackend_git_desc();
+  Result := StackPopString();
+end;
+
+function AppDir: string;
+begin
+  notebackend_app_dir();
   Result := StackPopString();
 end;
 
