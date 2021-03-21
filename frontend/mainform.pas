@@ -223,6 +223,7 @@ type
     procedure InitAppConfigLink;
     procedure InitPlatformSpecific;
     procedure InitOnConfigChange;
+    procedure InitDarwinSpecific;
 
     procedure Reposition;
     procedure LoadAppConfigFromDiskWithoutApply;
@@ -612,6 +613,8 @@ procedure TFormFooNoteMain.ApplyAppConfigToThisForm;
 var
   I: integer;
   Id: FullId;
+  M: TMenu;
+  MI, MJ: TMenuItem;
 begin
   // Apply size constraint.
   if AppConfig.MaxWidth >= 80 then begin
@@ -653,6 +656,19 @@ begin
 
   // Apply window color.
   Color := AppConfig.WindowColor;
+
+  // Apply "ShowMenuIcons".
+  if not AppConfig.ShowMenuIcons then begin
+    for M in [Self.PopupMenuEdit, Self.MenuAddMenu] do begin
+      for MI in M.Items do begin
+        MI.ImageIndex := -1;
+        for I := 0 to MI.Count - 1 do begin
+          MJ := MI.Items[I];
+          MJ.ImageIndex := -1;
+        end;
+      end;
+    end;
+  end;
 end;
 
 procedure TFormFooNoteMain.ApplyThisFromToAppConfig;
@@ -875,14 +891,18 @@ begin
   FreeAndNil(IdSet);
 end;
 
-procedure TFormFooNoteMain.FormCreate(Sender: TObject);
+procedure TFormFooNoteMain.InitDarwinSpecific;
 begin
-  SciEditNote := nil;
-
   {$ifdef DARWIN}
   // Show Maximize button on macOS. It can be used to "Dock" windows.
   BorderIcons := BorderIcons + [biMaximize];
   {$endif}
+end;
+
+procedure TFormFooNoteMain.FormCreate(Sender: TObject);
+begin
+  SciEditNote := nil;
+
   InitLogFFI; // Run after AllocConsole for env_logger to detect colors.
   InitRootTreeUrlAndConfigFileName; // Affects config name.
   InitAppConfigLink; // Link Editor TFont to AppConfig's Font.
@@ -892,6 +912,7 @@ begin
   InitPlatformSpecific; // Register OnConfigChange (affected by i18n).
   InitOnConfigChange;   // Register OnConfigChange.
   ApplyAppConfigToThisForm; // Apply non-callback (one-time) configs.
+  InitDarwinSpecific;
   AppConfig.NotifyAll; // Trigger "callback" to apply config changes.
 end;
 

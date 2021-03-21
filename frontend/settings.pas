@@ -56,6 +56,7 @@ type
     FWindowColor: TColor;
     FUseSciEdit: boolean;
     FSciDirectWrite: boolean;
+    FShowMenuIcons: boolean;
 
     // Callback.
     Callbacks: array of TConfigChangeCallback;
@@ -115,6 +116,7 @@ type
     property WindowColor: TColor read FWindowColor write FWindowColor;
     property EditorScrollBars: TScrollStyle read FEditorScrollBars write FEditorScrollBars;
     property SciDirectWrite: boolean read FSciDirectWrite write FSciDirectWrite;
+    property ShowMenuIcons: boolean read FShowMenuIcons write FShowMenuIcons;
   end;
 
 const
@@ -274,6 +276,16 @@ initialization
   AppConfig.FWindowColor := clWindow;
   AppConfig.FUseSciEdit := True;
   AppConfig.FEditorScrollBars := ssAutoVertical;
+
+  {$ifdef DARWIN}
+  // On macOS, menu item with icons and without items align in an ugly way:
+  //   macOS: [I] Text     Windows: [I] Text
+  //          Text                      Text
+  // Disable menu icons.
+  AppConfig.ShowMenuIcons := False;
+  {$else}
+  AppConfig.ShowMenuIcons := True;
+  {$endif}
 
 finalization
   FreeAndNil(AppConfig);
