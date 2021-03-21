@@ -1239,6 +1239,7 @@ mod git_cmd {
         fn command<T>(&mut self, f: impl FnOnce(&mut Command) -> T) -> T {
             let mut cmd = Command::new(GIT);
             let mut cmd = cmd
+                // Do not use GIT_USER here - can deadlock.
                 .env("GIT_AUTHOR_NAME", "FooNote")
                 .env("GIT_AUTHOR_EMAIL", "<foonote@example.com>")
                 .env("GIT_COMMITTER_NAME", "FooNote")
@@ -1263,7 +1264,7 @@ mod git_cmd {
                 };
                 cmd = cmd.arg("--git-dir").arg(dir).current_dir(cwd)
             } else {
-                log::info!("running {} {:?}", GIT, &self.args);
+                log::debug!("running {} {:?}", GIT, &self.args);
             }
             cmd = cmd.args(&self.args);
             f(cmd)
