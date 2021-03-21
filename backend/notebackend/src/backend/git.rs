@@ -13,6 +13,7 @@ use parking_lot::lock_api::RwLockUpgradableReadGuard;
 use parking_lot::Mutex;
 use parking_lot::RwLock;
 use std::borrow::Cow;
+use std::collections::BTreeSet;
 use std::collections::HashMap;
 use std::fmt;
 use std::fs::File;
@@ -165,19 +166,22 @@ impl GitBackend {
     /// `cache_dir` can be None, which means using the system default cache
     /// location, or a specified location for testing purpose.
     pub fn from_git_url(url: &str, cache_dir: Option<&Path>) -> io::Result<GitBackend> {
-        let (url, hash) = split_url(url)?;
+        let (url, branch_in_url) = split_url(url)?;
         let repo_path = prepare_bare_staging_repo(cache_dir)?;
         let remote_name = prepare_remote_name(&repo_path, url)?;
-        let branch_name = hash.unwrap_or("master").to_string();
+        let branch_name = branch_in_url.unwrap_or("").to_string();
         let mut text_io = GitTextIO {
             info: GitInfo::new(repo_path, remote_name, branch_name),
             texts: Default::default(),
             last_manifest: Default::default(),
             persist_threads: Default::default(),
         };
-        if let Err(e) = text_io.info.fetch() {
-            log::warn!("cannot fetch remote: {}", e);
-            text_io.info.reload_remote_branch_oid()?;
+        match text_io.info.fetch() {
+            Err(e) => {
+                log::warn!("cannot fetch remote: {}", e);
+                text_io.info.reload_remote_branch_oid()?;
+            }
+            Ok(info) => text_io.info = info,
         }
         text_io.info.read_local_head_oid()?;
         let manifest = text_io.load_manifest()?;
@@ -218,21 +222,83 @@ impl GitInfo {
         }
     }
 
-    /// Fetch the latest commit from the remote.
-    /// NOTE: `self.remote_head` is not reset to the fetched commit!
-    fn fetch(&self) -> io::Result<()> {
-        self.run_git(&[
-            "fetch",
-            self.remote_name.as_str(),
-            self.branch_name.as_str(),
-        ])?;
-        log::info!(
-            "Fetched {}/{}",
-            self.remote_name.as_str(),
-            self.branch_name.as_str()
-        );
-        self.reload_remote_branch_oid()?;
+    /// Create an empty branch remotely.
+    /// Useful to support "new empty repo" case with less special cases.
+    fn create_empty_branch(&self, branch_name: &str) -> io::Result<()> {
+        log::info!("Creating empty branch {}", branch_name);
+
+        // git mktree </dev/null
+        const EMPTY_TREE: &str = "4b825dc642cb6eb9a060e54bf8d69288fbee4904";
+
+        // out is the sha1 of the commit.
+        let out = self
+            .git()
+            .args(&["commit-tree", "-m", "[FooNote] Initial branch", EMPTY_TREE])
+            .output()?;
+        let out = out.trim();
+
+        // Pus to the desired remote branch.
+        let push_arg = format!("{}:refs/heads/{}", out, branch_name);
+        self.git()
+            .args(&["push", self.remote_name.as_str(), push_arg.as_str()])
+            .run()?;
+
         Ok(())
+    }
+
+    /// Fetch the latest commit from the remote.
+    /// Create a branch if remote repo is empty. Return a `GitInfo` with
+    /// the branch name filled.
+    /// `self.remote_head_oid will be set to the fetched commit.
+    fn fetch(&self) -> io::Result<Self> {
+        let mut info = self.clone();
+        let args = if info.branch_name.is_empty() {
+            // Fetch all branches and pick a branch name.
+            self.run_git(&["fetch", self.remote_name.as_str()])?;
+            log::info!("Fetched {}", self.remote_name.as_str());
+            let pattern = format!("refs/remotes/{}", &self.remote_name);
+            let ref_list = self
+                .git()
+                .args(&[
+                    "for-each-ref",
+                    "--format=%(refname:lstrip=3)", // strip "refs/remtes/$remote" prefix
+                    pattern.as_str(),
+                ])
+                .output()?;
+            let ref_names = ref_list.lines().collect::<BTreeSet<&str>>();
+            let branch_name = if ref_names.contains("main") {
+                "main"
+            } else if ref_names.contains("master") {
+                "master"
+            } else if let Some(name) = ref_names.iter().next() {
+                *name
+            } else {
+                // An empty repo. Attempt to create a branch.
+                let name = "master";
+                self.create_empty_branch(name)?;
+                name
+            };
+            log::info!(
+                "Implicit remote branch: {} (picked from {:?})",
+                branch_name,
+                &ref_names
+            );
+            info.branch_name = branch_name.to_string();
+        } else {
+            // Fetch specified branch name.
+            self.run_git(&[
+                "fetch",
+                self.remote_name.as_str(),
+                self.branch_name.as_str(),
+            ])?;
+            log::info!(
+                "Fetched {}/{}",
+                self.remote_name.as_str(),
+                self.branch_name.as_str()
+            );
+        };
+        info.reload_remote_branch_oid()?;
+        Ok(info)
     }
 
     /// Push the local changes to remote.
@@ -1255,22 +1321,28 @@ mod tests {
     use crate::clipboard;
     use notebackend_types::TreeBackend;
 
-    fn populate_git_repo(dir: &Path) -> Option<PathBuf> {
-        let git_repo_path = dir.join("repo");
-        let git_dir = git_repo_path.join(".git");
-
-        let git_repo_path_str = git_repo_path.display().to_string();
-        match GitCommand::default()
-            .args(&["-c", "init.defaultBranch=m", "init", &git_repo_path_str])
-            .run()
-            .ok()
-        {
+    fn init_git_repo(dir: &str, bare: bool) -> Option<&str> {
+        let mut args = vec!["-c", "init.defaultBranch=m", "init"];
+        if bare {
+            args.push("--bare");
+        }
+        args.push(dir);
+        match GitCommand::default().args(&args).run().ok() {
             None => {
                 eprintln!("skip test - git init does not work properly");
                 return None;
             }
             Some(_) => {}
         }
+        Some(dir)
+    }
+
+    fn populate_git_repo(dir: &Path) -> Option<PathBuf> {
+        let git_repo_path = dir.join("repo");
+        let git_dir = git_repo_path.join(".git");
+
+        let git_repo_path_str = git_repo_path.display().to_string();
+        init_git_repo(&git_repo_path_str, false)?;
 
         // Make a commit on the master branch.
         std::fs::write(git_repo_path.join("x"), b"x").unwrap();
@@ -1409,7 +1481,7 @@ mod tests {
     }
 
     #[test]
-    fn test_push_fail() {
+    fn test_push_remote_temporarily_down() {
         let dir = tempfile::tempdir().unwrap();
         let cache_path = dir.path().join("cache");
         let git_repo_path1 = match populate_git_repo(dir.path()) {
@@ -1482,5 +1554,20 @@ mod tests {
                 \_ 11 text="C""#
             );
         }
+    }
+
+    #[test]
+    fn test_auto_create_remote_branch() {
+        let dir = tempfile::tempdir().unwrap();
+        let dir = dir.path();
+        let cache_path = dir.join("cache");
+        let repo_path_str = dir.join("repo").display().to_string();
+        match init_git_repo(&repo_path_str, true) {
+            Some(_) => {}
+            None => return, /* git does not work */
+        }
+        let mut backend = GitBackend::from_git_url(&repo_path_str, Some(&cache_path)).unwrap();
+        backend.quick_insert(backend.get_root_id(), "a");
+        backend.persist().unwrap();
     }
 }
