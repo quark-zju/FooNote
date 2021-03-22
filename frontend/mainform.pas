@@ -933,7 +933,7 @@ begin
       AppConfig.DockWidth := Width;
     end;
     // Resize can cause Splitter movement.
-    if AppConfig.DockSide = dsNone then begin
+    if (AppConfig.DockSide = dsNone) and not AppConfig.ZenMode then begin
       AppConfig.NonDockNoteSplitTop := SplitterTreeNote.Top;
     end;
   end;
@@ -2107,6 +2107,9 @@ end;
 
 procedure TFormFooNoteMain.SplitterTreeNoteMoved(Sender: TObject);
 begin
+  if AppConfig.ZenMode then begin
+    exit;
+  end;
   if AppConfig.DockSide = dsNone then begin
     AppConfig.NonDockNoteSplitTop := SplitterTreeNote.Top;
     AppConfig.DockNoteSplitTop := 0;
