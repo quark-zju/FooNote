@@ -197,8 +197,10 @@ fn canonicalize_url(url: &str) -> String {
     if url.contains(":") || url.contains("@") || path.is_absolute() {
         url.to_string()
     } else {
-        let path = path.canonicalize().unwrap_or_else(|_| path.to_path_buf());
-        path.display().to_string()
+        let path = crate::url::APP_DIR.join(path);
+        let result = path.display().to_string();
+        log::debug!("url {} => {}", &url, &result);
+        result
     }
 }
 
