@@ -167,9 +167,10 @@ impl GitBackend {
     /// location, or a specified location for testing purpose.
     pub fn from_git_url(url: &str, cache_dir: Option<&Path>) -> io::Result<GitBackend> {
         let (url, branch_in_url) = split_url(url)?;
+        let url = canonicalize_url(url);
         let repo_path = prepare_bare_staging_repo(cache_dir)?;
-        maybe_create_local_repo(&Path::new(url))?;
-        let remote_name = prepare_remote_name(&repo_path, url)?;
+        maybe_create_local_repo(&Path::new(&url))?;
+        let remote_name = prepare_remote_name(&repo_path, &url)?;
         let branch_name = branch_in_url.unwrap_or("").to_string();
         let mut text_io = GitTextIO {
             info: GitInfo::new(repo_path, remote_name, branch_name),
@@ -187,6 +188,17 @@ impl GitBackend {
         text_io.info.read_local_head_oid()?;
         let manifest = text_io.load_manifest()?;
         Ok(Self::from_manifest_text_io(manifest, text_io))
+    }
+}
+
+/// Convert local path to an absolute path.
+fn canonicalize_url(url: &str) -> String {
+    let path = Path::new(url);
+    if url.contains(":") || url.contains("@") || path.is_absolute() {
+        url.to_string()
+    } else {
+        let path = path.canonicalize().unwrap_or_else(|_| path.to_path_buf());
+        path.display().to_string()
     }
 }
 
