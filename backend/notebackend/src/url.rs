@@ -3,8 +3,10 @@ use crate::t;
 use notebackend_types::log;
 use notebackend_types::Id;
 use notebackend_types::TreeBackend;
+use once_cell::sync::Lazy;
 use std::fmt;
 use std::io;
+use std::path::PathBuf;
 use std::{io::Result, path::Path};
 
 /// Load a backend from a URL.
@@ -124,3 +126,30 @@ impl fmt::Display for BackendType {
         f.write_str(name)
     }
 }
+
+/// "Current directory" on Windows (if writable). Or the "App Dir".
+pub(crate) static APP_DIR: Lazy<PathBuf> = Lazy::new(|| {
+    // Can we use "cwd"? Only try this on Windows (Portable Software).
+    #[cfg(windows)]
+    if let Ok(cwd) = std::env::current_dir() {
+        // If cwd is "/" (started by macOS Finder), do not attempt to use
+        // it as the application dir.
+        if cwd.display().to_string() != "/" {
+            // Can we write to cwd?
+            if tempfile::tempfile_in(&cwd).is_ok() {
+                log::info!("AppDir: {} (cwd)", cwd.display());
+                return cwd;
+            }
+        }
+    }
+
+    // Use user "data dir".
+    let path = match dirs::data_dir() {
+        None => std::path::Path::new(".").to_path_buf(),
+        Some(p) => p,
+    }
+    .join("foonote");
+    log::info!("AppDir: {} (data dir)", path.display());
+    let _ = std::fs::create_dir_all(&path);
+    path
+});
