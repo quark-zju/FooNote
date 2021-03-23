@@ -20,6 +20,7 @@ type
     CheckBoxTreeHorizonScrollbar: TCheckBox;
     CheckBoxOnTop: TCheckBox;
     CheckBoxNoteHorizonScrollbar: TCheckBox;
+    CheckBoxSciDirectWrite: TCheckBox;
     FontDialog1: TFontDialog;
     GroupBoxOther: TGroupBox;
     GroupBoxInterfaceSettings: TGroupBox;
@@ -29,6 +30,7 @@ type
     procedure ButtonSelFontClick(Sender: TObject);
     procedure CheckBoxNoteHorizonScrollbarChange(Sender: TObject);
     procedure CheckBoxOnTopChange(Sender: TObject);
+    procedure CheckBoxSciDirectWriteChange(Sender: TObject);
     procedure CheckBoxTreeHorizonScrollbarChange(Sender: TObject);
     procedure CheckBoxUseSciEditChange(Sender: TObject);
     procedure FormCreate(Sender: TObject);
@@ -52,7 +54,7 @@ implementation
 procedure OnConfigChange(Name: string; Config: TAppConfig);
 var
   I: integer;
-  B: boolean;
+  B, E: boolean;
 begin
   if (FormFooNoteSettings.CheckBoxOnTop.Checked <> Config.StayOnTop) then begin
     FormFooNoteSettings.CheckBoxOnTop.Checked := Config.StayOnTop;
@@ -67,11 +69,22 @@ begin
   if I <> FormFooNoteSettings.SpinEditAutoSave.Value then begin
     FormFooNoteSettings.SpinEditAutoSave.Value := I;
   end;
-  B := Config.UseSciEdit;
-  if B <> FormFooNoteSettings.CheckBoxUseSciEdit.Checked then begin
-    FormFooNoteSettings.CheckBoxUseSciEdit.Checked := B;
+  E := SciEdit.TSciEdit.IsAvailable;
+  FormFooNoteSettings.CheckBoxUseSciEdit.Enabled := E;
+  FormFooNoteSettings.CheckBoxSciDirectWrite.Enabled := E and Config.UseSciEdit;
+  if E then begin
+    B := Config.UseSciEdit;
+    if B <> FormFooNoteSettings.CheckBoxUseSciEdit.Checked then begin
+      FormFooNoteSettings.CheckBoxUseSciEdit.Checked := B;
+    end;
+    B := Config.SciDirectWrite;
+    if B <> FormFooNoteSettings.CheckBoxSciDirectWrite.Checked then begin
+      FormFooNoteSettings.CheckBoxSciDirectWrite.Checked := B;
+    end;
+  end else begin
+    FormFooNoteSettings.CheckBoxUseSciEdit.Checked := False;
+    FormFooNoteSettings.CheckBoxSciDirectWrite.Checked := False;
   end;
-  FormFooNoteSettings.CheckBoxUseSciEdit.Enabled := SciEdit.TSciEdit.IsAvailable;
 end;
 
 procedure SetFont(LinkedFont: TFont; Font: TFont);
@@ -84,6 +97,11 @@ end;
 procedure TFormFooNoteSettings.CheckBoxOnTopChange(Sender: TObject);
 begin
   AppConfig.StayOnTop := CheckBoxOnTop.Checked;
+end;
+
+procedure TFormFooNoteSettings.CheckBoxSciDirectWriteChange(Sender: TObject);
+begin
+  AppConfig.SciDirectWrite := CheckBoxSciDirectWrite.Checked;
 end;
 
 procedure TFormFooNoteSettings.CheckBoxTreeHorizonScrollbarChange(Sender: TObject);

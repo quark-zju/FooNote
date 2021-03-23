@@ -71,6 +71,7 @@ type
     procedure SetTreeHorizonScrollBar(Value: boolean);
     procedure SetNoteHorizonScrollBar(Value: boolean);
     procedure SetUseSciEdit(Value: boolean);
+    procedure SetSciDirectWrite(Value: boolean);
     procedure SetEditorFont(AFont: TFont);
   public
     // Not saved on disk. Do not trigger callbacks.
@@ -93,7 +94,8 @@ type
     property AutoSaveInterval: integer read FAutoSaveInterval write SetAutoSaveInterval;
     property TreeHorizonScrollBar: boolean read FTreeHorizonScrollBar write SetTreeHorizonScrollBar;
     property NoteHorizonScrollBar: boolean read FNoteHorizonScrollBar write SetNoteHorizonScrollBar;
-    property UseSciEdit: boolean read FUseSciEdit write SetUseSciEdit default True;
+    property UseSciEdit: boolean read FUseSciEdit write SetUseSciEdit;
+    property SciDirectWrite: boolean read FSciDirectWrite write SetSciDirectWrite;
 
     // Do not trigger callbacks.
     property EditorFont: TFont read FEditorFont write SetEditorFont;
@@ -116,7 +118,6 @@ type
     property LastSelectedId: Int32 read FLastSelection write FLastSelection;
     property WindowColor: TColor read FWindowColor write FWindowColor;
     property EditorScrollBars: TScrollStyle read FEditorScrollBars write FEditorScrollBars;
-    property SciDirectWrite: boolean read FSciDirectWrite write FSciDirectWrite;
     property ShowMenuIcons: boolean read FShowMenuIcons write FShowMenuIcons;
     property Win32EditorTabSize: Int32 read FWin32EditorTabSize write FWin32EditorTabSize;
   end;
@@ -210,12 +211,14 @@ end;
 
 procedure TAppConfig.SetUseSciEdit(Value: boolean);
 begin
-  if HasSciEdit then begin
-    FUseSciEdit := Value;
-  end else begin
-    FUseSciEdit := False;
-  end;
+  FUseSciEdit := Value;
   RunCallbacks('UseSciEdit');
+end;
+
+procedure TAppConfig.SetSciDirectWrite(Value: boolean);
+begin
+  FSciDirectWrite := Value;
+  RunCallbacks('SciDirectWrite');
 end;
 
 procedure TAppConfig.SetEditorFont(AFont: TFont);

@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, Controls, LCLType, LCLIntf, LMessages, Graphics,
-  Scintilla, Settings, LocaleUtils, LogFFI, Forms
+  Scintilla, LocaleUtils, LogFFI, Forms
   {$ifdef Windows}
   , Windows, win32int, win32proc
   {$endif};
@@ -32,6 +32,7 @@ type
     FFont: TFont;
     FAnchor: PtrInt;
     FCaret: PtrInt;
+    FUseDirectWrite: boolean;
 
     // Whether the SciEdit is fully initialized.
     // If not, avoid setting out OnChange events.
@@ -55,6 +56,7 @@ type
     procedure SetSelStart(Val: integer);
     function GetColor: TColor;
     procedure SetColor(Val: TColor);
+    procedure SetUseDirectWrite(Value: boolean);
   protected
     // https://www.scintilla.org/Steps.html
     procedure CreateWnd; override;
@@ -81,6 +83,7 @@ type
     property CaretPos: TPoint read GetCaretPos;
     property SelStart: integer read GetSelStart write SetSelStart;
     property Color: TColor read GetColor write SetColor;
+    property UseDirectWrite: boolean read FUseDirectWrite write SetUseDirectWrite;
     property OnChange: TNotifyEvent read FOnChange write FOnChange;
   end;
 
@@ -192,6 +195,22 @@ begin
   FColor := Val;
   SciMsg(SCI_STYLESETBACK, STYLE_DEFAULT, ColorToRGB(Val));
   SciMsg(SCI_STYLECLEARALL);
+end;
+
+procedure TSciEdit.SetUseDirectWrite(Value: boolean);
+begin
+  FUseDirectWrite := Value;
+  {$IFDEF WINDOWS}
+  if Value then begin
+    // DirectWrite on Windows allows colorful emoji.
+    SciMsg(SCI_SETTECHNOLOGY, SC_TECHNOLOGY_DIRECTWRITE);
+    // Direct2D has buffering.
+    SciMsg(SCI_SETBUFFEREDDRAW, 0);
+  end else begin
+    SciMsg(SCI_SETTECHNOLOGY, SC_TECHNOLOGY_DEFAULT);
+    SciMsg(SCI_SETBUFFEREDDRAW, 1);
+  end;
+  {$ENDIF}
 end;
 
 procedure TSciEdit.SetDefaultFont(Value: TFont);
@@ -411,15 +430,6 @@ begin
     SetDefaultFont(Font);
   end;
 
-  {$IFDEF WINDOWS}
-  if AppConfig.SciDirectWrite then begin
-    // DirectWrite on Windows allows colorful emoji.
-    SciMsg(SCI_SETTECHNOLOGY, SC_TECHNOLOGY_DIRECTWRITE);
-    // Direct2D has buffering.
-    SciMsg(SCI_SETBUFFEREDDRAW, 0);
-  end;
-  {$ENDIF}
-
   // Ctrl+Y, Ctrl+Shift+Z: Undo; Home/End are smarter.
   SciMsg(SCI_ASSIGNCMDKEY, (SCMOD_CTRL shl 16) or Ord('y'), SCI_REDO);
   SciMsg(SCI_ASSIGNCMDKEY, ((SCMOD_CTRL + SCMOD_SHIFT) shl 16) or Ord('Z'), SCI_REDO);
@@ -434,6 +444,7 @@ begin
   // Restore some states.
   SetWordWrap(FWordWrap);
   SetReadOnly(FReadOnly);
+  SetUseDirectWrite(FUseDirectWrite);
   UpdateSelectionColor(Focused);
 end;
 
@@ -525,6 +536,7 @@ begin
   FText := '';
   FColor := clWindow;
   FWordWrap := True;
+  FUseDirectWrite := False;
   FFont := Screen.SystemFont;
   IsInitialized := False;
   inherited;
@@ -533,7 +545,6 @@ end;
 initialization
 {$ifdef Windows}
   SciLibraryHandle := Windows.LoadLibrary('Scintilla.dll');
-  AppConfig.HasSciEdit := (SciLibraryHandle <> 0);
 {$else}
   SciLibraryHandle := 0;
 {$endif}

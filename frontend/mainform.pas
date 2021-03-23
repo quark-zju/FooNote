@@ -509,6 +509,11 @@ begin
       This.SciEditNote.SetDefaultFont(Config.EditorFont);
     end;
   end;
+  if (Name = AnyConfigName) or (Name = 'SciDirectWrite') then begin
+    if TSciEdit.IsAvailable and Assigned(This.SciEditNote) then begin
+      This.SciEditNote.UseDirectWrite := Config.SciDirectWrite;
+    end;
+  end;
   if (Name = AnyConfigName) or (Name = 'UseSciEdit') then begin
     B := Config.UseSciEdit and TSciEdit.IsAvailable;
     if LogHasDebug then begin
@@ -531,6 +536,7 @@ begin
         // Refresh other things.
         OnConfigChange('NoteHorizonScrollBar', Config);
         OnConfigChange('EditorFont', Config);
+        OnConfigChange('SciDirectWrite', Config);
       end;
       This.MemoNote.Visible := False;
       This.SciEditNote.Visible := False;
