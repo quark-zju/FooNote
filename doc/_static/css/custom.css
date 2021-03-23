@@ -1,0 +1,15 @@
+kbd {
+    padding: 1px 4px;
+    font-size: 87.5%;
+    background: #eeeeec;
+    border-top: 1px solid #d3d7cf;
+    border-left: 2px solid #d3d7cf;
+    border-bottom: 2px solid #888a85;
+    border-right: 2px solid #888a85;
+    border-radius: 3px;
+}
+
+kbd > kbd {
+    border: none;
+    padding: 0;
+}
