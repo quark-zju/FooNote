@@ -423,8 +423,7 @@ begin
   // Ctrl+Y, Ctrl+Shift+Z: Undo; Home/End are smarter.
   SciMsg(SCI_ASSIGNCMDKEY, (SCMOD_CTRL shl 16) or Ord('y'), SCI_REDO);
   SciMsg(SCI_ASSIGNCMDKEY, ((SCMOD_CTRL + SCMOD_SHIFT) shl 16) or Ord('Z'), SCI_REDO);
-  SciMsg(SCI_ASSIGNCMDKEY, SCK_HOME, SCI_VCHOMEWRAP);
-  SciMsg(SCI_ASSIGNCMDKEY, SCK_END, SCI_LINEENDWRAP);
+  SciMsg(SCI_ASSIGNCMDKEY, SCK_HOME, SCI_VCHOME);
 
   if LocaleUtils.LocaleName = 'cn' then begin
     SciMsg(SCI_SETLOCALE, SC_LOCALE_CN);
