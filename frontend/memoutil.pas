@@ -44,6 +44,14 @@ implementation
 type
   TEditLineFunc = function(S: string): string;
 
+  TSelection = record
+    YStart, YEnd, XStart: longint;
+    // The (first) selected line.
+    Line: string;
+  end;
+
+function GetLine(S: string; Index: integer): string; forward;
+
 // Return the next line (including CRLF or LF) from S.
 // StartPos initially should be 0.
 // Return an empty string if there are no more lines.
@@ -92,12 +100,12 @@ begin
 end;
 
 // Edit lines in a TMemo.
-procedure EditMemoLines(AMemo: TMemo; YStart, YEndInclusive: longint; EditFunc: TEditLineFunc);
+procedure EditMemoLines(AMemo: TMemo; ASel: TSelection; EditFunc: TEditLineFunc);
 var
   S: string;
 begin
   S := AMemo.Text;
-  S := EditLines(S, YStart, YEndInclusive, EditFunc);
+  S := EditLines(S, ASel.YStart, ASel.YEnd, EditFunc);
   AMemo.Text := S;
 end;
 
@@ -124,24 +132,30 @@ begin
 end;
 
 // Find the range of Y covering selected text. Both YStart and YEnd are inclusive.
-procedure GetMemoSelectedLines(Memo: TMemo; var YStart: longint; var YEnd: longint);
+// YEnd is YStart -1 if selection does not include LF. YStart starts from 0.
+// XStart is the numbere of utf-8 chars for the "YStart" line, starting from 0.
+function GetMemoSelectedLines(Memo: TMemo): TSelection;
 var
-  Text: string;
+  Text, LeftText: string;
 begin
   Text := Memo.Text;
-  YStart := LazUtf8.UTF8LeftStr(Text, Memo.SelStart).CountChar(#10);
-  YEnd := YStart + Memo.SelText.CountChar(#10);
-  if YStart = YEnd then begin
+  LeftText := LazUtf8.UTF8LeftStr(Text, Memo.SelStart);
+  Result.YStart := LeftText.CountChar(#10);
+  // PERF: This could be more efficient.
+  Result.Line := GetLine(Text, Result.YStart);
+  Result.XStart := LazUtf8.UTF8Length(GetLine(LeftText, Result.YStart));
+  Result.YEnd := Result.YStart + Memo.SelText.CountChar(#10);
+  if Result.YStart = Result.YEnd then begin
     // Do not treat it as line selection. YStart will be > YEnd in this case.
-    YEnd -= 1;
-  end else if (YEnd > YStart) and Memo.SelText.EndsWith(#10) then begin
+    Result.YEnd -= 1;
+  end else if (Result.YEnd > Result.YStart) and Memo.SelText.EndsWith(#10) then begin
     // Do not treat the beginning of a new line as "selected".
-    YEnd -= 1;
+    Result.YEnd -= 1;
   end;
 end;
 
 // Select YStart..=YEnd *full* lines (including end of line) in a TMemo.
-procedure SetMemoSelectedLines(AMemo: TMemo; YStart: longint; YEnd: longint);
+procedure SetMemoSelectedLines(AMemo: TMemo; ASel: TSelection);
 var
   S, Line: string;
   LineIndex, {EolLen,} LeftLen, StartPos, SelUtf8Start, SelUtf8Len: longint;
@@ -156,10 +170,10 @@ begin
     if Line.IsEmpty then begin
       break;
     end;
-    if LineIndex = YStart then begin
+    if LineIndex = ASel.YStart then begin
       SelUtf8Start := LazUtf8.UTF8Length(S.Substring(0, LeftLen));
     end;
-    if (LineIndex >= YStart) and (LineIndex <= YEnd) then begin
+    if (LineIndex >= ASel.YStart) and (LineIndex <= ASel.YEnd) then begin
       SelUtf8Len += LazUtf8.UTF8Length(Line);
     end;
     LineIndex += 1;
@@ -174,7 +188,7 @@ begin
 end;
 
 // Get the index-th (starts from 0) line including ending (ex. CRLF or LF).
-function GetMemoLine(S: string; Index: integer): string;
+function GetLine(S: string; Index: integer): string;
 var
   Line: string;
   LineIndex, StartPos: longint;
@@ -184,6 +198,7 @@ begin
   while True do begin
     Line := NextLine(S, StartPos);
     if Line.IsEmpty then begin
+      Result := '';
       break;
     end;
     if LineIndex = Index then begin
@@ -194,35 +209,40 @@ begin
   end;
 end;
 
+function GetPrefixSpace(Line: string): string;
+var
+  SpaceCount: SizeInt;
+begin
+  SpaceCount := 0;
+  // Count starting TABs or SPACEs.
+  while SpaceCount < Line.Length do begin
+    if (Line.Chars[SpaceCount] <> #9) and (Line.Chars[SpaceCount] <> ' ') then begin
+      break;
+    end;
+    SpaceCount += 1;
+  end;
+  Result := Line.Substring(0, SpaceCount);
+end;
+
 
 procedure SmartKeyDown(Memo: TMemo; var Key: word; Shift: TShiftState);
 var
-  YStart, YEnd: longint;
-  Line: string;
-  SpaceCount: integer;
+  Line, Prefix: string;
+  Sel: TSelection;
+  N, OldSelEnd: SizeInt;
 begin
-  YStart := 0;
-  YEnd := 0;
-
   // Auto indent: try to insert spaces from the previous line.
   // "  - foo <ENTER>" will insert "  " in the next line.
   // KeyPress runs before the side effect of Key.
   if ((key = 13) or (key = 10)) and (Memo.SelLength = 0) then begin
-    GetMemoSelectedLines(Memo, YStart, YEnd);
+    Sel := GetMemoSelectedLines(Memo);
     // This is the previous line after inserting the new line.
     // Currently the new line is not inserted yet.
-    Line := GetMemoLine(Memo.Text, YStart);
-    SpaceCount := 0;
-    // Count starting TABs or SPACEs.
-    while SpaceCount < Line.Length do begin
-      if (Line.Chars[SpaceCount] <> #9) and (Line.Chars[SpaceCount] <> ' ') then begin
-        break;
-      end;
-      SpaceCount += 1;
-    end;
+    Line := GetLine(Memo.Text, Sel.YStart);
     // Insert the spaces into the new line.
-    if SpaceCount > 0 then begin
-      Memo.SelText := Memo.Lines.LineBreak + Line.Substring(0, SpaceCount);
+    Prefix := GetPrefixSpace(Line);
+    if not Prefix.IsEmpty then begin
+      Memo.SelText := Memo.Lines.LineBreak + Prefix;
       key := 0;
     end;
   end;
@@ -231,26 +251,47 @@ begin
   if key = 9 then begin
     if ssShift in Shift then begin
       // De-dent selected lines.
-      GetMemoSelectedLines(Memo, YStart, YEnd);
-      if YEnd >= YStart then begin
-        EditMemoLines(Memo, YStart, YEnd, @Dedent);
-        SetMemoSelectedLines(Memo, YStart, YEnd);
+      Sel := GetMemoSelectedLines(Memo);
+      if Sel.YEnd >= Sel.YStart then begin
+        EditMemoLines(Memo, Sel, @Dedent);
+        SetMemoSelectedLines(Memo, Sel);
         Key := 0;
       end;
     end else begin
       if Memo.SelLength = 0 then begin
         // No selection. Insert a TAB.
-        // Memo.SelText := #9;
+        // Memo.SelText := #9; Key := 0;
       end else begin
         // With selection. Indent lines.
-        GetMemoSelectedLines(Memo, YStart, YEnd);
-        if YEnd >= YStart then begin
-          EditMemoLines(Memo, YStart, YEnd, @Indent);
-          SetMemoSelectedLines(Memo, YStart, YEnd);
+        Sel := GetMemoSelectedLines(Memo);
+        if Sel.YEnd >= Sel.YStart then begin
+          EditMemoLines(Memo, Sel, @Indent);
+          SetMemoSelectedLines(Memo, Sel);
           Key := 0;
         end;
       end;
     end;
+  end;
+
+  if key = 36 {VK_HOME} then begin
+    Sel := GetMemoSelectedLines(Memo);
+    Prefix := GetPrefixSpace(Sel.Line);
+    if Sel.XStart = Prefix.Length then begin
+      N := 0;
+    end else begin
+      N := Prefix.Length;
+    end;
+    if ssShift in Shift then begin
+      // Select to the "N" position.
+      OldSelEnd := Memo.SelStart + Memo.SelLength;
+      Memo.SelStart := Memo.SelStart + N - Sel.XStart;
+      Memo.SelLength := OldSelEnd - Memo.SelStart;
+    end else begin
+      // Move to the "N" position.
+      Memo.SelStart := Memo.SelStart + N - Sel.XStart;
+      Memo.SelLength := 0;
+    end;
+    Key := 0;
   end;
 end;
 
