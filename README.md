@@ -1,5 +1,6 @@
 ![FooNote](doc/image/banner.png)
 
+[![User Manual](https://readthedocs.org/projects/foonote/badge/?version=latest&style=flat)](https://foonote.readthedocs.io/)
 ![build](https://github.com/quark-zju/FooNote/workflows/build/badge.svg)
 [![QQ Group 513408556](https://img.shields.io/badge/QQ群-513408556-blue.svg)](https://jq.qq.com/?_wv=1027&k=RYw10ME8)
 
