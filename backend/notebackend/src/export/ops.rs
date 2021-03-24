@@ -470,6 +470,16 @@ pub extern "C" fn notebackend_set_lang() -> i32 {
     errno::OK
 }
 
+// () -> ()
+/// Set the current language to system default.
+#[no_mangle]
+pub extern "C" fn notebackend_set_system_lang() -> i32 {
+    let lang_id = LangId::from_system();
+    // safety: writing the u8 is atomic.
+    unsafe { crate::lang::CURRENT_LANG_ID = lang_id };
+    errno::OK
+}
+
 /// () -> (str)
 /// Get the current language ("cn", "en").
 #[no_mangle]
