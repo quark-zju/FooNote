@@ -361,7 +361,7 @@ impl GitInfo {
                 "push",
                 "--porcelain",
                 remote,
-                &format!("{}:{}", &to_push, branch,),
+                &format!("{}:refs/heads/{}", &to_push, branch,),
             ])
             .output_and_error()?;
 
@@ -391,7 +391,7 @@ impl GitInfo {
 
                 // Push again.
                 self.git()
-                    .args(&["push", remote, &format!("{}:{}", &merge.0, &branch)])
+                    .args(&["push", remote, &format!("{}:refs/heads/{}", &merge.0, &branch)])
                     .run()?;
                 log::info!("Pushed merge {} to {}/{}", &merge.0, &remote, &branch);
                 self.reload_remote_branch_oid()?;
