@@ -27,7 +27,7 @@ Designed to be used as a complement to other "main" apps. For paper books, it's 
 
 Features
 - Tree Structured: Notes are organized by a tree.
-- Tree Editing: Support multi-selection, drag-drop, and copy-paste support.
+- Tree Editing: Support multi-selection, drag-drop, and copy-paste.
 - Docking: Dock on the screen. Maximized windows won't overlap with the FooNote.
 - Syncing: Support syncing via Git.
 - Lightweight: Executable and runtime memory usage are just a few MBs.
