@@ -11,7 +11,7 @@ uses
   Classes, SysUtils, Forms, Controls, Graphics, Dialogs, StdCtrls, Menus,
   ExtCtrls, ComCtrls, ActnList, ClipBrd, LCLType,
   LazUtf8, FGL, LogFFI, Math, NoteBackend, NoteTypes, MemoUtil,
-  TreeNodeData, StackFFI,
+  TreeNodeData, StackFFI, LclIntf,
   TreeViewSync, Settings, PreviewForm, AboutForm, FileUtil, md5,
   savemsgform, selecturlform, LocaleUtils, SettingsForm, PasswordForm, Types,
   SciEdit;
@@ -21,6 +21,7 @@ type
   { TFormFooNoteMain }
 
   TFormFooNoteMain = class(TForm)
+    ActionAppHelp: TAction;
     ActionNewLocalFile: TAction;
     ActionNewGit: TAction;
     ActionNewMemory: TAction;
@@ -35,6 +36,7 @@ type
     MenuItem28: TMenuItem;
     MenuItem29: TMenuItem;
     MenuItem30: TMenuItem;
+    MenuItem31: TMenuItem;
     MenuItem34: TMenuItem;
     MenuItem35: TMenuItem;
     MenuItem36: TMenuItem;
@@ -118,6 +120,7 @@ type
     MenuAddMenu: TPopupMenu;
 
     procedure ActionAppAboutExecute(Sender: TObject);
+    procedure ActionAppHelpExecute(Sender: TObject);
     procedure ActionEditReloadExecute(Sender: TObject);
     procedure ActionEncryptLockExecute(Sender: TObject);
     procedure ActionEncryptUnlockExecute(Sender: TObject);
@@ -1147,6 +1150,11 @@ begin
     Application.CreateForm(TAboutFooNoteForm, AboutFooNoteForm);
   end;
   AboutFooNoteForm.ShowModal;
+end;
+
+procedure TFormFooNoteMain.ActionAppHelpExecute(Sender: TObject);
+begin
+  OpenUrl('https://foonote.readthedocs.io/');
 end;
 
 procedure TFormFooNoteMain.ActionEditReloadExecute(Sender: TObject);

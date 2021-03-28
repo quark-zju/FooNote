@@ -533,6 +533,12 @@ object FormFooNoteMain: TFormFooNoteMain
       ImageIndex = 1
       OnExecute = ActionNewLocalFileExecute
     end
+    object ActionAppHelp: TAction
+      Category = 'App'
+      Caption = 'Online &Help'
+      OnExecute = ActionAppHelpExecute
+      ShortCut = 112
+    end
   end
   object PopupMenuEdit: TPopupMenu
     Images = ImageListElementaryIcons
@@ -601,6 +607,9 @@ object FormFooNoteMain: TFormFooNoteMain
     end
     object MenuItem8: TMenuItem
       Caption = '-'
+    end
+    object MenuItem31: TMenuItem
+      Action = ActionAppHelp
     end
     object MenuItem1: TMenuItem
       Action = ActionAppAbout
