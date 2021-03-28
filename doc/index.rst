@@ -14,6 +14,7 @@ FooNote 轻量，占屏窄，适用于配合其他各种应用使用做辅助笔
 FooNote 主界面如下：
 
 .. image:: image/main-window-win32.png
+.. image:: image/main-window-macos.png
 
 笔记呈树形结构，下方的文本框用来编辑选定的笔记。点击下面的主题了解详细内容：
 
@@ -22,6 +23,7 @@ FooNote 主界面如下：
    
    tree
    editor
+   dock
    backend
    hotkey
    changelog
