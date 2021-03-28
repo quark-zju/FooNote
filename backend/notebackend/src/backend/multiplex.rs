@@ -624,15 +624,12 @@ impl TreeBackend for MultiplexBackend {
     }
 
     fn remove(&mut self, id: Self::Id) -> Result<()> {
-        log::debug!("remove {:?}", id);
-        self.with_mount_mut(id, |m, local_id| m.backend.remove(local_id))?;
-        self.touch(id)?;
-        if !self.is_ancestor(self.get_root_id(), id)? {
-            log::trace!("{:?} is no longer reachable from root", id);
-            if self.is_mounted(id)? {
-                self.umount_recursive(id, false)?;
-            }
+        if self.is_mounted(id)? {
+            self.umount_recursive(id, false)?;
         }
+        log::debug!("remove {:?}", id);
+        self.touch(id)?;
+        self.with_mount_mut(id, |m, local_id| m.backend.remove(local_id))?;
         Ok(())
     }
 
