@@ -88,16 +88,18 @@ LazarusResources.Add('foonote.cn','PO',[
   +#13#10'msgstr "'#232#174#184#229#143#175#229#141#143#232#174#174'"'#13#10#13
   +#10'#: tformfoonotemain.actionappabout.caption'#13#10'msgctxt "tformfoonotem'
   +'ain.actionappabout.caption"'#13#10'msgid "&About"'#13#10'msgstr "'#229#133
-  +#179#228#186#142'(&A)"'#13#10#13#10'#: tformfoonotemain.actionappquit.captio'
-  +'n'#13#10'msgctxt "tformfoonotemain.actionappquit.caption"'#13#10'msgid "&Ex'
-  +'it"'#13#10'msgstr "'#233#128#128#229#135#186'(&E)"'#13#10#13#10'#: tformfoo'
-  +'notemain.actionappquit.hint'#13#10'msgctxt "tformfoonotemain.actionappquit.'
-  +'hint"'#13#10'msgid "Exit"'#13#10'msgstr "'#233#128#128#229#135#186'"'#13#10
-  +#13#10'#: tformfoonotemain.actionappsettingpreferences.caption'#13#10'msgctx'
-  +'t "tformfoonotemain.actionappsettingpreferences.caption"'#13#10'msgid "&Pre'
-  +'ferences ..."'#13#10'msgstr "'#233#128#137#233#161#185'(&P) ..."'#13#10#13
-  +#10'#: tformfoonotemain.actioneditcopy.caption'#13#10'msgctxt "tformfoonotem'
-  +'ain.actioneditcopy.caption"'#13#10'msgid "&Copy"'#13#10'msgstr "'#229#164
+  +#179#228#186#142'(&A)"'#13#10#13#10'#: tformfoonotemain.actionapphelp.captio'
+  +'n'#13#10'msgid "Online &Help"'#13#10'msgstr "'#229#156#168#231#186#191#229
+  +#184#174#229#138#169'(&H)"'#13#10#13#10'#: tformfoonotemain.actionappquit.ca'
+  +'ption'#13#10'msgctxt "tformfoonotemain.actionappquit.caption"'#13#10'msgid '
+  +'"&Exit"'#13#10'msgstr "'#233#128#128#229#135#186'(&E)"'#13#10#13#10'#: tfor'
+  +'mfoonotemain.actionappquit.hint'#13#10'msgctxt "tformfoonotemain.actionappq'
+  +'uit.hint"'#13#10'msgid "Exit"'#13#10'msgstr "'#233#128#128#229#135#186'"'#13
+  +#10#13#10'#: tformfoonotemain.actionappsettingpreferences.caption'#13#10'msg'
+  +'ctxt "tformfoonotemain.actionappsettingpreferences.caption"'#13#10'msgid "&'
+  +'Preferences ..."'#13#10'msgstr "'#233#128#137#233#161#185'(&P) ..."'#13#10
+  +#13#10'#: tformfoonotemain.actioneditcopy.caption'#13#10'msgctxt "tformfoono'
+  +'temain.actioneditcopy.caption"'#13#10'msgid "&Copy"'#13#10'msgstr "'#229#164
   +#141#229#136#182'(&C)"'#13#10#13#10'#: tformfoonotemain.actioneditcopy.hint'
   +#13#10'msgctxt "tformfoonotemain.actioneditcopy.hint"'#13#10'msgid "Copy"'#13
   +#10'msgstr "'#229#164#141#229#136#182'"'#13#10#13#10'#: tformfoonotemain.act'
@@ -125,9 +127,9 @@ LazarusResources.Add('foonote.cn','PO',[
   +#229#138#160#229#175#134#230#140#130#232#189#189#231#130#185'"'#13#10#13#10
   +'#: tformfoonotemain.actionnewfolder.caption'#13#10'msgctxt "tformfoonotemai'
   +'n.actionnewfolder.caption"'#13#10'msgid "New &Folder"'#13#10'msgstr "'#230
-  +#150#176#230#150#135#228#187#182#229#164#185'(&F)"'#13#10#13#10'#: tformfoon'
+  ,#150#176#230#150#135#228#187#182#229#164#185'(&F)"'#13#10#13#10'#: tformfoon'
   +'otemain.actionnewfolder.hint'#13#10'msgctxt "tformfoonotemain.actionnewfold'
-  ,'er.hint"'#13#10'msgid "New Folder"'#13#10'msgstr "'#230#183#187#229#138#160
+  +'er.hint"'#13#10'msgid "New Folder"'#13#10'msgstr "'#230#183#187#229#138#160
   +#228#184#128#228#184#170#230#150#135#228#187#182#229#164#185'"'#13#10#13#10
   +'#: tformfoonotemain.actionnewgit.caption'#13#10'msgid "New &Git Mountpoint"'
   +#13#10'msgstr "'#230#150#176' &Git '#230#140#130#232#189#189#231#130#185'"'
@@ -189,57 +191,71 @@ LazarusResources.Add('foonote.cn','PO',[
   +#13#10'msgstr "'#231#161#174#229#174#154'(&O)"'#13#10#13#10'#: tformfoonotes'
   +'ettings.buttonseleditorfont.caption'#13#10'msgid "Select &Editor Font"'#13
   +#10'msgstr "'#231#188#150#232#190#145#229#140#186#229#173#151#228#189#147'(&'
-  +'E)"'#13#10#13#10'#: tformfoonotesettings.buttonselfont.caption'#13#10'msgid'
+  ,'E)"'#13#10#13#10'#: tformfoonotesettings.buttonselfont.caption'#13#10'msgid'
   +' "Select &Font"'#13#10'msgstr "'#229#173#151#228#189#147'(&F)"'#13#10#13#10
-  ,'#: tformfoonotesettings.caption'#13#10'msgid "FooNote Settings"'#13#10'msgs'
+  +'#: tformfoonotesettings.caption'#13#10'msgid "FooNote Settings"'#13#10'msgs'
   +'tr "FooNote '#232#174#190#231#189#174'"'#13#10#13#10'#: tformfoonotesetting'
   +'s.checkboxnotehorizonscrollbar.caption'#13#10'msgid "Note Editor H&orizonta'
   +'l Scrollbar"'#13#10'msgstr "'#231#172#148#232#174#176#231#188#150#232#190
   +#145#229#140#186#230#176#180#229#185#179#230#187#154#229#138#168#230#157#161
   +'(&O)"'#13#10#13#10'#: tformfoonotesettings.checkboxontop.caption'#13#10'msg'
   +'id "Stay on &Top"'#13#10'msgstr "'#231#189#174#233#161#182'(&T)"'#13#10#13
-  +#10'#: tformfoonotesettings.checkboxtreehorizonscrollbar.caption'#13#10'msgi'
-  +'d "Note Tree &Horizontal Scrollbar"'#13#10'msgstr "'#231#172#148#232#174#176
-  +#230#160#145#230#176#180#229#185#179#230#187#154#229#138#168#230#157#161'(&H'
-  +')"'#13#10#13#10'#: tformfoonotesettings.checkboxusesciedit.caption'#13#10'm'
-  +'sgid "Use &Scintilla Editor"'#13#10'msgstr "'#229#144#175#231#148#168' &Sci'
-  +'ntilla '#230#150#135#230#156#172#231#188#150#232#190#145#229#153#168'"'#13
-  +#10#13#10'#: tformfoonotesettings.checkboxusesciedit.hint'#13#10'msgid "Scin'
-  +'tilla Editor provides some advanced features like multi-level undo, multipl'
-  +'e cursors, drag and drop, smart home / end etc."'#13#10'msgstr "Scintilla '
-  +#230#150#135#230#156#172#231#188#150#232#190#145#229#153#168#230#148#175#230
-  +#140#129#228#184#128#228#186#155#233#171#152#231#186#167#229#138#159#232#131
-  +#189#239#188#140#229#166#130#239#188#154#229#164#154#231#186#167#230#146#164
-  +#233#148#128#227#128#129#229#164#154#229#133#137#230#160#135#227#128#129#230
-  +#150#135#230#156#172#230#139#150#230#139#189#227#128#129#230#153#186#232#131
-  +#189' HOME/END '#231#173#137#227#128#130'"'#13#10#13#10'#: tformfoonotesetti'
-  +'ngs.groupboxinterfacesettings.caption'#13#10'msgid "Interface"'#13#10'msgst'
-  +'r "'#231#149#140#233#157#162'"'#13#10#13#10'#: tformfoonotesettings.groupbo'
-  +'xother.caption'#13#10'msgid "Other"'#13#10'msgstr "'#229#133#182#228#187#150
-  +'"'#13#10#13#10'#: tformfoonotesettings.labelautosaveinterval.caption'#13#10
-  +'msgid "Auto Save Interval (Seconds)"'#13#10'msgstr "'#232#135#170#229#138
-  +#168#228#191#157#229#173#152#233#151#180#233#154#148#239#188#136#231#167#146
-  +#239#188#137'"'#13#10#13#10'#: tformopenurl.buttoncancel.caption'#13#10'msgc'
-  +'txt "tformopenurl.buttoncancel.caption"'#13#10'msgid "&Cancel"'#13#10'msgst'
-  +'r "'#229#143#150#230#182#136'(&C)"'#13#10#13#10'#: tformopenurl.buttonopen.'
-  +'caption'#13#10'msgid "&Open"'#13#10'msgstr "'#230#137#147#229#188#128'(&O)"'
-  +#13#10#13#10'#: tformopenurl.caption'#13#10'msgid "Open FooNote"'#13#10'msgs'
-  +'tr "'#230#137#147#229#188#128' FooNote"'#13#10#13#10'#: tformopenurl.label1'
-  +'.caption'#13#10'msgid "Location of FooNote to open:"'#13#10'msgstr "FooNote'
-  +' '#229#156#176#229#157#128#239#188#154'"'#13#10#13#10'#: tformopenurl.label'
-  +'2.caption'#13#10'msgid "Example: git@host.com:repo/notes.git"'#13#10'msgstr'
-  +' "'#228#190#139#229#166#130#239#188#154'git@host.com:repo/notes.git"'#13#10
-  +#13#10'#: tformopenurl.label3.caption'#13#10'msgid "Example: filename.foonot'
-  +'e"'#13#10'msgstr "'#228#190#139#229#166#130#239#188#154#230#150#135#228#187
-  +#182#229#144#141'.foonote"'#13#10#13#10'#: tformopenurl.label4.caption'#13#10
-  +'msgid "Example: memory:123"'#13#10'msgstr "'#228#190#139#229#166#130#239#188
+  +#10'#: tformfoonotesettings.checkboxscidirectwrite.caption'#13#10'msgid "Mak'
+  +'e Scintilla use &DirectWrite text rendering"'#13#10'msgstr "'#232#174#169' '
+  +'Scintilla '#228#189#191#231#148#168' &DirectWrite '#230#138#128#230#156#175
+  +#230#184#178#230#159#147#230#150#135#229#173#151'"'#13#10#13#10'#: tformfoon'
+  +'otesettings.checkboxscidirectwrite.hint'#13#10'msgctxt "tformfoonotesetting'
+  +'s.checkboxscidirectwrite.hint"'#13#10'msgid "Scintilla Editor provides some'
+  +' advanced features like multi-level undo, multiple cursors, drag and drop, '
+  +'smart home / end etc."'#13#10'msgstr "Scintilla '#230#150#135#230#156#172
+  +#231#188#150#232#190#145#229#153#168#230#148#175#230#140#129#228#184#128#228
+  +#186#155#233#171#152#231#186#167#229#138#159#232#131#189#239#188#140#229#166
+  +#130#239#188#154#229#164#154#231#186#167#230#146#164#233#148#128#227#128#129
+  +#229#164#154#233#135#141#229#133#137#230#160#135#227#128#129#230#150#135#230
+  +#156#172#230#139#150#230#139#189#231#173#137#227#128#130'"'#13#10#13#10'#: t'
+  +'formfoonotesettings.checkboxtreehorizonscrollbar.caption'#13#10'msgid "Note'
+  +' Tree &Horizontal Scrollbar"'#13#10'msgstr "'#231#172#148#232#174#176#230
+  +#160#145#230#176#180#229#185#179#230#187#154#229#138#168#230#157#161'(&H)"'
+  +#13#10#13#10'#: tformfoonotesettings.checkboxusesciedit.caption'#13#10'msgid'
+  +' "Use &Scintilla Editor"'#13#10'msgstr "'#229#144#175#231#148#168' &Scintil'
+  +'la '#230#150#135#230#156#172#231#188#150#232#190#145#229#153#168'"'#13#10#13
+  +#10'#: tformfoonotesettings.checkboxusesciedit.hint'#13#10'msgctxt "tformfoo'
+  +'notesettings.checkboxusesciedit.hint"'#13#10'msgid "Scintilla Editor provid'
+  +'es features like multiple cursors, drag and drop, etc."'#13#10'msgstr "Scin'
+  +'tilla '#230#150#135#230#156#172#231#188#150#232#190#145#229#153#168#230#148
+  +#175#230#140#129#228#184#128#228#186#155#233#171#152#231#186#167#229#138#159
+  +#232#131#189#239#188#140#229#166#130#239#188#154#229#164#154#229#133#137#230
+  +#160#135#227#128#129#230#150#135#230#156#172#230#139#150#230#139#189#231#173
+  +#137#227#128#130'"'#13#10#13#10'#: tformfoonotesettings.groupboxinterfaceset'
+  +'tings.caption'#13#10'msgid "Interface"'#13#10'msgstr "'#231#149#140#233#157
+  +#162'"'#13#10#13#10'#: tformfoonotesettings.groupboxother.caption'#13#10'msg'
+  +'id "Other"'#13#10'msgstr "'#229#133#182#228#187#150'"'#13#10#13#10'#: tform'
+  +'foonotesettings.label1.caption'#13#10'msgid "(need restart)"'#13#10'msgstr '
+  +'"'#239#188#136#233#156#128#233#135#141#229#144#175#239#188#137'"'#13#10#13
+  +#10'#: tformfoonotesettings.labelautosaveinterval.caption'#13#10'msgid "seco'
+  +'nds inactivity triggers auto save"'#13#10'msgstr "'#231#167#146#230#151#160
+  +#229#138#168#228#189#156#229#144#142#232#135#170#229#138#168#228#191#157#229
+  +#173#152'"'#13#10#13#10'#: tformopenurl.buttoncancel.caption'#13#10'msgctxt '
+  +'"tformopenurl.buttoncancel.caption"'#13#10'msgid "&Cancel"'#13#10'msgstr "'
+  +#229#143#150#230#182#136'(&C)"'#13#10#13#10'#: tformopenurl.buttonopen.capti'
+  +'on'#13#10'msgid "&Open"'#13#10'msgstr "'#230#137#147#229#188#128'(&O)"'#13
+  +#10#13#10'#: tformopenurl.caption'#13#10'msgid "Open FooNote"'#13#10'msgstr '
+  +'"'#230#137#147#229#188#128' FooNote"'#13#10#13#10'#: tformopenurl.label1.ca'
+  +'ption'#13#10'msgid "Location of FooNote to open:"'#13#10'msgstr "FooNote '
+  +#229#156#176#229#157#128#239#188#154'"'#13#10#13#10'#: tformopenurl.label2.c'
+  +'aption'#13#10'msgid "Example: git@host.com:repo/notes.git"'#13#10'msgstr "'
+  +#228#190#139#229#166#130#239#188#154'git@host.com:repo/notes.git"'#13#10#13
+  +#10'#: tformopenurl.label3.caption'#13#10'msgid "Example: filename.foonote"'
+  +#13#10'msgstr "'#228#190#139#229#166#130#239#188#154#230#150#135#228#187#182
+  +#229#144#141'.foonote"'#13#10#13#10'#: tformopenurl.label4.caption'#13#10'ms'
+  +'gid "Example: memory:123"'#13#10'msgstr "'#228#190#139#229#166#130#239#188
   +#154'memory:123"'#13#10#13#10'#: tformopenurl.radiocustom.caption'#13#10'msg'
   +'id "Custom"'#13#10'msgstr "'#232#135#170#229#174#154#228#185#137'"'#13#10#13
   +#10'#: tformopenurl.radiogit.caption'#13#10'msgid "Git"'#13#10'msgstr "Git '
   +#231#137#136#230#156#172#230#142#167#229#136#182'"'#13#10#13#10'#: tformopen'
   +'url.radiolocalfile.caption'#13#10'msgid "Local FooNote File"'#13#10'msgstr '
   +'"'#230#156#172#229#156#176' FooNote '#230#150#135#228#187#182'"'#13#10#13#10
-  +'#: tformopenurl.radiomemory.caption'#13#10'msgid "Memory"'#13#10'msgstr "'
+  ,'#: tformopenurl.radiomemory.caption'#13#10'msgid "Memory"'#13#10'msgstr "'
   +#229#134#133#229#173#152'"'#13#10#13#10'#: tformpassword.buttoncancel.captio'
   +'n'#13#10'msgctxt "tformpassword.buttoncancel.caption"'#13#10'msgid "&Cancel'
   +'"'#13#10'msgstr "'#229#143#150#230#182#136'(&C)"'#13#10#13#10'#: tformpassw'
@@ -255,7 +271,7 @@ LazarusResources.Add('foonote.cn','PO',[
   +'avefailure.buttonnewinstance.caption'#13#10'msgid "&Start FooNote"'#13#10'm'
   +'sgstr "'#229#144#175#229#138#168' FooNote (&S)"'#13#10#13#10'#: tformsavefa'
   +'ilure.caption'#13#10'msgctxt "tformsavefailure.caption"'#13#10'msgid "Faile'
-  ,'d to save"'#13#10'msgstr "'#230#151#160#230#179#149#228#191#157#229#173#152
+  +'d to save"'#13#10'msgstr "'#230#151#160#230#179#149#228#191#157#229#173#152
   +'"'#13#10#13#10'#: tformsavefailure.editnewurl.text'#13#10'msgid "A.foonote"'
   +#13#10'msgstr "A.foonote"'#13#10#13#10'#: tformsavefailure.label1.caption'#13
   +#10'msgid "The last attempt to save has failed with error message:"'#13#10'm'

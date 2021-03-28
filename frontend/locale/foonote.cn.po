@@ -103,14 +103,6 @@ msgctxt "platformwindows.rsstayontop"
 msgid "Stay On &Top"
 msgstr "置顶(&T)"
 
-#: settingsform.rsdebugtab
-msgid "Debug"
-msgstr "调试"
-
-#: settingsform.rsstayontop
-msgid "Stay on top of other windows."
-msgstr "置于其他窗口前面。"
-
 #: taboutfoonoteform.buttonok.caption
 msgctxt "taboutfoonoteform.buttonok.caption"
 msgid "&OK"
@@ -166,6 +158,10 @@ msgstr "许可协议"
 msgctxt "tformfoonotemain.actionappabout.caption"
 msgid "&About"
 msgstr "关于(&A)"
+
+#: tformfoonotemain.actionapphelp.caption
+msgid "Online &Help"
+msgstr "在线帮助(&H)"
 
 #: tformfoonotemain.actionappquit.caption
 msgctxt "tformfoonotemain.actionappquit.caption"
@@ -337,6 +333,12 @@ msgstr "搜索"
 msgid "New &Mountpoint"
 msgstr "新挂载点(&M)"
 
+#: tformfoonotemain.menuitemmainroot.caption
+#, fuzzy
+msgctxt "tformfoonotemain.menuitemmainroot.caption"
+msgid "FooNote"
+msgstr "FooNote"
+
 #: tformfoonotemain.savedialogfoonote.title
 msgid "Select Local FooNote File"
 msgstr "选择本地 FooNote 文件"
@@ -371,6 +373,15 @@ msgstr "笔记编辑区水平滚动条(&O)"
 msgid "Stay on &Top"
 msgstr "置顶(&T)"
 
+#: tformfoonotesettings.checkboxscidirectwrite.caption
+msgid "Make Scintilla use &DirectWrite text rendering"
+msgstr "让 Scintilla 使用 &DirectWrite 技术渲染文字"
+
+#: tformfoonotesettings.checkboxscidirectwrite.hint
+msgctxt "tformfoonotesettings.checkboxscidirectwrite.hint"
+msgid "Scintilla Editor provides some advanced features like multi-level undo, multiple cursors, drag and drop, smart home / end etc."
+msgstr "Scintilla 文本编辑器支持一些高级功能，如：多级撤销、多重光标、文本拖拽等。"
+
 #: tformfoonotesettings.checkboxtreehorizonscrollbar.caption
 msgid "Note Tree &Horizontal Scrollbar"
 msgstr "笔记树水平滚动条(&H)"
@@ -380,8 +391,9 @@ msgid "Use &Scintilla Editor"
 msgstr "启用 &Scintilla 文本编辑器"
 
 #: tformfoonotesettings.checkboxusesciedit.hint
-msgid "Scintilla Editor provides some advanced features like multi-level undo, multiple cursors, drag and drop, smart home / end etc."
-msgstr "Scintilla 文本编辑器支持一些高级功能，如：多级撤销、多光标、文本拖拽、智能 HOME/END 等。"
+msgctxt "tformfoonotesettings.checkboxusesciedit.hint"
+msgid "Scintilla Editor provides features like multiple cursors, drag and drop, etc."
+msgstr "Scintilla 文本编辑器支持一些高级功能，如：多光标、文本拖拽等。"
 
 #: tformfoonotesettings.groupboxinterfacesettings.caption
 msgid "Interface"
@@ -391,9 +403,13 @@ msgstr "界面"
 msgid "Other"
 msgstr "其他"
 
+#: tformfoonotesettings.label1.caption
+msgid "(need restart)"
+msgstr "（需重启）"
+
 #: tformfoonotesettings.labelautosaveinterval.caption
-msgid "Auto Save Interval (Seconds)"
-msgstr "自动保存间隔（秒）"
+msgid "seconds inactivity triggers auto save"
+msgstr "秒无动作后自动保存"
 
 #: tformopenurl.buttoncancel.caption
 msgctxt "tformopenurl.buttoncancel.caption"
@@ -487,10 +503,7 @@ msgstr "最近的保存失败了，错误信息如下："
 msgid "If this is caused by unrecoverable network issues, you can start a new FooNote instance and copy-paste changes there."
 msgstr "如果这是由于不可恢复的网络问题，您可以启动一个新的 FooNote，复制未保存的改动，粘贴到新的 FooNote 内。"
 
-#: treenodedata.rstrash
-msgid "Trash"
-msgstr "回收站"
-
 #: tsolidcolorpreviewform.caption
 msgid "FooNoteOverlay"
 msgstr "FooNote 叠加层"
+
