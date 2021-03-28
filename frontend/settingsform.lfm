@@ -64,7 +64,7 @@ object FormFooNoteSettings: TFormFooNoteSettings
       BorderSpacing.Around = 10
       Caption = 'Select &Font'
       OnClick = ButtonSelFontClick
-      TabOrder = 5
+      TabOrder = 6
     end
     object CheckBoxOnTop: TCheckBox
       AnchorSideLeft.Control = GroupBoxInterfaceSettings
@@ -117,7 +117,7 @@ object FormFooNoteSettings: TFormFooNoteSettings
       BorderSpacing.Around = 10
       Caption = 'Select &Editor Font'
       OnClick = ButtonSelEditorFontClick
-      TabOrder = 6
+      TabOrder = 7
     end
     object CheckBoxUseSciEdit: TCheckBox
       AnchorSideLeft.Control = GroupBoxInterfaceSettings
@@ -125,7 +125,7 @@ object FormFooNoteSettings: TFormFooNoteSettings
       AnchorSideTop.Side = asrBottom
       Left = 10
       Height = 21
-      Hint = 'Scintilla Editor provides some advanced features like multi-level undo, multiple cursors, drag and drop, smart home / end etc.'
+      Hint = 'Scintilla Editor provides features like multiple cursors, drag and drop, etc.'
       Top = 41
       Width = 130
       BorderSpacing.Around = 10
@@ -166,7 +166,7 @@ object FormFooNoteSettings: TFormFooNoteSettings
       )
       OnChange = ComboBoxLangChange
       Style = csDropDownList
-      TabOrder = 7
+      TabOrder = 5
     end
     object Label1: TLabel
       AnchorSideLeft.Control = ComboBoxLang
