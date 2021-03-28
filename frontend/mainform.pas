@@ -736,6 +736,8 @@ begin
   BorderIcons := BorderIcons + [biMaximize];
   // Show main menu
   MenuItemMainRoot.Visible := True;
+  // Enlarge bottom spacing because of round corners.
+  PanelEdit.BorderSpacing.Bottom := 10;
 {$endif}
 end;
 
