@@ -12,6 +12,7 @@ object FormFooNoteMain: TFormFooNoteMain
   Constraints.MinHeight = 200
   Constraints.MinWidth = 160
   DoubleBuffered = True
+  Menu = MainMenu1
   OnClose = FormClose
   OnCreate = FormCreate
   OnDestroy = FormDestroy
@@ -81,14 +82,14 @@ object FormFooNoteMain: TFormFooNoteMain
     AnchorSideTop.Control = Owner
     AnchorSideRight.Control = PanelDockSplitterRight
     Left = 8
-    Height = 25
+    Height = 27
     Top = 0
     Width = 241
     Align = alCustom
     Anchors = [akTop, akLeft, akRight]
     AutoSize = True
     BevelOuter = bvNone
-    ClientHeight = 25
+    ClientHeight = 27
     ClientWidth = 241
     ParentFont = False
     TabOrder = 1
@@ -101,10 +102,10 @@ object FormFooNoteMain: TFormFooNoteMain
       AnchorSideTop.Control = PanelTop
       AnchorSideRight.Control = PanelTop
       AnchorSideRight.Side = asrBottom
-      Left = 129
-      Height = 15
+      Left = 134
+      Height = 17
       Top = 5
-      Width = 107
+      Width = 102
       Align = alCustom
       Anchors = [akTop, akLeft, akRight]
       BorderSpacing.Around = 5
@@ -124,8 +125,8 @@ object FormFooNoteMain: TFormFooNoteMain
       AnchorSideRight.Side = asrBottom
       Left = 5
       Height = 22
-      Top = 1
-      Width = 55
+      Top = 2
+      Width = 60
       Align = alCustom
       AutoSize = True
       BorderSpacing.Left = 5
@@ -152,9 +153,9 @@ object FormFooNoteMain: TFormFooNoteMain
       AnchorSideLeft.Side = asrBottom
       AnchorSideTop.Control = EditNoteSearch
       AnchorSideTop.Side = asrCenter
-      Left = 65
+      Left = 70
       Height = 22
-      Top = 1
+      Top = 2
       Width = 59
       Align = alCustom
       AutoSize = True
@@ -249,8 +250,8 @@ object FormFooNoteMain: TFormFooNoteMain
     AnchorSideRight.Control = PanelDockSplitterRight
     AnchorSideBottom.Control = SplitterTreeNote
     Left = 13
-    Height = 336
-    Top = 25
+    Height = 334
+    Top = 27
     Width = 231
     Anchors = [akTop, akLeft, akRight, akBottom]
     BorderSpacing.Left = 5
@@ -258,12 +259,12 @@ object FormFooNoteMain: TFormFooNoteMain
     BevelColor = clWindow
     BevelOuter = bvNone
     BorderStyle = bsSingle
-    ClientHeight = 332
+    ClientHeight = 330
     ClientWidth = 227
     TabOrder = 2
     object TreeViewSearchTree: TTreeView
       Left = 0
-      Height = 332
+      Height = 330
       Top = 0
       Width = 227
       Align = alClient
@@ -286,7 +287,7 @@ object FormFooNoteMain: TFormFooNoteMain
     end
     object TreeViewNoteTree: TTreeView
       Left = 0
-      Height = 332
+      Height = 330
       Top = 0
       Width = 227
       Align = alClient
@@ -1913,5 +1914,46 @@ object FormFooNoteMain: TFormFooNoteMain
     Filter = 'FooNote|*.foonote'
     Left = 64
     Top = 392
+  end
+  object MainMenu1: TMainMenu
+    Left = 176
+    Top = 72
+    object MenuItemMainRoot: TMenuItem
+      Caption = 'FooNote'
+      Visible = False
+      object MenuItem33: TMenuItem
+        Action = ActionViewStayOnTop
+      end
+      object MenuItem46: TMenuItem
+        Caption = '-'
+      end
+      object MenuItem40: TMenuItem
+        Action = ActionEditSave
+      end
+      object MenuItem41: TMenuItem
+        Action = ActionEditReload
+      end
+      object MenuItem47: TMenuItem
+        Caption = '-'
+      end
+      object MenuItem44: TMenuItem
+        Action = ActionAppQuit
+      end
+      object MenuItem48: TMenuItem
+        Caption = '-'
+      end
+      object MenuItem45: TMenuItem
+        Action = ActionAppSettingPreferences
+      end
+      object MenuItem49: TMenuItem
+        Caption = '-'
+      end
+      object MenuItem42: TMenuItem
+        Action = ActionAppAbout
+      end
+      object MenuItem43: TMenuItem
+        Action = ActionAppHelp
+      end
+    end
   end
 end

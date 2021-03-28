@@ -31,18 +31,31 @@ type
     ActionToggleFolder: TAction;
     ActionViewWarnUnsaved: TAction;
     ActionEditReload: TAction;
+    MainMenu1: TMainMenu;
     MenuItem10: TMenuItem;
     MenuItem27: TMenuItem;
     MenuItem28: TMenuItem;
     MenuItem29: TMenuItem;
     MenuItem30: TMenuItem;
     MenuItem31: TMenuItem;
+    MenuItemMainRoot: TMenuItem;
+    MenuItem33: TMenuItem;
     MenuItem34: TMenuItem;
     MenuItem35: TMenuItem;
     MenuItem36: TMenuItem;
     MenuItem37: TMenuItem;
     MenuItem38: TMenuItem;
     MenuItem39: TMenuItem;
+    MenuItem40: TMenuItem;
+    MenuItem41: TMenuItem;
+    MenuItem42: TMenuItem;
+    MenuItem43: TMenuItem;
+    MenuItem44: TMenuItem;
+    MenuItem45: TMenuItem;
+    MenuItem46: TMenuItem;
+    MenuItem47: TMenuItem;
+    MenuItem48: TMenuItem;
+    MenuItem49: TMenuItem;
     MenuItemLockUnlockSep: TMenuItem;
     MenuItemRootPath: TMenuItem;
     MenuItem3: TMenuItem;
@@ -333,6 +346,7 @@ begin
     end;
   end;
 end;
+
 
 procedure TFormFooNoteMain.RefreshSelectedText;
 var
@@ -720,6 +734,8 @@ begin
 {$ifdef DARWIN}
   // Show Maximize button on macOS. It can be used to "Dock" windows.
   BorderIcons := BorderIcons + [biMaximize];
+  // Show main menu
+  MenuItemMainRoot.Visible := True;
 {$endif}
 end;
 
