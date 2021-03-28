@@ -27,3 +27,7 @@ a.*
 *.lib
 *.dylib
 *.git
+.DS_Store
+*.swp
+*.dSYM
+foonote
