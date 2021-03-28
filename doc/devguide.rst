@@ -6,6 +6,11 @@
 FooNote 是开放源代码项目，欢迎爱好者讨论修改。GitHub 地址为 
 `quark-zju/FooNote <https://github.com/quark-zju/FooNote/>`_。
 
+.. note::
+
+  本节主要针对软件开发者。如果只是使用 FooNote，可略过以下内容，但仍欢迎在 GitHub
+  提出问题，参与讨论。
+
 以下简略介绍 FooNote 源代码结构和编译运行方法。
 
 FooNote 分为前端、后端两部分，使用不同的编程语言完成。
