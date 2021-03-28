@@ -1,14 +1,14 @@
 object FormFooNoteSettings: TFormFooNoteSettings
   Left = 108
-  Height = 420
+  Height = 477
   Top = 275
-  Width = 347
+  Width = 421
   AutoSize = True
   BorderIcons = []
   BorderStyle = bsDialog
   Caption = 'FooNote Settings'
-  ClientHeight = 420
-  ClientWidth = 347
+  ClientHeight = 477
+  ClientWidth = 421
   OnCreate = FormCreate
   OnShow = FormShow
   Position = poWorkAreaCenter
@@ -21,9 +21,9 @@ object FormFooNoteSettings: TFormFooNoteSettings
     AnchorSideRight.Side = asrBottom
     AnchorSideBottom.Control = Owner
     AnchorSideBottom.Side = asrBottom
-    Left = 257
+    Left = 331
     Height = 27
-    Top = 348
+    Top = 356
     Width = 80
     Anchors = [akTop, akRight]
     AutoSize = True
@@ -42,23 +42,23 @@ object FormFooNoteSettings: TFormFooNoteSettings
     AnchorSideRight.Control = Owner
     AnchorSideRight.Side = asrBottom
     Left = 10
-    Height = 224
+    Height = 259
     Top = 10
-    Width = 327
+    Width = 401
     Anchors = [akTop, akLeft, akRight]
     AutoSize = True
     BorderSpacing.Around = 10
     Caption = 'Interface'
-    ClientHeight = 202
-    ClientWidth = 323
+    ClientHeight = 237
+    ClientWidth = 397
     TabOrder = 0
     object ButtonSelFont: TButton
       AnchorSideLeft.Control = GroupBoxInterfaceSettings
-      AnchorSideTop.Control = CheckBoxNoteHorizonScrollbar
+      AnchorSideTop.Control = ComboBoxLang
       AnchorSideTop.Side = asrBottom
       Left = 10
       Height = 27
-      Top = 165
+      Top = 200
       Width = 89
       AutoSize = True
       BorderSpacing.Around = 10
@@ -111,7 +111,7 @@ object FormFooNoteSettings: TFormFooNoteSettings
       AnchorSideTop.Side = asrCenter
       Left = 109
       Height = 27
-      Top = 165
+      Top = 200
       Width = 128
       AutoSize = True
       BorderSpacing.Around = 10
@@ -148,6 +148,39 @@ object FormFooNoteSettings: TFormFooNoteSettings
       OnChange = CheckBoxSciDirectWriteChange
       TabOrder = 2
     end
+    object ComboBoxLang: TComboBox
+      AnchorSideLeft.Control = CheckBoxNoteHorizonScrollbar
+      AnchorSideTop.Control = CheckBoxNoteHorizonScrollbar
+      AnchorSideTop.Side = asrBottom
+      Left = 10
+      Height = 25
+      Top = 165
+      Width = 227
+      BorderSpacing.Top = 10
+      BorderSpacing.Bottom = 10
+      ItemHeight = 17
+      Items.Strings = (
+        'Default Language / 默认语言'
+        '中文 / Simplified Chinese'
+        'English / 英文'
+      )
+      OnChange = ComboBoxLangChange
+      Style = csDropDownList
+      TabOrder = 7
+    end
+    object Label1: TLabel
+      AnchorSideLeft.Control = ComboBoxLang
+      AnchorSideLeft.Side = asrBottom
+      AnchorSideTop.Control = ComboBoxLang
+      AnchorSideTop.Side = asrCenter
+      Left = 247
+      Height = 17
+      Top = 169
+      Width = 79
+      BorderSpacing.Around = 10
+      Caption = '(need restart)'
+      ParentColor = False
+    end
   end
   object GroupBoxOther: TGroupBox
     AnchorSideLeft.Control = Owner
@@ -156,34 +189,35 @@ object FormFooNoteSettings: TFormFooNoteSettings
     AnchorSideRight.Control = Owner
     AnchorSideRight.Side = asrBottom
     Left = 10
-    Height = 94
-    Top = 244
-    Width = 327
+    Height = 67
+    Top = 279
+    Width = 401
     Anchors = [akTop, akLeft, akRight]
     AutoSize = True
     BorderSpacing.Around = 10
     Caption = 'Other'
-    ClientHeight = 72
-    ClientWidth = 323
+    ClientHeight = 45
+    ClientWidth = 397
     TabOrder = 1
     object LabelAutoSaveInterval: TLabel
-      AnchorSideLeft.Control = GroupBoxOther
-      AnchorSideTop.Control = GroupBoxOther
-      Left = 10
+      AnchorSideLeft.Control = SpinEditAutoSave
+      AnchorSideLeft.Side = asrBottom
+      AnchorSideTop.Control = SpinEditAutoSave
+      AnchorSideTop.Side = asrCenter
+      Left = 106
       Height = 17
-      Top = 10
-      Width = 166
+      Top = 14
+      Width = 211
       BorderSpacing.Around = 10
-      Caption = 'Auto Save Interval (Seconds)'
+      Caption = 'seconds inactivity triggers auto save'
       ParentColor = False
     end
     object SpinEditAutoSave: TSpinEdit
       AnchorSideLeft.Control = GroupBoxOther
-      AnchorSideTop.Control = LabelAutoSaveInterval
-      AnchorSideTop.Side = asrBottom
+      AnchorSideTop.Control = GroupBoxOther
       Left = 10
       Height = 25
-      Top = 37
+      Top = 10
       Width = 86
       BorderSpacing.Around = 10
       Increment = 30

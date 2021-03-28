@@ -73,6 +73,7 @@ type
     procedure SetUseSciEdit(Value: boolean);
     procedure SetSciDirectWrite(Value: boolean);
     procedure SetEditorFont(AFont: TFont);
+    procedure SetLocale(ALocale: string);
   public
     // Not saved on disk. Do not trigger callbacks.
     ForceNotTop: boolean;
@@ -96,6 +97,7 @@ type
     property NoteHorizonScrollBar: boolean read FNoteHorizonScrollBar write SetNoteHorizonScrollBar;
     property UseSciEdit: boolean read FUseSciEdit write SetUseSciEdit;
     property SciDirectWrite: boolean read FSciDirectWrite write SetSciDirectWrite;
+    property Locale: string read FLocale write SetLocale;
 
     // Do not trigger callbacks.
     property EditorFont: TFont read FEditorFont write SetEditorFont;
@@ -112,7 +114,6 @@ type
     property Left: longint read FLeft write FLeft;
     property Top: longint read FTop write FTop;
     property MaxWidth: longint read FMaxWidth write FMaxWidth;
-    property Locale: string read FLocale write FLocale;
     property ShowNodeId: boolean read FNodeShowId write FNodeShowId;
     property RememberPosition: boolean read FRememberPosition write FRememberPosition;
     property LastSelectedId: Int32 read FLastSelection write FLastSelection;
@@ -229,6 +230,12 @@ begin
     FEditorFont := AFont;
   end;
   RunCallbacks('EditorFont');
+end;
+
+procedure TAppConfig.SetLocale(ALocale: string);
+begin
+  FLocale := ALocale;
+  RunCallbacks('Locale');
 end;
 
 procedure TAppConfig.SetFeatureLevel(Value: TFeatureLevel);
