@@ -580,20 +580,26 @@ impl TreeBackend for MultiplexBackend {
             self.touch(src_id)?;
             let src = Box::new(NullBackend);
             let mut src = self.swap_backend(src_id.0, src);
-            // Do not move special nodes.
-            if !src.is_copyable(src_id.1)? {
-                return notebackend_types::error::invalid_input("cannot copy non-copyable nodes");
-            }
 
-            let moved_id_result = self.with_mount_mut(dest_id, |m, local_dest_id| {
-                let dst = &mut m.backend;
+            let moved_id_result = (|| {
+                // Do not move special nodes (ex. "Trash").
+                if !src.is_copyable(src_id.1)? {
+                    return notebackend_types::error::invalid_input(t!(
+                        cn = "部分节点无法通过复制移动",
+                        en = "cannot move non-copyable nodes"
+                    ));
+                }
 
-                // Do the move.
-                let dst_id = dst.insert(local_dest_id, pos, String::new(), String::new())?;
-                clipboard::copy_replace(&src, src_id.1, dst, dst_id, None)?;
-                src.remove(src_id.1)?;
-                Ok((dest_id.0, dst_id))
-            });
+                self.with_mount_mut(dest_id, |m, local_dest_id| {
+                    let dst = &mut m.backend;
+
+                    // Do the move.
+                    let dst_id = dst.insert(local_dest_id, pos, String::new(), String::new())?;
+                    clipboard::copy_replace(&src, src_id.1, dst, dst_id, None)?;
+                    src.remove(src_id.1)?;
+                    Ok((dest_id.0, dst_id))
+                })
+            })();
 
             // Swap back.
             self.swap_backend(src_id.0, src);
