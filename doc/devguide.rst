@@ -246,6 +246,8 @@ AES 加密后端使用 AES-GCM-SIV 加密算法，使用 256 比特的密钥，�
 
 FooNote 文档在 “doc” 目录下，是一个 Sphinx_ 项目。
 
+Windows 版截图使用 ScreenToGif_ 和 ShareX_ 做成，并使用 OptiPNG_ 优化。
+
 
 .. _DevGuideLangChoice:
 
@@ -287,3 +289,6 @@ MSDN 也说“不支持，不要用”。必须要手动实现多选功能。相
 .. _Git: https://git-scm.com/
 .. _Python: https://www.python.org/
 .. _Elementary: https://elementary.io/
+.. _ScreenToGif: https://github.com/NickeManarin/ScreenToGif
+.. _ShareX: https://github.com/ShareX/ShareX
+.. _OptiPNG: http://optipng.sourceforge.net/
