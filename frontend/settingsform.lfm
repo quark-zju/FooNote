@@ -139,7 +139,6 @@ object FormFooNoteSettings: TFormFooNoteSettings
       AnchorSideTop.Side = asrBottom
       Left = 30
       Height = 21
-      Hint = 'Scintilla Editor provides some advanced features like multi-level undo, multiple cursors, drag and drop, smart home / end etc.'
       Top = 72
       Width = 281
       BorderSpacing.Left = 20
