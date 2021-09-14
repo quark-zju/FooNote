@@ -11,7 +11,7 @@ crate-type = ["cdylib"]
 bitflags = "1"
 dirs = "3"
 dissimilar = "1"
-env_logger = { version = "0.8", default-features = false, features = ["termcolor", "humantime", "atty"] }
+env_logger = { version = "0.9", default-features = false, features = ["termcolor", "humantime", "atty"] }
 fs2 = "0.4"
 hex = "0.4"
 libloading = "0.6"
@@ -23,10 +23,10 @@ serde_cbor = "0.11"
 serde_json = { version = "1" }
 tempfile = "3"
 base64 = "0.13"
-scrypt = { version = "0.6", optional = true }
+scrypt = { version = "0.8", optional = true }
 sha-1 = "0.9"
 rand = { version = "0.8", optional = true }
-aes-gcm-siv = { version = "0.9", optional = true }
+aes-gcm-siv = { version = "0.10", optional = true }
 
 [features]
 encrypt = ["aes-gcm-siv", "scrypt", "rand"]
