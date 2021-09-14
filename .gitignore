@@ -31,3 +31,4 @@ a.*
 *.swp
 *.dSYM
 foonote
+/target
