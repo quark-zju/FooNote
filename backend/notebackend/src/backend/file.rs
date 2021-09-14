@@ -48,6 +48,14 @@ impl BlobIo for FileBlobIo {
     }
 }
 
+impl Drop for FileBlobIo {
+    fn drop(&mut self) {
+        if let Some(file) = self.file.take() {
+            let _ = file.unlock();
+        }
+    }
+}
+
 impl BlobBackend<FileBlobIo> {
     /// Load from a given path.
     pub fn from_path(path: &Path) -> io::Result<Self> {
