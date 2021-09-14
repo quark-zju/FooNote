@@ -18,16 +18,9 @@ jobs:
     - uses: actions/checkout@v2
     - name: Rust Information
       run: rustup show
-    - name: Build backend
-      run: cargo build --manifest-path backend/Cargo.toml --verbose --target-dir=target
-    - name: Run backend tests
-      run: cargo test --manifest-path backend/Cargo.toml --verbose --target-dir=target
-    - name: Copy build assets (Linux)
-      if: runner.os == 'Linux'
-      run: cp target/debug/libnotebackend.so frontend
     - name: Install Lazarus
       uses: gcarreno/setup-lazarus@v2.2.8
       with:
         lazarus-version: ${{ matrix.lazarus-versions }}
-    - name: Build GUI
-      run: lazbuild --build-mode=Release "frontend/foonote.lpi"
+    - name: Build and test
+      run: python do.py debug build test
