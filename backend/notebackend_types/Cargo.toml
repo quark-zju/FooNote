@@ -5,4 +5,4 @@ authors = ["Jun Wu <quark@lihdd.net>"]
 edition = "2018"
 
 [dependencies]
-log = "0.4"
+log = "= 0.4.14"
