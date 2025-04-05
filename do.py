@@ -40,10 +40,13 @@ def build(debug=False):
                 os.symlink(src, dst)
 
     print(">>> Building frontend. This requires Lazarus toolchain.")
+    lazbuild_flags = ["--build-mode=%s" % (debug and "Debug" or "Release")]
+    if sys.platform == "linux":
+        lazbuild_flags.append("--ws=qt6")
     subprocess.check_call(
         [
             "lazbuild",
-            "--build-mode=%s" % (debug and "Debug" or "Release"),
+            *lazbuild_flags,
             "frontend/foonote.lpi",
         ]
     )
