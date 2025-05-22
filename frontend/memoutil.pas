@@ -127,7 +127,7 @@ begin
   if S.IsEmpty or S.Trim.IsEmpty then begin
     Result := S;
   end else begin
-    Result := #9 + S;
+    Result := '  ' + S;
   end;
 end;
 
@@ -259,8 +259,8 @@ begin
       end;
     end else begin
       if Memo.SelLength = 0 then begin
-        // No selection. Insert a TAB.
-        // Memo.SelText := #9; Key := 0;
+        // No selection. Insert 2 spaces.
+        Memo.SelText := '  '; Key := 0;
       end else begin
         // With selection. Indent lines.
         Sel := GetMemoSelectedLines(Memo);
