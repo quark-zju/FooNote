@@ -597,6 +597,21 @@ object FormFooNoteMain: TFormFooNoteMain
     object MenuItem10: TMenuItem
       Caption = '-'
     end
+    object MenuItemDockLeft: TMenuItem
+      Action = ActionViewDockLeft
+    end
+    object MenuItemDockRight: TMenuItem
+      Action = ActionViewDockRight
+    end
+    object MenuItemUndock: TMenuItem
+      Action = ActionViewUndock
+    end
+    object MenuItemStayOnTop: TMenuItem
+      Action = ActionViewStayOnTop
+    end
+    object MenuItemDockSep: TMenuItem
+      Caption = '-'
+    end
     object MenuItem2: TMenuItem
       Action = ActionAppQuit
     end
