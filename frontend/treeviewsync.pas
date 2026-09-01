@@ -8,7 +8,7 @@ uses
   Classes, SysUtils, ComCtrls, TreeNodeData, NoteBackend, NoteTypes, FGL, LogFFI, Settings;
 
 // Update a tree view node from backend. Prepare its children (for +/- sign).
-procedure SyncTreeNode(View: TTreeNode; ForceChild: boolean = False);
+procedure SyncTreeNode(View: TTreeNode; ForceChild: boolean = False; ForceData: boolean = False);
 
 // Update child nodes. Parent can be nil.
 procedure SyncChildTreeNode(TreeView: TCustomTreeView; Parent, FirstChild: TTreeNode;
@@ -36,7 +36,7 @@ begin
   View.SelectedIndex := View.ImageIndex;
 end;
 
-procedure SyncTreeNode(View: TTreeNode; ForceChild: boolean = False);
+procedure SyncTreeNode(View: TTreeNode; ForceChild: boolean; ForceData: boolean);
 var
   Data: TTreeNodeData;
   Changed: boolean;
@@ -47,7 +47,7 @@ begin
   Data := TTreeNodeData(View.Data);
 
   // Update this node.
-  Changed := Data.SyncFromBackend();
+  Changed := Data.SyncFromBackend(ForceData);
   if Changed then begin
     ApplyData(View, Data);
   end;

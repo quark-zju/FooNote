@@ -16,11 +16,13 @@ type
     FirstLine: string;
     ChildIds: VecFullId;
     SearchText: string;
+    NodeType: string;
+    MountUrl: string;
 
     constructor Create(AId: FullId);
 
     // Sync with the backend. Return true on change.
-    function SyncFromBackend(): boolean;
+    function SyncFromBackend(Force: boolean = False): boolean;
 
     function ExtractMeta(Prefix: string): string;
     function GetImageIndex(): integer;
@@ -53,20 +55,28 @@ begin
   FirstLine := '';
   SearchText := '';
   ChildIds := [];
+  NodeType := '';
+  MountUrl := '';
 end;
 
-function TTreeNodeData.SyncFromBackend(): boolean;
+function TTreeNodeData.SyncFromBackend(Force: boolean): boolean;
 var
   NewMtime: NodeMtime;
 begin
   NewMtime := NoteBackend.GetMtime(Id);
-  if NewMtime = Mtime then begin
+  if not Force and (NewMtime = Mtime) then begin
     // Nothing changed.
     Exit(False);
   end;
   Mtime := NewMtime;
   // Sync Title, Meta, Children.
   FirstLine := NoteBackend.GetTextFirstLine(Id);
+  NodeType := ExtractMeta('type=');
+  if NodeType = 'mount' then begin
+    MountUrl := ExtractMeta('mount=');
+  end else begin
+    MountUrl := '';
+  end;
   ChildIds := NoteBackend.GetChildren(Id);
 
   Result := True;
@@ -81,7 +91,7 @@ function TTreeNodeData.GetImageIndex(): integer;
 var
   S: string;
 begin
-  S := ExtractMeta('type=');
+  S := NodeType;
   if S = 'folder' then begin
     Result := ImageIndex.IMG_FOLDER;
   end else if S = 'root' then begin
@@ -91,8 +101,7 @@ begin
   end else if S = 'warn' then begin
     Result := ImageIndex.IMG_WARN;
   end else if S = 'mount' then begin
-    S := ExtractMeta('mount=');
-    S := NoteBackend.UrlType(S);
+    S := NoteBackend.UrlType(MountUrl);
     if S = 'git' then begin
       Result := ImageIndex.IMG_ROOT_REMOTE;
     end else if S = 'local' then begin
@@ -128,6 +137,8 @@ begin
   Mtime := -1;
   FirstLine := '';
   ChildIds := [];
+  NodeType := '';
+  MountUrl := '';
 end;
 
 function TTreeNodeData.IsFolder(): boolean;

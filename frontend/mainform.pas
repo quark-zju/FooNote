@@ -1671,8 +1671,17 @@ begin
 end;
 
 procedure TFormFooNoteMain.TimerAutoRefreshTimer(Sender: TObject);
+var
+  Node: TTreeNode;
 begin
   RefreshFullTree;
+  Node := TreeViewNoteTree.Items.GetFirstNode;
+  while Node <> nil do begin
+    if not NodeData(Node).MountUrl.IsEmpty then begin
+      TreeViewSync.SyncTreeNode(Node, Node.Expanded, True);
+    end;
+    Node := Node.GetNextVisible;
+  end;
 end;
 
 procedure TFormFooNoteMain.TimerAutoSaveTimer(Sender: TObject);
@@ -2267,7 +2276,7 @@ end;
 
 procedure TFormFooNoteMain.TreeViewNoteTreeExpanding(Sender: TObject; Node: TTreeNode; var AllowExpansion: boolean);
 begin
-  TreeViewSync.SyncTreeNode(Node, True);
+  TreeViewSync.SyncTreeNode(Node, True, True);
 end;
 
 procedure TFormFooNoteMain.TreeViewNoteTreeSelectionChanged(Sender: TObject);
