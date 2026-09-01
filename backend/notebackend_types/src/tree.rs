@@ -233,6 +233,11 @@ pub trait TreeBackend: Send + Sync + 'static {
         Ok(heads)
     }
 
+    /// Handle an event, such as double click, pressing some keys, etc.
+    fn on_event(&self, name: &str, id: Self::Id) -> Result<()> {
+        Ok(())
+    }
+
     /// Obtains the serialized data. Useful for inline trees.
     fn inline_data(&self) -> Option<&[u8]>;
 
