@@ -3,6 +3,7 @@
 import subprocess
 import sys
 import os
+import shlex
 
 
 def get_cargo_flags(debug=False):
@@ -40,6 +41,27 @@ def build(debug=False):
                 os.symlink(src, dst)
 
     print(">>> Building frontend. This requires Lazarus toolchain.")
+    if sys.platform == "linux":
+        print(">>> Building Linux layer-shell support.")
+        qt_flags = shlex.split(
+            subprocess.check_output(
+                ["pkg-config", "--cflags", "--libs", "Qt6Gui"], text=True
+            )
+        )
+        subprocess.check_call(
+            [
+                "g++",
+                "-std=c++17",
+                "-shared",
+                "-fPIC",
+                "-O0" if debug else "-O2",
+                "frontend/platformlinuxqt6shim.cpp",
+                "-o",
+                "frontend/libfoonote_layer_shell.so",
+                *qt_flags,
+                "-lLayerShellQtInterface",
+            ]
+        )
     lazbuild_flags = ["--build-mode=%s" % (debug and "Debug" or "Release")]
     if sys.platform == "linux":
         lazbuild_flags.append("--ws=qt6")

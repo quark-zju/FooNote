@@ -76,6 +76,9 @@ notebackend_python
 前端项目在 “frontend” 目录下，可以使用 Lazarus_ 打开 ``foonote.lpi`` 编辑，
 或者使用 ``lazbuild`` 来直接从命令行编译。
 
+Linux 下使用 Qt 6 widgetset，并需要 C++ 编译器和 ``layer-shell-qt-devel`` 来构建
+Wayland 侧边停靠支持。
+
 
 前后端分工
 ^^^^^^^^^^

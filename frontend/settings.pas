@@ -246,7 +246,7 @@ end;
 
 procedure TAppConfig.SetDockSide(Value: TDockSide);
 begin
-{$ifndef Windows}
+{$if not defined(Windows) and not defined(LCLQt6)}
   Value := dsNone;
 {$endif}
   if FDockSide <> Value then begin

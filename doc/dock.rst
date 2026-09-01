@@ -12,3 +12,8 @@ FooNote 主界面可停靠于桌面一侧。适用于在同时使用其他“最
 
 在 macOS 下，可使用 `分屏浏览 <https://support.apple.com/zh-cn/HT204948>`_
 功能实现侧边停靠。
+
+在使用 Qt 6 界面的 Linux Wayland 环境下，FooNote 通过 ``layer-shell-qt``
+实现侧边停靠。可在主界面的右键菜单中选择左侧停靠、右侧停靠或取消停靠；停靠区域会由
+compositor 保留，因此平铺和最大化窗口不会覆盖 FooNote。此功能要求 compositor 支持
+``wlr-layer-shell`` 协议。

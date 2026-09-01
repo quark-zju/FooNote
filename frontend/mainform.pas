@@ -8,6 +8,9 @@ uses
   {$ifdef Windows}
   PlatformWindows,
   {$endif}
+  {$ifdef LCLQt6}
+  PlatformLinuxQt6,
+  {$endif}
   Classes, SysUtils, Forms, Controls, Graphics, Dialogs, StdCtrls, Menus,
   ExtCtrls, ComCtrls, ActnList, ClipBrd, LCLType,
   LazUtf8, FGL, LogFFI, Math, NoteBackend, NoteTypes, MemoUtil,
@@ -731,6 +734,9 @@ begin
   PlatformWindows.SetupMainForm(Self);
   PlatformWindows.SetEditTabSize(MemoNote, AppConfig.Win32EditorTabSize);
 {$endif}
+{$ifdef LCLQt6}
+  PlatformLinuxQt6.SetupMainForm(Self);
+{$endif}
 {$ifdef DARWIN}
   // Show Maximize button on macOS. It can be used to "Dock" windows.
   BorderIcons := BorderIcons + [biMaximize];
@@ -941,6 +947,9 @@ end;
 
 procedure TFormFooNoteMain.FormDestroy(Sender: TObject);
 begin
+{$ifdef LCLQt6}
+  PlatformLinuxQt6.TeardownMainForm;
+{$endif}
   TreeViewNoteTree.Items.Clear;
   FreeAndNil(RootNodeData);
   NoteBackend.CloseAll;
@@ -1462,6 +1471,9 @@ begin
     DockSplitterLeftIsDown := False;
     {$ifdef Windows}
     PlatformWindows.RepositionDock;
+    {$endif}
+    {$ifdef LCLQt6}
+    PlatformLinuxQt6.RepositionDock;
     {$endif}
   end;
 end;
