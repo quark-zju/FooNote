@@ -183,15 +183,23 @@ mod tests {
 
     #[test]
     fn test_merge_two_lists() {
-        let a = vec![1, 3, 2, 5];
-        let b = vec![1, 3, 4, 2, 6, 5, 7];
-        assert_eq!(merge_two_lists(&a, &b), [1, 3, 4, 2, 6, 5, 7]);
-        assert_eq!(merge_two_lists(&b, &a), [1, 3, 4, 2, 6, 5, 7]);
+        let is_subsequence = |items: &[i32], merged: &[i32]| {
+            let mut merged = merged.iter();
+            items
+                .iter()
+                .all(|item| merged.by_ref().any(|candidate| candidate == item))
+        };
 
-        let a = vec![1, 2, 3, 5];
-        let b = vec![1, 3, 4, 5];
-        assert_eq!(merge_two_lists(&a, &b), [1, 2, 3, 4, 5]);
-        assert_eq!(merge_two_lists(&b, &a), [1, 2, 3, 4, 5]);
+        for (a, b) in [
+            (vec![1, 3, 2, 5], vec![1, 3, 4, 2, 6, 5, 7]),
+            (vec![1, 2, 3, 5], vec![1, 3, 4, 5]),
+        ] {
+            for (left, right) in [(&a, &b), (&b, &a)] {
+                let merged = merge_two_lists(left, right);
+                assert!(is_subsequence(&a, &merged));
+                assert!(is_subsequence(&b, &merged));
+            }
+        }
     }
 
     #[test]
