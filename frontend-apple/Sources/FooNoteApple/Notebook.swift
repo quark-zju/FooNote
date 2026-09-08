@@ -53,6 +53,10 @@ final class Notebook: ObservableObject {
     @Published var confirmDelete = false
     @Published var showConnection = false
     @Published var connectionIsRoot = false
+    /// Whether the notebook window floats above other windows; persisted across launches.
+    @Published var alwaysOnTop: Bool
+    /// The hosting app window, used to apply the always-on-top level.
+    weak var window: NSWindow?
     private(set) var root: NodeID?
     private(set) var selected: NodeID?
     private var savedText = ""
@@ -63,6 +67,7 @@ final class Notebook: ObservableObject {
 
     init(url: String? = nil, autosaveDelay: UInt64 = 30_000_000_000) {
         self.autosaveDelay = autosaveDelay
+        alwaysOnTop = UserDefaults.standard.bool(forKey: "alwaysOnTop")
         remembersLocation = url == nil
         if let url { open(url); return }
         do {
@@ -361,6 +366,20 @@ final class Notebook: ObservableObject {
     }
 
     func focus(_ target: FocusTarget) { focusTarget = target; focusRevision += 1 }
+
+    /// Toggle whether the notebook window floats above other windows, persisting the choice.
+    func setAlwaysOnTop(_ value: Bool) {
+        guard alwaysOnTop != value else { return }
+        alwaysOnTop = value
+        UserDefaults.standard.set(value, forKey: "alwaysOnTop")
+        applyAlwaysOnTop()
+    }
+
+    /// Apply the current always-on-top preference to the hosting window.
+    func applyAlwaysOnTop() {
+        window?.level = alwaysOnTop ? .floating : .normal
+    }
+
     func editSelected() {
         if selectedNote?.encrypted == true && selectedNote?.unlocked == false { requestEncryption(create: false) }
         else if canEdit { focus(.editor) }

@@ -16,11 +16,14 @@ struct FooNoteAppleApp: App {
     @StateObject private var notebook = Notebook()
     var body: some Scene {
         Window("FooNote", id: "notebook") {
-            ContentView(model: notebook).background(WindowPlacement()).onAppear {
-                delegate.notebook = notebook
-                NSApplication.shared.setActivationPolicy(.regular)
-                NSApplication.shared.activate(ignoringOtherApps: true)
-            }
+            ContentView(model: notebook)
+                .background(WindowPlacement())
+                .background(WindowAccessor(model: notebook))
+                .onAppear {
+                    delegate.notebook = notebook
+                    NSApplication.shared.setActivationPolicy(.regular)
+                    NSApplication.shared.activate(ignoringOtherApps: true)
+                }
         }
         .defaultSize(width: 280, height: 760)
         .commands {
@@ -42,7 +45,36 @@ struct FooNoteAppleApp: App {
             CommandGroup(after: .textEditing) {
                 Button("Find Notes") { notebook.focusSearch() }.keyboardShortcut("f")
             }
+            CommandGroup(after: .windowSize) {
+                Toggle("Always on Top", isOn: Binding(
+                    get: { notebook.alwaysOnTop },
+                    set: { notebook.setAlwaysOnTop($0) }
+                ))
+            }
         }
+    }
+}
+
+/// Captures the hosting NSWindow so window-level settings (always on top) can be
+/// applied at launch and re-applied whenever the setting changes.
+private struct WindowAccessor: NSViewRepresentable {
+    var model: Notebook
+    final class Anchor: NSView {
+        var model: Notebook?
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            guard let window else { return }
+            model?.window = window
+            model?.applyAlwaysOnTop()
+        }
+    }
+    func makeNSView(context: Context) -> Anchor {
+        let anchor = Anchor()
+        anchor.model = model
+        return anchor
+    }
+    func updateNSView(_ view: Anchor, context: Context) {
+        if view.model !== model { view.model = model }
     }
 }
 
