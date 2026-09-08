@@ -378,6 +378,15 @@ pub extern "C" fn notebackend_copy() -> i32 {
     errno::OK
 }
 
+/// () -> (bytes: bytes)
+/// Export a standalone recovery snapshot of the complete visible tree.
+#[no_mangle]
+pub extern "C" fn notebackend_export_snapshot() -> i32 {
+    let bytes = attempt!(ROOT_BACKEND.write().export_snapshot());
+    stack::push(bytes);
+    errno::OK
+}
+
 /// (dest_id: (i32, i32), pos: i32, bytes: bytes) -> ([new_id: (i32, i32)], len: i32)
 /// Paste from copied bytes.
 #[no_mangle]

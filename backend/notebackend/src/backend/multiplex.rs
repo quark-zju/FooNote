@@ -68,6 +68,77 @@ impl Default for MultiplexBackend {
 }
 
 impl MultiplexBackend {
+    /// Serialize the currently visible tree into a standalone notebook blob.
+    ///
+    /// Inlined encrypted mounts are deliberately treated as opaque: their
+    /// ciphertext remains in the source node's text and their children are not
+    /// visited. Other mounts are expanded so the resulting snapshot remains
+    /// usable when the original external backend is unavailable.
+    pub fn export_snapshot(&mut self) -> Result<Vec<u8>> {
+        self.save_inlined_backends(None)?;
+        let mut snapshot = crate::backend::MemBackend::empty();
+        let mut visiting = HashSet::new();
+        self.snapshot_node(
+            self.get_root_id(),
+            snapshot.get_root_id(),
+            &mut snapshot,
+            &mut visiting,
+        )?;
+        Ok(snapshot.to_json_bytes())
+    }
+
+    fn snapshot_node(
+        &self,
+        source: FullId,
+        destination: Id,
+        snapshot: &mut crate::backend::MemBackend,
+        visiting: &mut HashSet<FullId>,
+    ) -> Result<()> {
+        if !visiting.insert(source) {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                "cycle detected while exporting snapshot",
+            ));
+        }
+
+        let mount_url = self.extract_url(source)?;
+        let encrypted = source != self.get_root_id()
+            && (mount_url == "aes256" || mount_url.starts_with("aes256:"));
+        let text = self.get_text(source)?.to_string();
+        let mut meta = self.get_raw_meta(source)?.to_string();
+        if source != self.get_root_id() && !encrypted && !self.extract_url(source)?.is_empty() {
+            meta = meta
+                .lines()
+                .filter(|line| !line.starts_with("mount="))
+                .map(|line| {
+                    format!(
+                        "{}\n",
+                        if line == "type=mount" {
+                            "type=folder"
+                        } else {
+                            line
+                        }
+                    )
+                })
+                .collect();
+        }
+        snapshot.set_text(destination, text)?;
+        snapshot.set_raw_meta(destination, meta)?;
+
+        if !encrypted {
+            for child in self.get_children(source)? {
+                let child_destination = snapshot.insert(
+                    destination,
+                    InsertPos::Append,
+                    String::new(),
+                    String::new(),
+                )?;
+                self.snapshot_node(child, child_destination, snapshot, visiting)?;
+            }
+        }
+        visiting.remove(&source);
+        Ok(())
+    }
     pub fn open_url(url: &str) -> io::Result<Self> {
         let backend = crate::url::open(url, None)?;
         let result = Self {

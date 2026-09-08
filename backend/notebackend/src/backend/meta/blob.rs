@@ -122,6 +122,16 @@ impl<I: BlobIo> BlobBackend<I> {
         }
     }
 
+    /// Serialize using the JSON format accepted by local .foonote files,
+    /// even when this backend normally uses compact CBOR (e.g. clipboard memory).
+    pub fn to_json_bytes(&self) -> Vec<u8> {
+        serde_json::to_vec(&RefTreeData {
+            texts: &self.text_io.texts,
+            manifest: &self.manifest,
+        })
+        .expect("serialize should succeed")
+    }
+
     /// Converts to bytes.
     pub fn to_bytes(&self) -> Vec<u8> {
         let buf = match I::format() {

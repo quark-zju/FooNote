@@ -105,6 +105,40 @@ public final class Backend {
         }
     }
 
+    public func extractMeta(_ node: NodeID, prefix: String) throws -> String {
+        try requireOpen {
+            try transaction {
+                push(node)
+                push(prefix)
+                try check(notebackend_extract_meta())
+                return try popString()
+            }
+        }
+    }
+
+    public func updateMeta(_ node: NodeID, prefix: String, value: String) throws {
+        try requireOpen {
+            try transaction {
+                push(node)
+                push(prefix)
+                push(value)
+                try check(notebackend_update_meta())
+            }
+        }
+    }
+
+    /// Produce a standalone recovery file while preserving encrypted mount
+    /// ciphertext. The backend remains open and unchanged apart from syncing
+    /// inlined mount data into its source text.
+    public func exportSnapshot() throws -> Data {
+        try requireOpen {
+            try transaction {
+                try check(notebackend_export_snapshot())
+                return try popBytes()
+            }
+        }
+    }
+
     public func parent(_ node: NodeID) throws -> NodeID {
         try requireOpen {
             try transaction {
@@ -298,6 +332,16 @@ public final class Backend {
         guard notebackend_stack_last_str(&pointer, &size) == 0,
               let pointer else { throw BackendError.malformedResponse }
         let value = String(decoding: UnsafeBufferPointer(start: pointer, count: size), as: UTF8.self)
+        notebackend_stack_pop()
+        return value
+    }
+
+    private func popBytes() throws -> Data {
+        var pointer: UnsafePointer<UInt8>?
+        var size = 0
+        guard notebackend_stack_last_bytes(&pointer, &size) == 0,
+              let pointer else { throw BackendError.malformedResponse }
+        let value = Data(bytes: pointer, count: size)
         notebackend_stack_pop()
         return value
     }
