@@ -12,7 +12,8 @@ let package = Package(
         .target(name: "CNoteBackend", linkerSettings: [.linkedLibrary("notebackend")]),
         .target(name: "NoteBackend", dependencies: ["CNoteBackend"]),
         .executableTarget(name: "FooNoteApple", dependencies: ["NoteBackend"]),
-        .testTarget(name: "NoteBackendTests", dependencies: ["NoteBackend"])
+        .testTarget(name: "NoteBackendTests", dependencies: ["NoteBackend"]),
+        .testTarget(name: "FooNoteAppleTests", dependencies: ["FooNoteApple"])
     ]
 )
 // Keep the existing Rust cdylib ABI; embed an rpath for development builds.

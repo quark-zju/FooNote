@@ -1,118 +1,5 @@
 import AppKit
 import SwiftUI
-import NoteBackend
-
-struct Note: Identifiable {
-    let id: NodeID
-    var title: String
-    var children: [Note]?
-}
-
-@MainActor
-final class Notebook: ObservableObject {
-    let backend = Backend()
-    @Published var notes: [Note] = []
-    @Published var selected: NodeID?
-    @Published var draft = ""
-    @Published var error: String?
-    @Published var location = ""
-    @Published var status = "Ready"
-    private var root: NodeID?
-    private var savedText = ""
-
-    init() {
-        do {
-            let directory = try FileManager.default.url(for: .applicationSupportDirectory,
-                in: .userDomainMask, appropriateFor: nil, create: true)
-                .appendingPathComponent("FooNoteApple", isDirectory: true)
-            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-            open(directory.appendingPathComponent("Prototype.foonote").path)
-        } catch { self.error = error.localizedDescription }
-    }
-
-    @discardableResult func attempt(_ action: () throws -> Void) -> Bool {
-        do { try action(); return true }
-        catch { self.error = error.localizedDescription; status = "Operation failed"; return false }
-    }
-
-    func reload() throws {
-        guard let root else { return }
-        func load(_ id: NodeID) throws -> Note {
-            let text = try backend.text(id)
-            let children = try backend.children(id).map(load)
-            return Note(id: id, title: text.components(separatedBy: .newlines).first.flatMap {
-                $0.isEmpty ? nil : $0
-            } ?? "Untitled", children: children.isEmpty ? nil : children)
-        }
-        notes = try backend.children(root).map(load)
-    }
-
-    @discardableResult func save() -> Bool {
-        attempt {
-            if let selected, draft != savedText { try backend.setText(selected, text: draft) }
-            try backend.persist()
-            savedText = draft
-            try reload()
-            status = "Saved"
-        }
-    }
-
-    func select(_ id: NodeID?) {
-        guard id != selected, save() else { return }
-        attempt {
-            let text = try id.map { try backend.text($0) } ?? ""
-            selected = id; draft = text; savedText = text
-        }
-    }
-
-    func open(_ path: String) {
-        if root != nil && !save() { return }
-        attempt {
-            let newRoot = try backend.open(path)
-            root = newRoot; selected = nil; draft = ""; savedText = ""
-            location = path
-            try reload()
-            status = "Opened"
-        }
-    }
-
-    func chooseFile(create: Bool) {
-        if create {
-            let panel = NSSavePanel()
-            panel.title = "New FooNote notebook"
-            panel.nameFieldStringValue = "Notes.foonote"
-            if panel.runModal() == .OK, let url = panel.url {
-                let path = url.pathExtension == "foonote" ? url.path : url.path + ".foonote"
-                open(path)
-                if location == path { _ = save() }
-            }
-        } else {
-            let panel = NSOpenPanel()
-            panel.allowsMultipleSelection = false
-            panel.canChooseDirectories = false
-            panel.message = "Choose a .foonote notebook"
-            if panel.runModal() == .OK, let url = panel.url { open(url.path) }
-        }
-    }
-
-    func add(child: Bool) {
-        guard let parent = child ? selected : root, save() else { return }
-        attempt {
-            let id = try backend.insert(parent: parent, text: "New note")
-            selected = id; draft = "New note"; savedText = draft
-            try backend.persist(); try reload(); status = "Created"
-        }
-    }
-
-    func delete() {
-        guard let selected, save() else { return }
-        attempt {
-            try backend.remove(selected)
-            self.selected = nil; draft = ""; savedText = ""
-            try backend.persist(); try reload(); status = "Deleted"
-        }
-    }
-}
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
@@ -129,21 +16,30 @@ struct FooNoteAppleApp: App {
     @StateObject private var notebook = Notebook()
     var body: some Scene {
         Window("FooNote", id: "notebook") {
-            ContentView(model: notebook)
-                .onAppear {
-                    delegate.notebook = notebook
-                    NSApplication.shared.setActivationPolicy(.regular)
-                    NSApplication.shared.activate(ignoringOtherApps: true)
-                }
+            ContentView(model: notebook).onAppear {
+                delegate.notebook = notebook
+                NSApplication.shared.setActivationPolicy(.regular)
+                NSApplication.shared.activate(ignoringOtherApps: true)
+            }
         }
-        .defaultSize(width: 960, height: 640)
+        .defaultSize(width: 340, height: 760)
         .commands {
             CommandGroup(replacing: .newItem) {
-                Button("New Notebook…") { notebook.chooseFile(create: true) }.keyboardShortcut("n")
+                Button("New Note") { notebook.add() }.keyboardShortcut("n")
+                Button("New Folder") { notebook.add(kind: "folder") }.keyboardShortcut("n", modifiers: [.command, .shift])
+                Button("New Child Note") { notebook.add(child: true) }.keyboardShortcut("n", modifiers: [.command, .option])
+                Button("New Separator") { notebook.add(kind: "separator") }.keyboardShortcut("=", modifiers: [.command, .shift])
+                Divider()
+                Button("New Notebook…") { notebook.chooseFile(create: true) }.keyboardShortcut("n", modifiers: [.command, .option, .shift])
                 Button("Open Notebook…") { notebook.chooseFile(create: false) }.keyboardShortcut("o")
+                Button("Open Root URL…") { notebook.connectionIsRoot = true; notebook.showConnection = true }
+                Button("Mount Notebook / Git…") { notebook.connectionIsRoot = false; notebook.showConnection = true }
             }
             CommandGroup(replacing: .saveItem) {
-                Button("Save") { notebook.save() }.keyboardShortcut("s")
+                Button("Save / Sync") { notebook.save() }.keyboardShortcut("s")
+            }
+            CommandGroup(after: .textEditing) {
+                Button("Find Notes") { notebook.focusSearch() }.keyboardShortcut("f")
             }
         }
     }
@@ -151,58 +47,110 @@ struct FooNoteAppleApp: App {
 
 struct ContentView: View {
     @ObservedObject var model: Notebook
-    @State private var confirmDelete = false
     var body: some View {
-        NavigationSplitView {
-            List(selection: Binding(get: { model.selected }, set: { model.select($0) })) {
-                OutlineGroup(model.notes, children: \.children) { note in
-                    Label(note.title, systemImage: note.children == nil ? "note.text" : "folder")
-                        .lineLimit(1).tag(note.id)
-                }
-            }
-            .navigationTitle("Notes")
-            .navigationSplitViewColumnWidth(min: 200, ideal: 260)
-        } detail: {
-            if model.selected != nil {
-                VStack(alignment: .leading, spacing: 0) {
-                    Text(model.draft.components(separatedBy: .newlines).first ?? "Untitled")
-                        .font(.title2.bold()).lineLimit(1).padding()
-                    Divider()
-                    TextEditor(text: $model.draft)
-                        .font(.system(size: 15)).padding(12)
-                        .accessibilityLabel("Note text")
-                    Divider()
+        VStack(spacing: 0) {
+            SearchField(model: model).frame(height: 26).padding(8)
+            VSplitView {
+                ZStack {
+                    NoteOutline(model: model)
+                        .opacity(model.query.isEmpty ? 1 : 0)
+                        .allowsHitTesting(model.query.isEmpty)
+                    if !model.query.isEmpty {
+                        VStack(spacing: 0) {
+                            HStack {
+                                Text(model.searching ? "Searching…" : "\(model.hits.count) results")
+                                Spacer()
+                                Button("Clear") { model.searchEscape() }.buttonStyle(.borderless)
+                            }.font(.caption).foregroundStyle(.secondary).padding(8)
+                            List(model.hits) { hit in
+                                Button { model.reveal(hit.id) } label: {
+                                    VStack(alignment: .leading, spacing: 3) {
+                                        Text(model.find(hit.id)?.title ?? "Note").fontWeight(.medium)
+                                        Text(hit.line).font(.caption).foregroundStyle(.secondary).lineLimit(2)
+                                    }.frame(maxWidth: .infinity, alignment: .leading)
+                                }.buttonStyle(.plain)
+                            }
+                            .overlay {
+                                if model.hits.isEmpty && !model.searching { Text("No matching notes").foregroundStyle(.secondary) }
+                            }
+                        }
+                    }
+                }.frame(minHeight: 130, idealHeight: 360)
+                VStack(spacing: 0) {
                     HStack {
-                        Text(model.status)
+                        Text(model.selection.count > 1 ? "\(model.selection.count) selected" : (model.selectedNote?.title ?? "Note"))
+                            .lineLimit(1).font(.caption.weight(.semibold))
                         Spacer()
-                        Text("\(model.draft.count) characters")
-                    }.font(.caption).foregroundStyle(.secondary).padding(10)
-                }
-            } else {
-                VStack(spacing: 14) {
-                    Image(systemName: "square.and.pencil").font(.system(size: 44)).foregroundStyle(.secondary)
-                    Text("A little space for your thoughts").font(.title2)
-                    Text("Select a note, or create one to get started.").foregroundStyle(.secondary)
-                    Button("New Note") { model.add(child: false) }
-                }.frame(maxWidth: .infinity, maxHeight: .infinity)
+                        if model.selectedNote?.readOnly == true { Image(systemName: "lock") }
+                    }.padding(8).background(.bar)
+                    NoteEditor(model: model)
+                        .overlay {
+                            if model.selected == nil {
+                                Text("Select a note or press ⌘N").font(.callout).foregroundStyle(.secondary)
+                                    .allowsHitTesting(false)
+                            }
+                        }
+                }.frame(minHeight: 120, idealHeight: 300)
+            }
+            HStack {
+                Text(model.status).lineLimit(1)
+                Spacer(minLength: 4)
+                Text("\(model.draft.count)")
+            }.font(.caption2).foregroundStyle(.secondary).padding(7)
+        }
+        .frame(minWidth: 260, minHeight: 380)
+        .navigationSubtitle(model.location.components(separatedBy: "/").last ?? "FooNote")
+        .toolbar {
+            ToolbarItemGroup {
+                Menu {
+                    Button("New Note  ⌘N") { model.add() }
+                    Button("New Folder  ⇧⌘N") { model.add(kind: "folder") }
+                    Button("New Child Note  ⌥⌘N") { model.add(child: true) }
+                    Button("New Separator  ⇧⌘=") { model.add(kind: "separator") }
+                    Divider()
+                    Button("Mount Notebook / Git…") { model.connectionIsRoot = false; model.showConnection = true }
+                    Button("Open Root URL…") { model.connectionIsRoot = true; model.showConnection = true }
+                    Button("Open Notebook…") { model.chooseFile(create: false) }
+                    Button("New Notebook…") { model.chooseFile(create: true) }
+                } label: { Label("New / Open", systemImage: "plus") }
+                Button { model.save() } label: { Label("Save / Sync", systemImage: "arrow.triangle.2.circlepath") }
+                Button { model.requestDelete() } label: { Label("Delete", systemImage: "trash") }
+                    .disabled(model.selection.isEmpty)
             }
         }
-        .frame(minWidth: 640, minHeight: 420)
-        .navigationSubtitle(URL(fileURLWithPath: model.location).lastPathComponent)
-        .toolbar {
-            Button { model.chooseFile(create: false) } label: { Label("Open", systemImage: "folder") }
-            Button { model.add(child: false) } label: { Label("New Note", systemImage: "square.and.pencil") }
-            Button { model.add(child: true) } label: { Label("New Child", systemImage: "text.badge.plus") }
-                .disabled(model.selected == nil)
-            Button { model.save() } label: { Label("Save", systemImage: "square.and.arrow.down") }
-            Button { confirmDelete = true } label: { Label("Delete", systemImage: "trash") }
-                .disabled(model.selected == nil)
-        }
-        .confirmationDialog("Delete this note and its children?", isPresented: $confirmDelete) {
+        .onChange(of: model.query) { _ in model.refreshSearch() }
+        .onChange(of: model.draft) { _ in model.status = "⌘S to save / sync" }
+        .sheet(isPresented: $model.showConnection) { ConnectionSheet(model: model) }
+        .confirmationDialog("Delete selected notes and their children?", isPresented: $model.confirmDelete) {
             Button("Delete", role: .destructive) { model.delete() }
         }
         .alert("FooNote", isPresented: Binding(get: { model.error != nil }, set: { if !$0 { model.error = nil } })) {
             Button("OK") { model.error = nil }
         } message: { Text(model.error ?? "") }
+    }
+}
+
+struct ConnectionSheet: View {
+    @ObservedObject var model: Notebook
+    @State private var url = ""
+    @State private var title = ""
+    @State private var failure = ""
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text(model.connectionIsRoot ? "Open Root URL" : "Mount Notebook / Git").font(.headline)
+            TextField("/path/Notes.foonote or /path/Notes.git", text: $url)
+            if !model.connectionIsRoot { TextField("Display name (optional)", text: $title) }
+            Text("Git: /absolute/path/Notes.git, https://host/repo.git, or git@host:repo.git. Uses the existing Git credentials. Opening fetches; Save / Sync pushes changes.")
+                .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            if !failure.isEmpty { Text(failure).foregroundStyle(.red).font(.caption) }
+            HStack {
+                Spacer()
+                Button("Cancel") { model.showConnection = false }.keyboardShortcut(.cancelAction)
+                Button(model.connectionIsRoot ? "Open" : "Mount") {
+                    if model.connect(url: url, title: title) { model.showConnection = false }
+                    else { failure = model.error ?? "Connection failed"; model.error = nil }
+                }.keyboardShortcut(.defaultAction).disabled(url.trimmingCharacters(in: .whitespaces).isEmpty)
+            }
+        }.padding(20).frame(width: 360)
     }
 }
