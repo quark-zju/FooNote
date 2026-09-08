@@ -47,7 +47,7 @@ public final class Backend {
 
     public func children(_ node: NodeID) throws -> [NodeID] {
         try requireOpen {
-            try transaction {
+            return try transaction {
                 push(node)
                 try check(notebackend_get_children())
                 let count = Int(try popInt())
@@ -73,15 +73,34 @@ public final class Backend {
     }
 
     @discardableResult
-    public func insert(parent: NodeID, text: String) throws -> NodeID {
+    public func insert(parent: NodeID, text: String, meta: String = "", position: Int32 = 0) throws -> NodeID {
         try requireOpen {
             try transaction {
-                // InsertPos::Append is encoded as 0 by the Rust ABI.
                 push(parent)
-                notebackend_stack_push_i32(0)
+                notebackend_stack_push_i32(position)
                 push(text)
-                push("")
+                push(meta)
                 try check(notebackend_insert())
+                return try popNodeID()
+            }
+        }
+    }
+
+    public func metadata(_ node: NodeID) throws -> String {
+        try requireOpen {
+            try transaction {
+                push(node)
+                try check(notebackend_get_raw_meta())
+                return try popString()
+            }
+        }
+    }
+
+    public func parent(_ node: NodeID) throws -> NodeID {
+        try requireOpen {
+            try transaction {
+                push(node)
+                try check(notebackend_get_parent())
                 return try popNodeID()
             }
         }
@@ -103,6 +122,93 @@ public final class Backend {
                 push(node)
                 try check(notebackend_remove())
             }
+        }
+    }
+
+    public func remove(_ nodes: [NodeID]) throws {
+        try requireOpen {
+            try transaction {
+                pushNodeList(nodes)
+                try check(notebackend_remove_batch())
+            }
+        }
+    }
+
+    @discardableResult
+    public func move(_ nodes: [NodeID], destination: NodeID, position: Int32) throws -> [NodeID] {
+        try requireOpen {
+            try validateMove(nodes, destination: destination, position: position)
+            return try transaction {
+                pushNodeList(nodes)
+                push(destination)
+                notebackend_stack_push_i32(position)
+                try check(notebackend_set_parent_batch())
+                return try popNodeList()
+            }
+        }
+    }
+
+    /// Validate every selected node before invoking Rust's sequential batch move.
+    /// This prevents a multi-head request from partially moving before a later
+    /// cyclic item is rejected by the backend.
+    private func validateMove(_ nodes: [NodeID], destination: NodeID, position: Int32) throws {
+        let target = position == 0 ? destination : try parent(destination)
+        for node in nodes {
+            var current = target
+            var seen: Set<NodeID> = []
+            while seen.insert(current).inserted {
+                if current == node {
+                    throw BackendError.operationFailed(code: 22, message: "Cannot move a node below its descendant.")
+                }
+                let next = try parent(current)
+                if next == current { break }
+                current = next
+            }
+        }
+    }
+
+    /// Starts a background search. Poll `searchResults()` and `searchComplete()` from the UI.
+    public func searchStart(_ query: String, roots: [NodeID]) throws {
+        try requireOpen {
+            try transaction {
+                push(query)
+                pushNodeList(roots)
+                try check(notebackend_search_start())
+            }
+        }
+    }
+
+    public func searchResults() throws -> [(NodeID, String)] {
+        try requireOpen {
+            try transaction {
+                notebackend_stack_push_i32(0)
+                try check(notebackend_search_result())
+                let count = Int(try popInt())
+                guard count >= 0 else { throw BackendError.malformedResponse }
+                var result: [(NodeID, String)] = []
+                result.reserveCapacity(count)
+                for _ in 0..<count {
+                    let line = try popString()
+                    let node = try popNodeID()
+                    result.append((node, line))
+                }
+                return result
+            }
+        }
+    }
+
+    public func searchComplete() throws -> Bool {
+        try requireOpen {
+            try transaction {
+                try check(notebackend_search_is_complete())
+                return try popInt() != 0
+            }
+        }
+    }
+
+    public func searchStop() throws {
+        try requireOpen {
+            try transaction { try check(notebackend_search_stop()) }
         }
     }
 
@@ -146,6 +252,20 @@ public final class Backend {
                 raw.count
             )
         }
+    }
+
+    private func pushNodeList(_ nodes: [NodeID]) {
+        for node in nodes.reversed() { push(node) }
+        notebackend_stack_push_i32(Int32(nodes.count))
+    }
+
+    private func popNodeList() throws -> [NodeID] {
+        let count = Int(try popInt())
+        guard count >= 0 else { throw BackendError.malformedResponse }
+        var result: [NodeID] = []
+        result.reserveCapacity(count)
+        for _ in 0..<count { result.append(try popNodeID()) }
+        return result
     }
 
     private func popInt() throws -> Int32 {
