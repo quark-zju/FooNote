@@ -46,6 +46,8 @@ struct NoteOutline: NSViewRepresentable {
             view.delegate = self
             view.dataSource = self
             view.headerView = nil
+            view.style = .plain
+            view.selectionHighlightStyle = .regular
             let column = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("NoteColumn"))
             column.resizingMask = .autoresizingMask
             view.addTableColumn(column)
@@ -205,7 +207,7 @@ struct NoteOutline: NSViewRepresentable {
             cell.imageView?.isHidden = separator
             let symbol: String
             switch note.kind {
-            case "mount": symbol = "externaldrive"
+            case "mount": symbol = note.encrypted ? (note.unlocked ? "lock.open" : "lock") : "externaldrive"
             case "folder": symbol = "folder"
             case "trash": symbol = "trash"
             default: symbol = note.children.isEmpty ? "note.text" : "folder"
@@ -228,6 +230,13 @@ struct NoteOutline: NSViewRepresentable {
             }
             cell.subviews.filter { $0.identifier == lineID }.forEach { $0.isHidden = !separator }
             return cell
+        }
+
+        func outlineView(_ outlineView: NSOutlineView, heightOfRowByItem item: Any) -> CGFloat {
+            (item as? Note)?.kind == "separator" ? 10 : 24
+        }
+        func outlineView(_ outlineView: NSOutlineView, rowViewForItem item: Any) -> NSTableRowView? {
+            FullWidthRowView()
         }
 
         func outlineViewSelectionDidChange(_ notification: Notification) {
@@ -317,6 +326,10 @@ struct NoteOutline: NSViewRepresentable {
             }
             add("Edit Note", #selector(editNote), enabled: model.canEdit)
             menu.addItem(.separator())
+            add("New Encrypted Area…", #selector(newEncrypted))
+            if model.selectedNote?.encrypted == true {
+                add(model.selectedNote?.unlocked == true ? "Lock Encrypted Area" : "Unlock Encrypted Area…", #selector(toggleEncryption))
+            }
             add("New Note", #selector(newNote))
             add("New Folder", #selector(newFolder))
             add("New Child Note", #selector(newChild), enabled: model.selected != nil && model.selectedNote?.kind != "separator")
@@ -330,6 +343,11 @@ struct NoteOutline: NSViewRepresentable {
             return menu
         }
         @objc private func editNote() { model.editSelected() }
+        @objc private func newEncrypted() { model.requestEncryption(create: true) }
+        @objc private func toggleEncryption() {
+            if model.selectedNote?.unlocked == true { model.lockEncryption() }
+            else { model.requestEncryption(create: false) }
+        }
         @objc private func newNote() { model.add() }
         @objc private func newFolder() { model.add(kind: "folder") }
         @objc private func newChild() { model.add(child: true) }
@@ -379,5 +397,14 @@ final class NoteOutlineView: NSOutlineView {
     override func mouseDown(with event: NSEvent) {
         super.mouseDown(with: event)
         if event.clickCount == 2 { doubleClickHandler?() }
+    }
+}
+
+@MainActor
+final class FullWidthRowView: NSTableRowView {
+    override func drawSelection(in dirtyRect: NSRect) {
+        guard selectionHighlightStyle != .none else { return }
+        (isEmphasized ? NSColor.selectedContentBackgroundColor : NSColor.unemphasizedSelectedContentBackgroundColor).setFill()
+        bounds.fill()
     }
 }

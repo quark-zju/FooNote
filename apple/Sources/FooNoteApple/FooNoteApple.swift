@@ -26,6 +26,7 @@ struct FooNoteAppleApp: App {
         .commands {
             CommandGroup(replacing: .newItem) {
                 Button("New Note") { notebook.add() }.keyboardShortcut("n")
+                Button("New Encrypted Area…") { notebook.requestEncryption(create: true) }
                 Button("New Folder") { notebook.add(kind: "folder") }.keyboardShortcut("n", modifiers: [.command, .shift])
                 Button("New Child Note") { notebook.add(child: true) }.keyboardShortcut("n", modifiers: [.command, .option])
                 Button("New Separator") { notebook.add(kind: "separator") }.keyboardShortcut("=", modifiers: [.command, .shift])
@@ -80,12 +81,27 @@ struct ContentView: View {
                 VStack(spacing: 0) {
                     NoteEditor(model: model)
                         .overlay {
-                            if model.selected == nil {
-                                Text("Select a note or press ⌘N").font(.callout).foregroundStyle(.secondary)
+                            if model.selected == nil || model.selectedNote?.encrypted == true {
+                                Text(model.selectedNote?.encrypted == true ? (model.selectedNote?.unlocked == true ? "Encrypted area unlocked — select a child note" : "Encrypted area locked — double-click to unlock") : "Select a note or press ⌘N").font(.callout).foregroundStyle(.secondary)
                                     .allowsHitTesting(false)
                             }
                         }
                 }.frame(minHeight: 120, idealHeight: 300)
+            }
+            if let failure = model.saveError {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Save failed").fontWeight(.semibold)
+                    Text(failure).lineLimit(3).textSelection(.enabled)
+                    HStack {
+                        Button("Retry") { model.save() }
+                        Button("Export Recovery…") { model.exportRecovery() }
+                    }
+                    if let url = model.recoveryURL {
+                        Text(url.path).textSelection(.enabled).lineLimit(3)
+                        Button("Show Recovery File") { NSWorkspace.shared.activateFileViewerSelecting([url]) }
+                    }
+                }.font(.caption).padding(12).frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color.orange.opacity(0.12))
             }
             HStack {
                 if model.selectedNote?.readOnly == true {
@@ -103,6 +119,14 @@ struct ContentView: View {
             ToolbarItemGroup {
                 Menu {
                     Button("New Note  ⌘N") { model.add() }
+                    Button("New Encrypted Area…") { model.requestEncryption(create: true) }
+                    if model.selectedNote?.encrypted == true {
+                        if model.selectedNote?.unlocked == true {
+                            Button("Lock Encrypted Area") { model.lockEncryption() }
+                        } else {
+                            Button("Unlock Encrypted Area…") { model.requestEncryption(create: false) }
+                        }
+                    }
                     Button("New Folder  ⇧⌘N") { model.add(kind: "folder") }
                     Button("New Child Note  ⌥⌘N") { model.add(child: true) }
                     Button("New Separator  ⇧⌘=") { model.add(kind: "separator") }
@@ -118,7 +142,8 @@ struct ContentView: View {
             }
         }
         .onChange(of: model.query) { _ in model.refreshSearch() }
-        .onChange(of: model.draft) { _ in model.status = "⌘S to save / sync" }
+
+        .sheet(isPresented: $model.showEncryption) { EncryptionSheet(model: model) }
         .sheet(isPresented: $model.showConnection) { ConnectionSheet(model: model) }
         .confirmationDialog("Delete selected notes and their children?", isPresented: $model.confirmDelete) {
             Button("Delete", role: .destructive) { model.delete() }
@@ -151,5 +176,37 @@ struct ConnectionSheet: View {
                 }.keyboardShortcut(.defaultAction).disabled(url.trimmingCharacters(in: .whitespaces).isEmpty)
             }
         }.padding(20).frame(width: 360)
+    }
+}
+
+struct EncryptionSheet: View {
+    @ObservedObject var model: Notebook
+    @State private var name = "Encrypted"
+    @State private var password = ""
+    @State private var confirmation = ""
+    @State private var failure = ""
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(model.creatingEncryption ? "New Encrypted Area" : "Unlock Encrypted Area").font(.headline)
+            if model.creatingEncryption { TextField("Name", text: $name) }
+            SecureField("Password", text: $password)
+            if model.creatingEncryption { SecureField("Confirm password", text: $confirmation) }
+            Text("Uses the original FooNote AES encryption. Passwords are not saved; the area name remains visible.")
+                .font(.caption).foregroundStyle(.secondary)
+            if !failure.isEmpty { Text(failure).font(.caption).foregroundStyle(.red) }
+            HStack {
+                Spacer()
+                Button("Cancel") { model.showEncryption = false }.keyboardShortcut(.cancelAction)
+                Button(model.creatingEncryption ? "Create" : "Unlock") {
+                    if model.creatingEncryption && password != confirmation {
+                        failure = "Passwords do not match."; return
+                    }
+                    if model.unlockOrCreate(password: password, name: name) { model.showEncryption = false }
+                    else { failure = model.error ?? "Unlock failed"; model.error = nil }
+                    password = ""; confirmation = ""
+                }.keyboardShortcut(.defaultAction).disabled(password.isEmpty)
+            }
+        }.padding(20).frame(width: 300)
+        .onDisappear { password = ""; confirmation = "" }
     }
 }
