@@ -26,7 +26,8 @@ final class Notebook: ObservableObject {
     let backend = Backend()
     @Published var notes: [Note] = []
     @Published var selection: Set<NodeID> = []
-    @Published var draft = ""
+    @Published var draft = "" { didSet { updateTitle() } }
+    @Published var titleRevision = 0
     @Published var error: String?
     @Published var location = ""
     @Published var status = "Ready"
@@ -94,6 +95,19 @@ final class Notebook: ObservableObject {
         }
         notes = try backend.children(root).map { try load($0, ancestors: [root]) }
         treeRevision += 1
+    }
+
+    private func updateTitle() {
+        guard let note = selectedNote, !note.readOnly else { return }
+        let first = draft.components(separatedBy: .newlines).first ?? ""
+        let title = first.isEmpty ? (note.kind == "folder" ? "Untitled folder" : "Untitled") : first
+        if note.title != title { note.title = title; titleRevision += 1 }
+    }
+
+    func selectSearchHit(_ id: NodeID) {
+        // Keep the result list as a snapshot while editing its notes.
+        stopSearch()
+        if select([id]) { focus(.editor) }
     }
 
     private func flushDraft() throws {
@@ -182,8 +196,9 @@ final class Notebook: ObservableObject {
         attempt {
             try flushDraft()
             let meta = kind == "note" ? "" : "type=\(kind)\n" + (kind == "separator" ? "readonly=true\n" : "")
-            let text = kind == "separator" ? "" : (kind == "folder" ? "New folder" : "New note")
-            let id = try backend.insert(parent: destination, text: text, meta: meta, position: position)
+            let id = try backend.insert(parent: destination, text: "", meta: meta, position: position)
+            if kind != "separator" { try backend.autofill(id) }
+            let text = try backend.text(id)
             try reload()
             selected = id; selection = [id]; draft = text; savedText = text
             clearSearch(); focus(kind == "separator" ? .tree : .editor)

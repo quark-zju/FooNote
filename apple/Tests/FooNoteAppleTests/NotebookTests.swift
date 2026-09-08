@@ -35,6 +35,30 @@ final class NotebookTests: XCTestCase {
         XCTAssertEqual(try model.backend.parent(child), folder)
     }
 
+    func testLiveTitleAutofillAndSearchSnapshot() async throws {
+        let model = Notebook(url: "memory:")
+        defer { model.backend.close() }
+        model.add()
+        model.draft = "1"
+        let first = try XCTUnwrap(model.selected)
+        XCTAssertEqual(model.find(first)?.title, "1")
+        model.add()
+        model.draft = "2"
+        model.add()
+        XCTAssertEqual(model.draft, "3")
+        model.query = "1"
+        model.hits = [SearchHit(id: first, line: "1")]
+        model.selectSearchHit(first)
+        model.draft = "Changed\nbody"
+        XCTAssertEqual(model.find(first)?.title, "Changed")
+        let revision = model.titleRevision
+        model.draft = "Changed\nanother body"
+        XCTAssertEqual(model.titleRevision, revision)
+        XCTAssertEqual(model.query, "1")
+        XCTAssertEqual(model.hits.map(\.id), [first])
+        XCTAssertEqual(model.focusTarget, .editor)
+    }
+
     func testDropPositionMapping() async throws {
         let a = NodeID(backend: 1, id: 1)
         let b = NodeID(backend: 1, id: 2)

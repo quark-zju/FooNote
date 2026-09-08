@@ -26,6 +26,7 @@ int32_t notebackend_get_parent(void);
 int32_t notebackend_get_text(void);
 int32_t notebackend_get_raw_meta(void);
 int32_t notebackend_insert(void);
+int32_t notebackend_autofill(void);
 int32_t notebackend_set_parent_batch(void);
 int32_t notebackend_set_text(void);
 int32_t notebackend_remove(void);

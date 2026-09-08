@@ -16,13 +16,13 @@ struct FooNoteAppleApp: App {
     @StateObject private var notebook = Notebook()
     var body: some Scene {
         Window("FooNote", id: "notebook") {
-            ContentView(model: notebook).onAppear {
+            ContentView(model: notebook).background(WindowPlacement()).onAppear {
                 delegate.notebook = notebook
                 NSApplication.shared.setActivationPolicy(.regular)
                 NSApplication.shared.activate(ignoringOtherApps: true)
             }
         }
-        .defaultSize(width: 340, height: 760)
+        .defaultSize(width: 280, height: 760)
         .commands {
             CommandGroup(replacing: .newItem) {
                 Button("New Note") { notebook.add() }.keyboardShortcut("n")
@@ -63,12 +63,13 @@ struct ContentView: View {
                                 Button("Clear") { model.searchEscape() }.buttonStyle(.borderless)
                             }.font(.caption).foregroundStyle(.secondary).padding(8)
                             List(model.hits) { hit in
-                                Button { model.reveal(hit.id) } label: {
+                                Button { model.selectSearchHit(hit.id) } label: {
                                     VStack(alignment: .leading, spacing: 3) {
                                         Text(model.find(hit.id)?.title ?? "Note").fontWeight(.medium)
                                         Text(hit.line).font(.caption).foregroundStyle(.secondary).lineLimit(2)
                                     }.frame(maxWidth: .infinity, alignment: .leading)
                                 }.buttonStyle(.plain)
+                                .listRowBackground(model.selected == hit.id ? Color.accentColor.opacity(0.15) : Color.clear)
                             }
                             .overlay {
                                 if model.hits.isEmpty && !model.searching { Text("No matching notes").foregroundStyle(.secondary) }
@@ -77,12 +78,6 @@ struct ContentView: View {
                     }
                 }.frame(minHeight: 130, idealHeight: 360)
                 VStack(spacing: 0) {
-                    HStack {
-                        Text(model.selection.count > 1 ? "\(model.selection.count) selected" : (model.selectedNote?.title ?? "Note"))
-                            .lineLimit(1).font(.caption.weight(.semibold))
-                        Spacer()
-                        if model.selectedNote?.readOnly == true { Image(systemName: "lock") }
-                    }.padding(8).background(.bar)
                     NoteEditor(model: model)
                         .overlay {
                             if model.selected == nil {
@@ -93,10 +88,14 @@ struct ContentView: View {
                 }.frame(minHeight: 120, idealHeight: 300)
             }
             HStack {
+                if model.selectedNote?.readOnly == true {
+                    Image(systemName: "lock").help("Read-only").accessibilityLabel("Read-only")
+                }
                 Text(model.status).lineLimit(1)
                 Spacer(minLength: 4)
                 Text("\(model.draft.count)")
-            }.font(.caption2).foregroundStyle(.secondary).padding(7)
+            }.font(.caption2).foregroundStyle(.secondary)
+                .padding(.horizontal, 16).padding(.top, 8).padding(.bottom, 14)
         }
         .frame(minWidth: 260, minHeight: 380)
         .navigationSubtitle(model.location.components(separatedBy: "/").last ?? "FooNote")

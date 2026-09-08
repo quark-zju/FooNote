@@ -34,6 +34,7 @@ struct NoteOutline: NSViewRepresentable {
         weak var outline: NoteOutlineView?
         private var refreshInProgress = false
         private var lastTreeRevision = -1
+        private var lastTitleRevision = -1
         private var lastSelection: Set<NodeID> = []
         private var lastFocusRevision = -1
         private static let pasteboardType = NSPasteboard.PasteboardType("com.foonote.node-ids")
@@ -61,6 +62,7 @@ struct NoteOutline: NSViewRepresentable {
             view.rowSizeStyle = .small
             view.registerForDraggedTypes([Self.pasteboardType])
             view.keyHandler = { [weak self] key in self?.handle(key) ?? false }
+            view.contextMenuHandler = { [weak self] row in self?.contextMenu(row: row) }
             view.doubleClickHandler = { [weak self] in self?.model.editSelected() }
             view.reloadData()
             lastTreeRevision = model.treeRevision
@@ -85,6 +87,11 @@ struct NoteOutline: NSViewRepresentable {
                 syncSelection(in: view)
                 revealSelection(in: view)
                 lastSelection = model.selection
+            }
+            if model.titleRevision != lastTitleRevision {
+                lastTitleRevision = model.titleRevision
+                view.reloadData(forRowIndexes: IndexSet(integersIn: 0..<view.numberOfRows),
+                    columnIndexes: IndexSet(integer: 0))
             }
             if model.focusRevision != lastFocusRevision {
                 lastFocusRevision = model.focusRevision
@@ -205,7 +212,7 @@ struct NoteOutline: NSViewRepresentable {
             }
             cell.imageView?.image = NSImage(systemSymbolName: symbol, accessibilityDescription: note.kind)
             cell.imageView?.contentTintColor = .secondaryLabelColor
-            cell.toolTip = separator ? "Separator" : note.title
+            cell.toolTip = nil
             cell.setAccessibilityLabel(separator ? "Separator" : note.title)
             let lineID = NSUserInterfaceItemIdentifier("Separator")
             if separator && !cell.subviews.contains(where: { $0.identifier == lineID }) {
@@ -297,6 +304,41 @@ struct NoteOutline: NSViewRepresentable {
             return contains(candidate, in: parent.children)
         }
 
+        func contextMenu(row: Int) -> NSMenu? {
+            guard let view = outline else { return nil }
+            if let note = view.item(atRow: row) as? Note {
+                if !model.selection.contains(note.id), !model.select([note.id]) { return nil }
+            } else if !model.select([]) { return nil }
+            let menu = NSMenu()
+            menu.autoenablesItems = false
+            func add(_ title: String, _ action: Selector, enabled: Bool = true) {
+                let item = NSMenuItem(title: title, action: action, keyEquivalent: "")
+                item.target = self; item.isEnabled = enabled; menu.addItem(item)
+            }
+            add("Edit Note", #selector(editNote), enabled: model.canEdit)
+            menu.addItem(.separator())
+            add("New Note", #selector(newNote))
+            add("New Folder", #selector(newFolder))
+            add("New Child Note", #selector(newChild), enabled: model.selected != nil && model.selectedNote?.kind != "separator")
+            add("New Separator", #selector(newSeparator))
+            add("Mount Notebook / Git…", #selector(mountNotebook))
+            menu.addItem(.separator())
+            add("Expand All", #selector(expandAll))
+            add("Collapse All", #selector(collapseAll))
+            menu.addItem(.separator())
+            add("Delete Selected", #selector(deleteSelected), enabled: !model.selection.isEmpty)
+            return menu
+        }
+        @objc private func editNote() { model.editSelected() }
+        @objc private func newNote() { model.add() }
+        @objc private func newFolder() { model.add(kind: "folder") }
+        @objc private func newChild() { model.add(child: true) }
+        @objc private func newSeparator() { model.add(kind: "separator") }
+        @objc private func mountNotebook() { model.connectionIsRoot = false; model.showConnection = true }
+        @objc private func expandAll() { outline?.expandItem(nil, expandChildren: true) }
+        @objc private func collapseAll() { outline?.collapseItem(nil, collapseChildren: true) }
+        @objc private func deleteSelected() { model.requestDelete() }
+
         private func handle(_ key: NoteOutlineView.Key) -> Bool {
             switch key {
             case .return: model.editSelected(); return true
@@ -312,6 +354,10 @@ struct NoteOutline: NSViewRepresentable {
 final class NoteOutlineView: NSOutlineView {
     enum Key { case `return`, slash, escape, delete }
     var keyHandler: ((Key) -> Bool)?
+    var contextMenuHandler: ((Int) -> NSMenu?)?
+    override func menu(for event: NSEvent) -> NSMenu? {
+        contextMenuHandler?(row(at: convert(event.locationInWindow, from: nil)))
+    }
 
     override func keyDown(with event: NSEvent) {
         if event.modifierFlags.intersection([.command, .control, .option]).isEmpty == false {

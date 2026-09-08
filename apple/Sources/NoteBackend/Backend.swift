@@ -86,6 +86,15 @@ public final class Backend {
         }
     }
 
+    public func autofill(_ node: NodeID) throws {
+        try requireOpen {
+            try transaction {
+                push(node)
+                try check(notebackend_autofill())
+            }
+        }
+    }
+
     public func metadata(_ node: NodeID) throws -> String {
         try requireOpen {
             try transaction {
