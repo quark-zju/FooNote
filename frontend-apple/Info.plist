@@ -2,7 +2,7 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
 <key>CFBundleIdentifier</key><string>org.foonote.apple.prototype</string>
-<key>CFBundleName</key><string>FooNote Apple</string>
+<key>CFBundleName</key><string>FooNote</string>
 <key>CFBundleExecutable</key><string>FooNoteApple</string>
 <key>CFBundlePackageType</key><string>APPL</string>
 <key>CFBundleShortVersionString</key><string>0.1</string>

@@ -14,6 +14,11 @@ def get_cargo_flags(debug=False):
 
 
 def build(debug=False):
+    if sys.platform == "darwin":
+        print(">>> Building Apple frontend. This requires Rust and Swift toolchains.")
+        subprocess.check_call(["./build.sh"], cwd="frontend-apple")
+        return
+
     print(">>> Building backend. This requires Rust toolchain.")
     cargo_flags = get_cargo_flags(debug=debug)
     subprocess.check_call(

@@ -1,4 +1,4 @@
-# FooNote Apple prototype
+# FooNote Apple frontend
 
 macOS 13+ 原生前端，SwiftUI 外壳 + AppKit 笔记树/编辑器，直接调用现有 Rust
 `notebackend` C ABI。无需 Lazarus，也没有独立的数据格式或后端服务。
@@ -8,15 +8,15 @@ macOS 13+ 原生前端，SwiftUI 外壳 + AppKit 笔记树/编辑器，直接调
 需要 macOS、Xcode Command Line Tools（Swift 5.9+）和 Rust/Cargo。
 
 ```sh
-./apple/build.sh
-open "apple/dist/FooNote Apple.app"
+./frontend-apple/build.sh
+open "frontend-apple/dist/FooNote.app"
 ```
 
 也可以先构建 Rust，再直接启动开发版本：
 
 ```sh
-cargo build --manifest-path backend/Cargo.toml -p notebackend --target-dir apple/.build/rust
-swift run --package-path apple
+cargo build --manifest-path backend/Cargo.toml -p notebackend --target-dir frontend-apple/.build/rust
+swift run --package-path frontend-apple
 ```
 
 脚本生成包含 Rust 动态库的本机架构 `.app`，使用本地 ad-hoc 签名，尚未公证。
@@ -84,8 +84,8 @@ swift run --package-path apple
 ## 验证与限制
 
 ```sh
-cargo build --manifest-path backend/Cargo.toml -p notebackend --target-dir apple/.build/rust
-DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --package-path apple
+cargo build --manifest-path backend/Cargo.toml -p notebackend --target-dir frontend-apple/.build/rust
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test --package-path frontend-apple
 ```
 
 测试需要完整 Xcode（Command Line Tools 不包含 XCTest）。测试使用隔离的内存/临时文件

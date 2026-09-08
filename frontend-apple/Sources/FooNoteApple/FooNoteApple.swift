@@ -103,15 +103,19 @@ struct ContentView: View {
                 }.font(.caption).padding(12).frame(maxWidth: .infinity, alignment: .leading)
                     .background(Color.orange.opacity(0.12))
             }
-            HStack {
-                if model.selectedNote?.readOnly == true {
-                    Image(systemName: "lock").help("Read-only").accessibilityLabel("Read-only")
-                }
-                Text(model.status).lineLimit(1)
-                Spacer(minLength: 4)
-                Text("\(model.draft.count)")
-            }.font(.caption2).foregroundStyle(.secondary)
-                .padding(.horizontal, 16).padding(.top, 8).padding(.bottom, 14)
+            if model.selectedNote?.readOnly == true || model.saveError != nil {
+                HStack {
+                    if model.selectedNote?.readOnly == true {
+                        Image(systemName: "lock").help("Read-only").accessibilityLabel("Read-only")
+                    }
+                    if model.saveError != nil {
+                        Image(systemName: "exclamationmark.triangle")
+                        Text("Save failed").lineLimit(1)
+                    }
+                    Spacer(minLength: 4)
+                }.font(.caption2).foregroundStyle(.secondary)
+                    .padding(.horizontal, 16).padding(.top, 8).padding(.bottom, 14)
+            }
         }
         .frame(minWidth: 260, minHeight: 380)
         .navigationSubtitle(model.location.components(separatedBy: "/").last ?? "FooNote")

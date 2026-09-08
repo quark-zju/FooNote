@@ -3,7 +3,7 @@ set -eu
 cd "$(dirname "$0")"
 cargo build --manifest-path ../backend/Cargo.toml -p notebackend --target-dir .build/rust
 swift build
-app="$PWD/dist/FooNote Apple.app"
+app="$PWD/dist/FooNote.app"
 mkdir -p "$app/Contents/MacOS" "$app/Contents/Frameworks" "$app/Contents/Resources"
 cp .build/debug/FooNoteApple "$app/Contents/MacOS/FooNoteApple"
 cp .build/rust/debug/libnotebackend.dylib "$app/Contents/Frameworks/"
