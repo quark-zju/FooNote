@@ -17,9 +17,7 @@
 
 详细介绍见[使用手册](https://foonote.readthedocs.io/)。
 
-![FooNote Windows](doc/image/main-window-win32.png)
-![FooNote macOS](doc/image/main-window-macos.png)
-
+<img src="./doc/image/main-window-win32.png" height="650" alt="FooNote Windows"><img src="./doc/image/main-window-macos2.webp" height="650" alt="FooNote macOS">
 
 Lightweight tree note taking companion.
 
