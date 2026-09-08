@@ -39,3 +39,7 @@ Features
 感谢：
 - Opera (<= 12, 后为 Vivaldi) 浏览器：提供了树形笔记的主要想法
 - [BooguNote](https://github.com/boogunote/bn1)：提供了 Windows 下桌面停靠的参考实现
+
+## Apple 原生前端原型
+
+macOS SwiftUI 原型见 [apple/README.md](apple/README.md)，复用现有 Rust 后端和 `.foonote` 文件格式。
